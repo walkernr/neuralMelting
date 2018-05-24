@@ -6,19 +6,20 @@ Created on Wed May 22 13:31:27 2018
 """
 
 from __future__ import division, print_function
+import logging
+import sys
 import numpy as np
-from scipy.optimize import curve_fit
-from sknn.platform import cpu32, threading
-import matplotlib.pyplot as plt
+import pickle
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.decomposition import PCA
 from lasagne import layers as lasagne, nonlinearities as nl
+from sknn.platform import cpu32, threading
 from sknn.mlp import Classifier, Layer, Convolution, Native
-import pickle
+from scipy.optimize import curve_fit
 from colormaps import cmaps
-import logging
+import matplotlib.pyplot as plt
 from PIL import Image
-import sys
+
 
 logging.basicConfig(format='%(message)s', level=logging.DEBUG, stream=sys.stdout)
 # plotting paramters
@@ -129,7 +130,7 @@ print('network initialized')
 print('------------------------------------------------------------')
 # load domains for rdf and sf
 R = pickle.load(open(prefix+'.r.pickle'))[:]
-Q = pickle.load(open(prefix+'.q.pickle'))[:]
+# Q = pickle.load(open(prefix+'.q.pickle'))[:]
 # load simulation data
 N = pickle.load(open(prefix+'.natoms.pickle'))
 O = np.concatenate(tuple([i*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
@@ -285,28 +286,28 @@ if bpca:
 else:
     plt_pref = [prefix, network, property, scaler, 'not-reduced', fit_func]
 # generate convolution images
-# if 'sknn_convolution' in network:
-    # train0 = np.reshape(np.mean(tdata[tclass == 0], axis=0), (int(np.sqrt(npcacomp)),int(np.sqrt(npcacomp))))
-    # train1 = np.reshape(np.mean(tdata[tclass == 1], axis=0), (int(np.sqrt(npcacomp)),int(np.sqrt(npcacomp))))
-    # train0 = Image.fromarray(np.uint8(cm(train0)*255))
-    # train0 = train0.resize((400,400), Image.ANTIALIAS)
-    # train1 = Image.fromarray(np.uint8(cm(train1)*255))
-    # train1 = train1.resize((400,400), Image.ANTIALIAS)
-    # class0 = np.reshape(np.mean(cdata[pred == 0], axis=0), (int(np.sqrt(npcacomp)),int(np.sqrt(npcacomp))))
-    # class1 = np.reshape(np.mean(cdata[pred == 1], axis=0), (int(np.sqrt(npcacomp)),int(np.sqrt(npcacomp))))
-    # class0 = Image.fromarray(np.uint8(cm(class0)*255))
-    # class0 = class0.resize((400,400), Image.ANTIALIAS)
-    # class1 = Image.fromarray(np.uint8(cm(class1)*255))
-    # class1 = class1.resize((400,400), Image.ANTIALIAS)
-    # images = Image.new('RGB', (800,800))
-    # images.paste(train0, (0, 0))
-    # images.paste(train1, (400, 0))
-    # images.paste(class0, (0, 400))
-    # images.paste(class1, (400, 400))
-    # images.save('.'.join(plt_pref+['img.png']))
+if 'sknn_convolution' in network:
+    train0 = np.reshape(np.mean(tdata[tclass == 0], axis=0), (int(np.sqrt(npcacomp)),int(np.sqrt(npcacomp))))
+    train1 = np.reshape(np.mean(tdata[tclass == 1], axis=0), (int(np.sqrt(npcacomp)),int(np.sqrt(npcacomp))))
+    train0 = Image.fromarray(np.uint8(cm(train0)*255))
+    train0 = train0.resize((400,400), Image.ANTIALIAS)
+    train1 = Image.fromarray(np.uint8(cm(train1)*255))
+    train1 = train1.resize((400,400), Image.ANTIALIAS)
+    class0 = np.reshape(np.mean(cdata[pred == 0], axis=0), (int(np.sqrt(npcacomp)),int(np.sqrt(npcacomp))))
+    class1 = np.reshape(np.mean(cdata[pred == 1], axis=0), (int(np.sqrt(npcacomp)),int(np.sqrt(npcacomp))))
+    class0 = Image.fromarray(np.uint8(cm(class0)*255))
+    class0 = class0.resize((400,400), Image.ANTIALIAS)
+    class1 = Image.fromarray(np.uint8(cm(class1)*255))
+    class1 = class1.resize((400,400), Image.ANTIALIAS)
+    images = Image.new('RGB', (800,800))
+    images.paste(train0, (0, 0))
+    images.paste(train1, (400, 0))
+    images.paste(class0, (0, 400))
+    images.paste(class1, (400, 400))
+    images.save('.'.join(plt_pref+['img.png']))
     
-    # print('images saved')
-    # print('------------------------------------------------------------')
+    print('images saved')
+    print('------------------------------------------------------------')
 # save figures
 fig0.savefig('.'.join(plt_pref+['prob.png']))
 fig1.savefig('.'.join(plt_pref+['rdf.png']))

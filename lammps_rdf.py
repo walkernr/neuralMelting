@@ -6,6 +6,7 @@ Created on Wed May 22 08:32:52 2018
 """
 
 from __future__ import division, print_function
+import sys
 import numpy as np
 from multiprocessing import cpu_count
 from joblib import Parallel, delayed
@@ -101,7 +102,7 @@ def calculate_rdf(j):
 # get spatial properties
 natoms, box, pos, R, bins, r, dr, nrho, dni, gs, rb, ra = calculate_spatial()
 # calculate radial distribution for each sample in parallel
-Parallel(n_jobs=cpu_count(), backend='threading', verbose=4)(delayed(calculate_rdf)(j) for j in xrange(len(natoms)))'
+Parallel(n_jobs=cpu_count(), backend='threading', verbose=4)(delayed(calculate_rdf)(j) for j in xrange(len(natoms)))
 # adjust rdf by atom count and atoms contained by shells
 g = np.divide(gs, natoms[0]*dni)
 # calculate domain for structure factor
