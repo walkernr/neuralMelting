@@ -18,7 +18,7 @@ from lammps import lammps
 try:
     el = sys.argv[1]
 except:
-    el = 'Al'
+    el = 'LJ'
 # number of data sets
 n_dat = 32
 # simulation name
@@ -26,7 +26,7 @@ name = 'hmc'
 # monte carlo parameters
 mod = 64              # frequency of data storage
 n_swps = 256*mod      # total hmc sweeps
-n_stps = 16            # md steps during hmc
+n_stps = 16           # md steps during hmc
 seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
 
@@ -79,11 +79,11 @@ p_hmc = {'Ti': 0.875,
          'Cu': 0.875,
          'LJ': 0.875}
 # max log volume change displacement
-lnvol_max = {'Ti': 0.00006103515,
-             'Al': 0.00006103515,
-             'Ni': 0.00006103515,
-             'Cu': 0.00006103515,
-             'LJ': 0.00024414062}
+lnvol_max = {'Ti': 0.00048828125,
+             'Al': 0.00048828125,
+             'Ni': 0.00048828125,
+             'Cu': 0.00048828125,
+             'LJ': 0.00048828125}
 # timestep
 dt = {'real': 4.0,
       'metal': 0.00390625,
@@ -167,25 +167,25 @@ traj = open(lmpsfilein.replace('.in', '.traj'), 'w')
 thermo.write('#----------------------\n')
 thermo.write('# simulation parameters\n')
 thermo.write('#----------------------\n')
-thermo.write('# ndat: %d\n' % n_dat)
-thermo.write('# mod: %d\n' % mod)
-thermo.write('# nswps: %d\n' % n_swps)
-thermo.write('# nstps: %d\n' % n_stps)
-thermo.write('# seed: %d\n' % seed)
+thermo.write('# ndat:     %d\n' % n_dat)
+thermo.write('# mod:      %d\n' % mod)
+thermo.write('# nswps:    %d\n' % n_swps)
+thermo.write('# nstps:    %d\n' % n_stps)
+thermo.write('# seed:     %d\n' % seed)
 thermo.write('#----------------------\n')
 thermo.write('# material properties\n')
 thermo.write('#----------------------\n')
-thermo.write('# element: %s\n' % el)
-thermo.write('# units: %s\n' % units[el])
-thermo.write('# lattice: %s\n' % lat[el][0])
-thermo.write('# latpar: %f\n' % lat[el][1])
-thermo.write('# size: %d\n' % sz[el])
-thermo.write('# mass: %f\n' % mass[el])
-thermo.write('# press: %f\n' % P[el])
-thermo.write('# mintemp: %f\n' % T[el][0])
-thermo.write('# maxtemp: %f\n' % T[el][-1])
+thermo.write('# element:  %s\n' % el)
+thermo.write('# units:    %s\n' % units[el])
+thermo.write('# lattice:  %s\n' % lat[el][0])
+thermo.write('# latpar:   %f\n' % lat[el][1])
+thermo.write('# size:     %d\n' % sz[el])
+thermo.write('# mass:     %f\n' % mass[el])
+thermo.write('# press:    %f\n' % P[el])
+thermo.write('# mintemp:  %f\n' % T[el][0])
+thermo.write('# maxtemp:  %f\n' % T[el][-1])
 thermo.write('# timestep: %f\n' % dt[units[el]])
-thermo.write('# phmc: %f\n' % p_hmc[el])
+thermo.write('# phmc:     %f\n' % p_hmc[el])
 thermo.write('# lnvolmax: %f\n' % lnvol_max[el])
 thermo.write('# ------------------------------------------------------------------------------------\n')
 thermo.write('# | stp | temp | terr | pe | ke | virial | vol | acchmc | accvol | mdpehmv | mdpevol |\n')
