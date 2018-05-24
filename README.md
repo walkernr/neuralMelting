@@ -43,7 +43,7 @@ This program parses the output from lammps_hmc.py and pickles the data.
 lammps_rdf.py
 -------------
 
-This program calculates the radial distributions and structure factors for each sample using the pickled trajectory information from lammps_parse.py.
+This program calculates the radial distributions and structure factors for each sample using the pickled trajectory information from lammps_parse.py. The radial distributions are performed in parallel and the structure factors are calculated as Fourier transitions of the radial distributions. The script pickles the data, which also includes density information.
 
 lammps_neural.py
 ----------------
