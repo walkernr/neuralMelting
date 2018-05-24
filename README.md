@@ -14,7 +14,7 @@ Python
 - LAMMPS
 - NumPy
 - SciPy
-- Jobib
+- Joblib
 - Scikit-Learn
 - Lasagne
 - Scikit-NeuralNetwork
