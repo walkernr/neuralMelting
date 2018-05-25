@@ -48,30 +48,30 @@ except:
     el = 'LJ'
 # lennard-jones parameters
 lj_param = (1.0, 1.0)
-# lattice dict
+# pressure
+P = {'Ti': 1.0,
+     'Al': 1.0,
+     'Ni': 1.0,
+     'Cu': 1.0,
+     'LJ': 1.0}
+# lattice type and parameter
 lat = {'Ti': ('bcc', 2.951),
        'Al': ('fcc', 4.046),
        'Ni': ('fcc', 3.524),
        'Cu': ('fcc', 3.597),
        'LJ': ('fcc', 2**(1/6)*lj_param[1])}
-# size dict
-sz = {'Ti': 4,
-      'Al': 3,
-      'Ni': 3,
-      'Cu': 3,
-      'LJ': 3}
 # simulation name
 name = 'hmc'
 # file prefix
-prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el][0], sz[el], name)
+prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el][0], int(P[el]), name)
 # run details
 property = 'radial_distribution'  # property for classification
 n_dat = 32                        # number of datasets
-ntrainsets = 1                    # number of training sets
+ntrainsets = 4                    # number of training sets
 scaler = 'minmax'                 # data scaling method
 network = 'sknn_convolution_2d'   # neural network type
 bpca = False                      # boolean for pca reduction
-fit_func = 'gompertz'             # fitting function
+fit_func = 'logistic'             # fitting function
 # summary of input
 print('------------------------------------------------------------')
 print('input summary')
@@ -86,7 +86,9 @@ print('fitting function: ', fit_func)
 print('pca reduction: ', str(bpca).lower())
 print('------------------------------------------------------------')
 # fitting functions
-def logistic(t, a, k, b, m):
+def logistic(t, b, m):
+    a = 0.0
+    k = 1.0
     return a+np.divide(k, 1+np.exp(-b*(t-m)))
 def gompertz(t, b, c):
     a = 1.0
@@ -94,9 +96,9 @@ def gompertz(t, b, c):
 def richard(t, a, k, b, nu, q, m, c):
     return a+np.divide(k-a, np.power(c+q*np.exp(-b*(t-m)), 1./nu))
 # initial fitting parameters
-log_guess = [1.0, 1.0, 1.0, 1.0]
+log_guess = [1.0, 1.0]
 gomp_guess = [1.0, 1.0]
-rich_guess = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+rich_guess = [0.0, 1.0, 3.0, 0.5, 0.5, 0.0, 1.0]
 # fitting dictionaries
 fit_funcs = {'logistic':logistic, 'richard':richard, 'gompertz':gompertz}
 fit_guess = {'logistic':log_guess, 'richard':rich_guess, 'gompertz':gomp_guess}
@@ -130,7 +132,7 @@ print('network initialized')
 print('------------------------------------------------------------')
 # load domains for rdf and sf
 R = pickle.load(open(prefix+'.r.pickle'))[:]
-# Q = pickle.load(open(prefix+'.q.pickle'))[:]
+Q = pickle.load(open(prefix+'.q.pickle'))[:]
 # load simulation data
 N = pickle.load(open(prefix+'.natoms.pickle'))
 O = np.concatenate(tuple([i*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
@@ -153,6 +155,7 @@ S = S[smplspc]
 print('data loaded')
 print('------------------------------------------------------------')
 # property dictionary
+propdom = {'radial_distribution':R, 'structure_factor':Q}
 properties = {'radial_distribution':G, 'structure_factor':S}
 # change pca properties for 2d convolution to prevent error
 # 2d convolution expects square input
@@ -170,7 +173,7 @@ scalers[scaler].fit(data[tind])          # fit scaler to training data
 sdata = scalers[scaler].transform(data)  # transform data with scaler
 # apply pca reduction
 if bpca:
-    tdata = pca.fit(sdata[tind])          # fit pca to training data
+    tdata = pca.fit_transform(sdata[tind])          # fit pca to training data
     cdata = pca.transform(sdata[cind])    # pca transform of data
     evar = pca.explained_variance_ratio_  # extract explained variance ratios
 # extract training/classification data/temperatures
@@ -225,15 +228,20 @@ mprob = np.zeros(len(temps), dtype=float)  # mean probability array
 for i in xrange(len(temps)):
     mprob[i] = np.mean(prob[cT == temps[i], 1])  # mean probability of samples at temp i being liquid
 # curve fitting
-fitdom = np.linspace(np.min(temps), np.max(temps), 1024)                                            # domain for curve fitting
-popt, pcov = curve_fit(fit_funcs[fit_func], temps, mprob, p0=fit_guess[fit_func], method='dogbox')  # fitting parameters
-perr = np.sqrt(np.diag(pcov))                                                                       # fit standard error
-fitrng = fit_funcs[fit_func](fitdom, *popt)                                                         # fit values
+adjtemp = np.linspace(0, 1, len(temps))                                                               # domain for curve fitting
+n_dom = 4096                                                                                          # expanded number of curve samples
+adjdom = np.linspace(0, 1, n_dom)                                                                     # expanded domain for curve fitting
+fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)                                             # expanded domain for curve plotting
+popt, pcov = curve_fit(fit_funcs[fit_func], adjtemp, mprob, p0=fit_guess[fit_func], method='dogbox')  # fitting parameters
+perr = np.sqrt(np.diag(pcov))                                                                         # fit standard error
+fitrng = fit_funcs[fit_func](adjdom, *popt)                                                           # fit values
 # extract transition
 if fit_func == 'gompertz':
     trans = -np.log(np.log(2)/popt[0])/popt[1]
+    trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)
 else:
-    trans = fitdom[np.argmin(np.abs(fitrng-0.5))]
+    trans = adjdom[np.argmin(np.abs(fitrng-0.5))]
+    trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)
 transitions.append(trans)
 print('transition temperature estimated')
 print('------------------------------------------------------------')
@@ -252,7 +260,7 @@ ax0.plot(fitdom, fitrng, color=cm(scale(trans)), alpha=1.00, label='$\mathrm{Pha
 for i in xrange(2):
     ax0.scatter(cT[pred == i], prob[pred == i, 1], c=cm(scale(mtemp[1, i])), s=120, alpha=0.05, edgecolors='none')
 ax0.scatter(temps, mprob, color=cm(scale(temps)), alpha=1.00, s=240, marker='*')
-ax0.text(trans+0.1, .5, ' '.join(['$T_{\mathrm{trans}} =', '{:1.3f}'.format(trans), '$']))
+ax0.text(trans+2*np.diff(temps)[0], .5, ' '.join(['$T_{\mathrm{trans}} =', '{:1.3f}'.format(trans), '$']))
 ax0.axvline(trans, color=cm(scale(trans)), linestyle='--')
 ax0.set_ylim(0.0, 1.0)
 for tick in ax0.get_xticklabels():
@@ -273,13 +281,18 @@ ax1.spines['top'].set_visible(False)
 ax1.xaxis.set_ticks_position('bottom')
 ax1.yaxis.set_ticks_position('left')
 for i in xrange(2):
-    rdflabels = ['$\mathrm{Trained\enspace '+labels[i]+'\enspace Phase}$', '$\mathrm{Classified\enspace '+labels[i]+'\enspace Phase}$']
-    ax1.plot(R, np.mean(ustdata[tclass == i], axis=0), color=cm(scale(mtemp[0, i])), alpha=1.00, label=rdflabels[0])
-    ax1.plot(R, np.mean(uscdata[pred == i], axis=0), color=cm(scale(mtemp[1, i])), alpha=1.00, linestyle='--', label=rdflabels[1])
-ax1.legend()      
-ax1.set_xlabel('$\mathrm{Distance}$')
-ax1.set_ylabel('$\mathrm{Radial Distribution}$')
-ax1.set_title('$\mathrm{%s\enspace Phase\enspace RDFs}$' % el, y=1.015)
+    plabels = ['$\mathrm{Trained\enspace '+labels[i]+'\enspace Phase}$', '$\mathrm{Classified\enspace '+labels[i]+'\enspace Phase}$']
+    ax1.plot(propdom[property], np.mean(ustdata[tclass == i], axis=0), color=cm(scale(mtemp[0, i])), alpha=1.00, label=plabels[0])
+    ax1.plot(propdom[property], np.mean(uscdata[pred == i], axis=0), color=cm(scale(mtemp[1, i])), alpha=1.00, linestyle='--', label=plabels[1])
+ax1.legend()
+if property == 'radial_distribution':      
+    ax1.set_xlabel('$\mathrm{Distance}$')
+    ax1.set_ylabel('$\mathrm{Radial Distribution}$')
+    ax1.set_title('$\mathrm{%s\enspace Phase\enspace RDFs}$' % el, y=1.015)
+if property == 'structure_factor':
+    ax1.set_xlabel('$\mathrm{Wavenumber}$')
+    ax1.set_ylabel('$\mathrm{Structure Factor}$')
+    ax1.set_title('$\mathrm{%s\enspace Phase\enspace SFs}$' % el, y=1.015)
 # prefix for plot files
 if bpca:
     plt_pref = [prefix, network, property, scaler, 'reduced', fit_func]
@@ -310,7 +323,10 @@ if 'sknn_convolution' in network:
     print('------------------------------------------------------------')
 # save figures
 fig0.savefig('.'.join(plt_pref+['prob.png']))
-fig1.savefig('.'.join(plt_pref+['rdf.png']))
+if property == 'radial_distribution':
+    fig1.savefig('.'.join(plt_pref+['rdf.png']))
+if property == 'structure_factor':
+    fig1.savefig('.'.join(plt_pref+['sf.png']))
 # close plots
 plt.close('all')
 print('probability plot saved')

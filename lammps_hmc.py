@@ -20,12 +20,12 @@ try:
 except:
     el = 'LJ'
 # number of data sets
-n_dat = 32
+n_dat = 64
 # simulation name
 name = 'hmc'
 # monte carlo parameters
-mod = 64              # frequency of data storage
-n_swps = 256*mod      # total hmc sweeps
+mod = 128             # frequency of data storage
+n_swps = 1024*mod      # total hmc sweeps
 n_stps = 16           # md steps during hmc
 seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
@@ -98,7 +98,7 @@ def lammps_input():
         takes element name, lattice definitions, size, and simulation name
         returns input file name '''
     # convert lattice definition list to strings
-    prefix = '%s.%s.%d.lammps' % (el.lower(), lat[el][0], sz[el])
+    prefix = '%s.%s.%d.lammps' % (el.lower(), lat[el][0], int(P[el]))
     # set lammps file name
     job = prefix+'.'+name
     lmpsfilein = job+'.in'
@@ -196,7 +196,7 @@ thermo.write('# ----------------------------------------------------------------
 # -------------------------------
 
 if units[el] == 'real':
-    N_A = 6.0221409e23                               # Avagadro number [num/mol]
+    N_A = 6.0221409e23                               # avagadro number [num/mol]
     kB = 3.29983e-27                                 # boltzmann constant [kcal/K]
     R = kB*N_A                                       # gas constant [kcal/(mol K)]
     Et = R*T[el]                                     # thermal energy [kcal/mol]
@@ -261,7 +261,7 @@ for i in xrange(len(T[el])):
             ke = lmps.extract_compute('thermo_ke', None, 0)/Et[i]
             etot = pe+ke
             # set new atom velocities and run md
-            lmps.command('velocity all create %f %s dist gaussian' % (T[el][i], seed))
+            lmps.command('velocity all create %f %d dist gaussian' % (T[el][i], np.random.randint(1, 2**16)))
             lmps.command('velocity all zero linear')
             lmps.command('velocity all zero angular')
             lmps.command('run %d' % n_stps)
@@ -306,7 +306,7 @@ for i in xrange(len(T[el])):
             lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
             lmps.command('run 0')
             penew = lmps.extract_compute('thermo_pe', None, 0)/Et[i]
-            # calculate volume criterion
+            # calculate enthalpy criterion
             arg = (penew-pe)+Pf[i]*(volnew-vol)-(natoms+1.)*np.log(volnew/vol)
             if np.random.rand() <= np.min([1, np.exp(-arg)]):
                 # update volume acceptations

@@ -19,22 +19,22 @@ except:
     el = 'LJ'
 # lennard-jones parameters
 lj_param = (1.0, 1.0)
-# lattice dict
+# pressure
+P = {'Ti': 1.0,
+     'Al': 1.0,
+     'Ni': 1.0,
+     'Cu': 1.0,
+     'LJ': 1.0}
+# lattice type and parameter
 lat = {'Ti': ('bcc', 2.951),
        'Al': ('fcc', 4.046),
        'Ni': ('fcc', 3.524),
        'Cu': ('fcc', 3.597),
        'LJ': ('fcc', 2**(1/6)*lj_param[1])}
-# size dict
-sz = {'Ti': 4,
-      'Al': 3,
-      'Ni': 3,
-      'Cu': 3,
-      'LJ': 3}
 # simulation name
 name = 'hmc'
 # file prefix
-prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el][0], sz[el], name)
+prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el][0], int(P[el]), name)
 
 def load_data():
     ''' load atom count, box dimension, and atom positions '''
