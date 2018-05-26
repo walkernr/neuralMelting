@@ -50,6 +50,11 @@ lammps_neural.py
 
 This program classifies samples as either solids or liquids by passing either the radial distributions or the structure factors through a neural network. There are many options available with regards to which data scaler, classification neural network, and fitting function to use in addition to whether data reduction/transformation should be used.
 
+lammps_cluster.py
+-----------------
+
+This program classifies samples as either solids or liquid by passing either the radial distributions or the structure factors through an unsupervised clustering algorithm following data dimensionality reduction. Multiple reduction and clustering methods are available.
+
 Further Development
 ===================
 
