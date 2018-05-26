@@ -12,6 +12,7 @@ from multiprocessing import cpu_count
 from joblib import Parallel, delayed
 import pickle
 
+
 # element choice
 try:
     el = sys.argv[1]
@@ -35,6 +36,8 @@ lat = {'Ti': ('bcc', 2.951),
 name = 'hmc'
 # file prefix
 prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el][0], int(P[el]), name)
+
+nproc = 2  # cpu_count()
 
 def load_data():
     ''' load atom count, box dimension, and atom positions '''
@@ -102,7 +105,7 @@ def calculate_rdf(j):
 # get spatial properties
 natoms, box, pos, R, bins, r, dr, nrho, dni, gs, rb, ra = calculate_spatial()
 # calculate radial distribution for each sample in parallel
-Parallel(n_jobs=cpu_count(), backend='threading', verbose=4)(delayed(calculate_rdf)(j) for j in xrange(len(natoms)))
+Parallel(n_jobs=nproc, backend='threading', verbose=4)(delayed(calculate_rdf)(j) for j in xrange(len(natoms)))
 # adjust rdf by atom count and atoms contained by shells
 g = np.divide(gs, natoms[0]*dni)
 # calculate domain for structure factor

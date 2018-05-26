@@ -10,6 +10,7 @@ import sys
 import numpy as np
 from lammps import lammps
 
+
 # --------------
 # run parameters
 # --------------
@@ -47,7 +48,7 @@ P = {'Ti': 1.0,
      'Al': 1.0,
      'Ni': 1.0,
      'Cu': 1.0,
-     'LJ': 1.0}
+     'LJ': 5.0}
 # temperature
 T = {'Ti': np.linspace(256, 2560, n_dat, dtype=np.float64),
      'Al': np.linspace(256, 2560, n_dat, dtype=np.float64),
@@ -87,7 +88,7 @@ lnvol_max = {'Ti': 0.00048828125,
 # timestep
 dt = {'real': 4.0,
       'metal': 0.00390625,
-      'lj': 0.00390625}   
+      'lj': 0.00390625}
 
 # ---------------------------------
 # lammps file construction function

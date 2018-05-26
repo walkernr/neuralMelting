@@ -66,8 +66,8 @@ name = 'hmc'
 prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el][0], int(P[el]), name)
 # run details
 property = 'radial_distribution'  # property for classification
-n_dat = 32                        # number of datasets
-ntrainsets = 4                    # number of training sets
+n_dat = 64                        # number of datasets
+ntrainsets = 8                    # number of training sets
 scaler = 'minmax'                 # data scaling method
 network = 'sknn_convolution_2d'   # neural network type
 bpca = False                      # boolean for pca reduction
@@ -76,7 +76,7 @@ fit_func = 'logistic'             # fitting function
 print('------------------------------------------------------------')
 print('input summary')
 print('------------------------------------------------------------')
-print('potential: %s meam' % el.lower())
+print('potential: %s' % el.lower())
 print('number of sets: ', n_dat)
 print('property: ', property)
 print('training sets (per phase): ', ntrainsets)
@@ -324,12 +324,12 @@ if 'sknn_convolution' in network:
 # save figures
 fig0.savefig('.'.join(plt_pref+['prob.png']))
 if property == 'radial_distribution':
-    fig1.savefig('.'.join(plt_pref+['rdf.png']))
+    fig1.savefig('.'.join(plt_pref+['rdf', 'png']))
 if property == 'structure_factor':
-    fig1.savefig('.'.join(plt_pref+['sf.png']))
+    fig1.savefig('.'.join(plt_pref+['sf', 'png']))
 # close plots
 plt.close('all')
-print('probability plot saved')
+print('plots saved')
 print('------------------------------------------------------------')
 print('finished')
 print('------------------------------------------------------------')
