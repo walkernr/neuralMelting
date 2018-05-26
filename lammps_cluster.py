@@ -89,7 +89,7 @@ T = pickle.load(open(prefix+'.temp.pickle'))
 G = pickle.load(open(prefix+'.rdf.pickle'))
 S = pickle.load(open(prefix+'.sf.pickle'))
 # sample space reduction for improving performance
-smplspc = np.arange(0, N.size, 4)
+smplspc = np.arange(0, N.size, 8)
 N = N[smplspc]
 O = O[smplspc]
 P = P[smplspc]
@@ -110,7 +110,7 @@ if reduction == 'tsne':
     npcacomp = 64
 ntsnecomp = 2
 # temperature distribution
-bins = 32
+bins = 64
 tdist = np.histogram(T, bins, range=(np.min(T), np.max(T)), density=False)
 plxty = int(np.mean(tdist[0]))
 tdist = np.histogram(T, bins, range=(np.min(T), np.max(T)), density=True)
@@ -244,13 +244,23 @@ fig1 = plt.figure()
 ax10 = fig1.add_subplot(211)
 ax11 = fig1.add_subplot(212)
 ax10.fill_between(tdist[1][1:], 0, tdist[0], color=cm(scale(np.mean(T))), alpha=0.25)
+ax10.set_xlabel('$T$')
+ax10.set_ylabel('$p(T)$')
 for i in xrange(2):
     ax11.fill_between(ctdist[pind[i]][1][1:], 0, ctdist[pind[i]][0], color=cm(scale(cmtemp[pind[i]])), alpha=0.25)
-    ax11.axvline(amt, color=cm(.25))
-    ax11.axvline(gmt, color=cm(.25))
-    for i in xrange(2):
-        ax11.axvline(amt+(-1)**i*ast, color=cm(.25), linestyle='--')
-        ax11.axvline(gmt+(-1)**i*(gst-1)*gmt, color=cm(.75), linestyle='--')
+ax11.axvline(amt, color=cm(.25))
+ax11.axvline(gmt, color=cm(.25))
+for i in xrange(2):
+    ax11.axvline(amt+(-1)**i*ast, color=cm(.25), linestyle='--')
+    ax11.axvline(gmt+(-1)**i*(gst-1)*gmt, color=cm(.75), linestyle='--')
+if el == 'LJ':
+    ax11.text(1.1*(amt+ast), 1.0, ' '.join(['$T_{\mathrm{arith}} =', '{:2.2f}'.format(amt), '$']))
+    ax11.text(1.1*(amt+ast), 1.5, ' '.join(['$T_{\mathrm{geo}} =', '{:2.2f}'.format(gmt), '$']))
+else:
+    ax11.text(1.1*(amt+ast), 1.0, ' '.join(['$T_{\mathrm{arith}} =', '{:4.0f}'.format(amt), 'K$']))
+    ax11.text(1.1*(amt+ast), 1.5, ' '.join(['$T_{\mathrm{geo}} =', '{:4.0f}'.format(gmt), 'K$']))
+ax11.set_xlabel('$T$')
+ax11.set_ylabel('$p(T)$')
 # property plot
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(111)
@@ -267,10 +277,10 @@ if el == 'LJ':
 else:
     ax2.legend(['$\mathrm{'+'{:4.0f}'.format(cmtemp[pind[i]])+'K}$' for i in xrange(2)])
 # save figures
-plt_pref = [prefix, property, scaler, reduction, clustering]
-fig0.savefig('.'.join(plt_prefix+['red', 'png']))
-fig1.savefig('.'.join(plt_prefix+['dist', 'png']))
-fig2.savefig('.'.join(plt_prefix+['rdf', 'png']))
+plt_pref = [prefix, property, scaler, reduction, clust]
+fig0.savefig('.'.join(plt_pref+['red', 'png']))
+fig1.savefig('.'.join(plt_pref+['dist', 'png']))
+fig2.savefig('.'.join(plt_pref+['rdf', 'png']))
 # close plots
 plt.close('all')
 print('plots saved')
