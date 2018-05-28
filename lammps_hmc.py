@@ -48,7 +48,7 @@ P = {'Ti': 1.0,
      'Al': 1.0,
      'Ni': 1.0,
      'Cu': 1.0,
-     'LJ': 5.0}
+     'LJ': 1.0}
 # temperature
 T = {'Ti': np.linspace(256, 2560, n_dat, dtype=np.float64),
      'Al': np.linspace(256, 2560, n_dat, dtype=np.float64),
