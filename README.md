@@ -16,6 +16,7 @@ Python
 - SciPy
 - Joblib
 - Scikit-Learn
+- MulticoreTSNE
 - Lasagne
 - Scikit-NeuralNetwork
 - MatPlotLib
