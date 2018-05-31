@@ -9,7 +9,10 @@ from __future__ import division, print_function
 import sys
 import numpy as np
 from lammps import lammps
+#  from mpi4py import MPI
 
+#  parallel support not currently implemented
+#  comm = MPI.COMM_WORLD
 
 # --------------
 # run parameters
@@ -62,11 +65,11 @@ lat = {'Ti': ('bcc', 2.951),
        'Cu': ('fcc', 3.615),
        'LJ': ('fcc', 2**(1/6)*lj_param[1])}
 # box size
-sz = {'Ti': 4,
-      'Al': 3,
-      'Ni': 3,
-      'Cu': 3,
-      'LJ': 3}
+sz = {'Ti': 5,
+      'Al': 4,
+      'Ni': 4,
+      'Cu': 4,
+      'LJ': 4}
 # mass
 mass = {'Ti': 47.867,
         'Al': 29.982,
@@ -84,7 +87,7 @@ lnvol_max = {'Ti': 0.00048828125,
              'Al': 0.00048828125,
              'Ni': 0.00048828125,
              'Cu': 0.00048828125,
-             'LJ': 0.00048828125}
+             'LJ': 0.00024414062}
 # timestep
 dt = {'real': 4.0,
       'metal': 0.00390625,
@@ -265,7 +268,7 @@ for i in xrange(len(T[el])):
             lmps.command('velocity all create %f %d dist gaussian' % (T[el][i], np.random.randint(1, 2**16)))
             lmps.command('velocity all zero linear')
             lmps.command('velocity all zero angular')
-            lmps.command('run %d' % n_stps)
+            lmps.command('run %d' % n_stps)  # this part should be parallel
             # set new physical properties
             xnew = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
             vnew = np.ctypeslib.as_array(lmps.gather_atoms('v', 1, 3))
@@ -273,8 +276,8 @@ for i in xrange(len(T[el])):
             kenew = lmps.extract_compute('thermo_ke', None, 0)/Et[i]
             etotnew = penew+kenew
             # calculate hamiltonian criterion
-            dH = etotnew-etot
-            if np.random.rand() <= np.min([1, np.exp(-dH)]):
+            dE = etotnew-etot
+            if np.random.rand() <= np.min([1, np.exp(-dE)]):
                 # update hamiltonian acceptations
                 nacchmc += 1
                 tdpehmc += penew-pe
@@ -308,8 +311,8 @@ for i in xrange(len(T[el])):
             lmps.command('run 0')
             penew = lmps.extract_compute('thermo_pe', None, 0)/Et[i]
             # calculate enthalpy criterion
-            arg = (penew-pe)+Pf[i]*(volnew-vol)-(natoms+1.)*np.log(volnew/vol)
-            if np.random.rand() <= np.min([1, np.exp(-arg)]):
+            dH = (penew-pe)+Pf[i]*(volnew-vol)-(natoms+1.)*np.log(volnew/vol)
+            if np.random.rand() <= np.min([1, np.exp(-dH)]):
                 # update volume acceptations
                 naccvol += 1
                 tdpevol += penew-pe

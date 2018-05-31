@@ -96,7 +96,7 @@ def gompertz(t, b, c):
 def richard(t, a, k, b, nu, q, m, c):
     return a+np.divide(k-a, np.power(c+q*np.exp(-b*(t-m)), 1./nu))
 # initial fitting parameters
-log_guess = [1.0, 1.0]
+log_guess = [1.0, 0.5]
 gomp_guess = [1.0, 1.0]
 rich_guess = [0.0, 1.0, 3.0, 0.5, 0.5, 0.0, 1.0]
 # fitting dictionaries
@@ -173,9 +173,9 @@ scalers[scaler].fit(data[tind])          # fit scaler to training data
 sdata = scalers[scaler].transform(data)  # transform data with scaler
 # apply pca reduction
 if bpca:
-    tdata = pca.fit_transform(sdata[tind])          # fit pca to training data
-    cdata = pca.transform(sdata[cind])    # pca transform of data
-    evar = pca.explained_variance_ratio_  # extract explained variance ratios
+    tdata = pca.fit_transform(sdata[tind])  # fit pca to training data
+    cdata = pca.transform(sdata[cind])      # pca transform of data
+    evar = pca.explained_variance_ratio_    # extract explained variance ratios
 # extract training/classification data/temperatures
 if not bpca:
     tdata = sdata[tind]  # extract training data
@@ -221,7 +221,6 @@ scale = lambda temp: (temp-np.min(T))/np.max(T-np.min(T))
 print('colormap and scale defined')
 print('------------------------------------------------------------')
 # curve fitting and transition temp extraction
-transitions = []                           # transition list
 temps = np.unique(cT)                      # temperature domain of classification data
 mprob = np.zeros(len(temps), dtype=float)  # mean probability array
 # loop through temperature domain
@@ -237,15 +236,24 @@ perr = np.sqrt(np.diag(pcov))                                                   
 fitrng = fit_funcs[fit_func](adjdom, *popt)                                                           # fit values
 # extract transition
 if fit_func == 'gompertz':
-    trans = -np.log(np.log(2)/popt[0])/popt[1]
-    trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)
+    trans = -np.log(np.log(2)/popt[0])/popt[1]                                        # midpoint formula
+    trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)                         # transformation to temperature
+    cerr = np.array([[-perr[0], perr[1]], [perr[0], -perr[1]]], dtype=float)          # critical error
+    tintrvl = np.divide(-np.log(np.log(2)/(popt[0]+cerr[:, 0])), popt[1]+cerr[:, 1])  # error range
+    tintrvl = tintrvl*(np.max(temps)-np.min(temps))+np.min(temps)                     # transformation to temperature interval
+    cfitrng = [fit_funcs[fit_func](adjdom, *(popt+cerr[i, :])) for i in xrange(2)]    # critical fit values
+if fit_func == 'logistic':
+    trans = popt[1]*(np.max(temps)-np.min(temps))+np.min(temps)                           # midpoint temperature
+    cerr = perr[1]*np.array([-1, 1])                                                      # critical error
+    tintrvl = (popt[1]+cerr)*(np.max(temps)-np.min(temps))+np.min(temps)                  # transformation to temperature interval
+    cfitrng = [fit_funcs[fit_func](adjdom, popt[0], popt[1]+cerr[i]) for i in xrange(2)]  # critical fit values
 else:
     trans = adjdom[np.argmin(np.abs(fitrng-0.5))]
     trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)
-transitions.append(trans)
 print('transition temperature estimated')
 print('------------------------------------------------------------')
 print('transition: ', trans)
+print('transition range: ', ', '.join(tintrvl.astype('|S32')))
 print('fit parameters: ', ', '.join(popt.astype('|S32')))
 print('parameter error: ', ', '.join(perr.astype('|S32')))
 print('------------------------------------------------------------')
@@ -257,11 +265,15 @@ ax0.spines['top'].set_visible(False)
 ax0.xaxis.set_ticks_position('bottom')
 ax0.yaxis.set_ticks_position('left')
 ax0.plot(fitdom, fitrng, color=cm(scale(trans)), alpha=1.00, label='$\mathrm{Phase\enspace Probability\enspace Curve}$')
+ax0.axvline(trans, color=cm(scale(trans)), alpha=0.50)
+if fit_func == 'gompertz' or fit_func == 'logistic':
+    for i in xrange(2):
+        ax0.plot(fitdom, cfitrng[i], color=cm(scale(tintrvl[i])), alpha=1.00, linestyle='-.')
+        ax0.axvline(tintrvl[i], color=cm(scale(tintrvl[i])), alpha=0.50, linestyle='-.')
 for i in xrange(2):
     ax0.scatter(cT[pred == i], prob[pred == i, 1], c=cm(scale(mtemp[1, i])), s=120, alpha=0.05, edgecolors='none')
 ax0.scatter(temps, mprob, color=cm(scale(temps)), alpha=1.00, s=240, marker='*')
 ax0.text(trans+2*np.diff(temps)[0], .5, ' '.join(['$T_{\mathrm{trans}} =', '{:1.3f}'.format(trans), '$']))
-ax0.axvline(trans, color=cm(scale(trans)), linestyle='--')
 ax0.set_ylim(0.0, 1.0)
 for tick in ax0.get_xticklabels():
     tick.set_rotation(16)
