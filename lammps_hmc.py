@@ -32,6 +32,7 @@ mod = 128             # frequency of data storage
 n_swps = 1024*mod     # total hmc sweeps
 n_stps = 16           # md steps during hmc
 seed = 256            # random seed
+phmc = 0.75           # probability of hmc move
 np.random.seed(seed)  # initialize rng
 
 # -------------------
@@ -66,9 +67,9 @@ lat = {'Ti': ('bcc', 2.951),
        'LJ': ('fcc', 1.122)}
 # box size
 sz = {'Ti': 5,
-      'Al': 4,
-      'Ni': 4,
-      'Cu': 4,
+      'Al': 3,
+      'Ni': 3,
+      'Cu': 3,
       'LJ': 4}
 # mass
 mass = {'Ti': 47.867,
@@ -76,12 +77,6 @@ mass = {'Ti': 47.867,
         'Ni': 58.693,
         'Cu': 63.546,
         'LJ': 1.0}
-# probability of hamiltonian monte carlo
-p_hmc = {'Ti': 0.875,
-         'Al': 0.875,
-         'Ni': 0.875,
-         'Cu': 0.875,
-         'LJ': 0.875}
 # max box adjustment
 dbox = {'Ti': 0.0009765625*lat['Ti'][1],
         'Al': 0.0009765625*lat['Al'][1],
@@ -178,6 +173,7 @@ thermo.write('# ndat:     %d\n' % n_dat)
 thermo.write('# mod:      %d\n' % mod)
 thermo.write('# nswps:    %d\n' % n_swps)
 thermo.write('# nstps:    %d\n' % n_stps)
+thermo.write('# phmc:     %f\n' % phmc)
 thermo.write('# seed:     %d\n' % seed)
 thermo.write('#----------------------\n')
 thermo.write('# material properties\n')
@@ -192,7 +188,6 @@ thermo.write('# press:    %f\n' % P[el])
 thermo.write('# mintemp:  %f\n' % T[el][0])
 thermo.write('# maxtemp:  %f\n' % T[el][-1])
 thermo.write('# timestep: %f\n' % dt[units[el]])
-thermo.write('# phmc:     %f\n' % p_hmc[el])
 thermo.write('# dboxmax:  %f\n' % dbox[el])
 thermo.write('# ------------------------------------------------------------------------------------\n')
 thermo.write('# | stp | temp | terr | pe | ke | virial | vol | acchmc | accvol | mdpehmv | mdpevol |\n')
@@ -257,7 +252,7 @@ for i in xrange(len(T[el])):
     # loop through hmc sweeps
     for j in xrange(n_swps):
         # hamiltonian monte carlo
-        if np.random.rand() <= p_hmc[el]:
+        if np.random.rand() <= phmc:
             # update hmc tries
             ntryhmc += 1
             # save current physical properties
@@ -270,6 +265,7 @@ for i in xrange(len(T[el])):
             lmps.command('velocity all create %f %d dist gaussian' % (T[el][i], np.random.randint(1, 2**16)))
             lmps.command('velocity all zero linear')
             lmps.command('velocity all zero angular')
+            # lmps.command('timestep %f' % dt[units[el]])
             lmps.command('run %d' % n_stps)  # this part should be parallel
             # set new physical properties
             xnew = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
@@ -329,17 +325,21 @@ for i in xrange(len(T[el])):
                 lmps.command('change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box' % (3*(box,)))
                 lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
                 lmps.command('run 0')
-        # max box adjustment update and data storage
+        # timestep and max box adjustment update; data storage
         if (j+1) % mod == 0:
             # acceptance ratios
             acchmc = np.nan_to_num(np.float64(nacchmc)/np.float64(ntryhmc))
             accvol = np.nan_to_num(np.float64(naccvol)/np.float64(ntryvol))
-            # update max box adjustment
+            # update timestep and max box adjustment
+            # if acchmc < 0.5:
+                # dt[units[el]] *= 0.9375
+            # else:
+                # dt[units[el]] *= 1.0625
             if accvol < 0.5:
                 dbox[el] *= 0.9375
             else:
                 dbox[el] *= 1.0625
-            # mean mc arguments
+            # mean potential energy changes
             mdpehmc = np.nan_to_num(np.float64(tdpehmc)/np.float64(nacchmc))
             mdpevol = np.nan_to_num(np.float64(tdpevol)/np.float64(naccvol))
             # calculate physical properties

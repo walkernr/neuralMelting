@@ -6,9 +6,8 @@ Created on Sat May 26 01:22:43 2018
 """
 
 from __future__ import division, print_function
+import sys, pickle
 import numpy as np
-import pickle
-import sys
 from multiprocessing import cpu_count
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.decomposition import PCA
@@ -43,30 +42,28 @@ try:
     el = sys.argv[1]
 except:
     el = 'LJ'
-# lennard-jones parameters
-lj_param = (1.0, 1.0)
 # pressure
 P = {'Ti': 1.0,
      'Al': 1.0,
      'Ni': 1.0,
      'Cu': 1.0,
      'LJ': 1.0}
-# lattice type and parameter
-lat = {'Ti': ('bcc', 2.951),
-       'Al': ('fcc', 4.046),
-       'Ni': ('fcc', 3.524),
-       'Cu': ('fcc', 3.597),
-       'LJ': ('fcc', 2**(1/6)*lj_param[1])}
+# lattice type
+lat = {'Ti': 'bcc',
+       'Al': 'fcc',
+       'Ni': 'fcc',
+       'Cu': 'fcc',
+       'LJ': 'fcc'}
 # simulation name
 name = 'hmc'
 # file prefix
-prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el][0], int(P[el]), name)
+prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el], int(P[el]), name)
 # run details
 property = 'radial_distribution'  # property for classification
 n_dat = 64                        # number of datasets
 scaler = 'minmax'                 # data scaling method
 reduction = 'pca'                 # reduction method
-clust = 'spectral'           # clustering method
+clust = 'spectral'                # clustering method
 # summary of input
 print('------------------------------------------------------------')
 print('input summary')

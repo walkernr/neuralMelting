@@ -6,11 +6,10 @@ Created on Wed May 22 08:32:52 2018
 """
 
 from __future__ import division, print_function
-import sys
+import sys, pickle
 import numpy as np
 from multiprocessing import cpu_count
 from joblib import Parallel, delayed
-import pickle
 
 
 # element choice
@@ -18,26 +17,24 @@ try:
     el = sys.argv[1]
 except:
     el = 'LJ'
-# lennard-jones parameters
-lj_param = (1.0, 1.0)
 # pressure
 P = {'Ti': 1.0,
      'Al': 1.0,
      'Ni': 1.0,
      'Cu': 1.0,
      'LJ': 1.0}
-# lattice type and parameter
-lat = {'Ti': ('bcc', 2.951),
-       'Al': ('fcc', 4.046),
-       'Ni': ('fcc', 3.524),
-       'Cu': ('fcc', 3.597),
-       'LJ': ('fcc', 2**(1/6)*lj_param[1])}
+# lattice type
+lat = {'Ti': 'bcc',
+       'Al': 'fcc',
+       'Ni': 'fcc',
+       'Cu': 'fcc',
+       'LJ': 'fcc'}
 # simulation name
 name = 'hmc'
 # file prefix
-prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el][0], int(P[el]), name)
+prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el], int(P[el]), name)
 
-nproc = 2  # cpu_count()
+nproc = 4  # cpu_count()
 
 def load_data():
     ''' load atom count, box dimension, and atom positions '''

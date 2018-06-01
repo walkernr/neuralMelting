@@ -6,10 +6,8 @@ Created on Wed May 22 13:31:27 2018
 """
 
 from __future__ import division, print_function
-import logging
-import sys
+import sys, logging, pickle
 import numpy as np
-import pickle
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.decomposition import PCA
 from lasagne import layers as lasagne, nonlinearities as nl
@@ -22,7 +20,7 @@ from PIL import Image
 
 
 logging.basicConfig(format='%(message)s', level=logging.DEBUG, stream=sys.stdout)
-# plotting paramters
+# plotting parameters
 plt.rc('text', usetex=True)
 plt.rc('font', family='sans-serif')
 ftsz = 48
@@ -46,24 +44,22 @@ try:
     el = sys.argv[1]
 except:
     el = 'LJ'
-# lennard-jones parameters
-lj_param = (1.0, 1.0)
 # pressure
 P = {'Ti': 1.0,
      'Al': 1.0,
      'Ni': 1.0,
      'Cu': 1.0,
      'LJ': 1.0}
-# lattice type and parameter
-lat = {'Ti': ('bcc', 2.951),
-       'Al': ('fcc', 4.046),
-       'Ni': ('fcc', 3.524),
-       'Cu': ('fcc', 3.597),
-       'LJ': ('fcc', 2**(1/6)*lj_param[1])}
+# lattice type
+lat = {'Ti': 'bcc',
+       'Al': 'fcc',
+       'Ni': 'fcc',
+       'Cu': 'fcc',
+       'LJ': 'fcc'}
 # simulation name
 name = 'hmc'
 # file prefix
-prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el][0], int(P[el]), name)
+prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el], int(P[el]), name)
 # run details
 property = 'radial_distribution'  # property for classification
 n_dat = 64                        # number of datasets
@@ -115,13 +111,16 @@ pca = PCA(n_components=npcacomp)
 print('scaler and pca reduction initialized')
 print('------------------------------------------------------------')
 # neural network construction
+# simple dense network with relu activation
 sknn_class = Classifier(layers=[Layer('Rectifier', units=64), Layer('Softmax')], learning_rate=2**-6, n_iter=256, random_state=0, verbose=True)
+# 1d cnn - lasagne layers do not work currently
 sknn_convol_1d = Classifier(layers=[Native(lasagne.NINLayer, num_units=64, nonlinearity=nl.rectify),
                                     Native(lasagne.Conv1DLayer, num_filters=4, filter_size=4, stride=1, pad=0, nonlinearity=nl.rectify),
                                     Native(lasagne.MaxPool1DLayer, pool_size=4),
                                     Native(lasagne.Conv1DLayer, num_filters=4, filter_size=4, stride=1, pad=0, nonlinearity=nl.rectify),
                                     Native(lasagne.MaxPool1DLayer, pool_size=4),
                                     Layer('Softmax')], learning_rate=2**-5, n_iter=64, random_state=0, verbose=True)
+# 2d cnn using 1d filters of gradually decreasing size; input must be square (or transformable into square)
 sknn_convol_2d = Classifier(layers=[Convolution('Rectifier', channels=4, kernel_shape=(8,1), kernel_stride=(1,1)),
                                     Convolution('Rectifier', channels=4, kernel_shape=(4,1), kernel_stride=(1,1)),
                                     Convolution('Rectifier', channels=4, kernel_shape=(2,1), kernel_stride=(1,1)),
