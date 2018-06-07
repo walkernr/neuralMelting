@@ -9,7 +9,8 @@ from __future__ import division, print_function
 import sys, pickle
 import numpy as np
 from multiprocessing import cpu_count
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA
 from MulticoreTSNE import MulticoreTSNE as TSNE
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
@@ -17,7 +18,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 from colormaps import cmaps
 
-
+nproc = 2  # cpu_count()
 # plotting parameters
 plt.rc('text', usetex=True)
 plt.rc('font', family='sans-serif')
@@ -55,15 +56,15 @@ lat = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # simulation name
-name = 'hmc'
+name = 'mc'
 # file prefix
 prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el], int(P[el]), name)
 # run details
 property = 'radial_distribution'  # property for classification
 n_dat = 64                        # number of datasets
-scaler = 'minmax'                 # data scaling method
-reduction = 'pca'                 # reduction method
-clust = 'spectral'                # clustering method
+scaler = 'tanh'                   # data scaling method
+reduction = 'tsne'                # reduction method
+clust = 'agglomerative'           # clustering method
 # summary of input
 print('------------------------------------------------------------')
 print('input summary')
@@ -99,7 +100,7 @@ print('------------------------------------------------------------')
 propdom = {'radial_distribution':R, 'structure_factor':Q}
 properties = {'radial_distribution':G, 'structure_factor':S}
 # scaler dict
-scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(feature_range=(-1,1))}
+scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(), 'robust':RobustScaler(), 'tanh':TanhScaler()}
 # reduction dimension
 if reduction == 'pca':
     npcacomp = 2
@@ -107,19 +108,18 @@ if reduction == 'tsne':
     npcacomp = 64
 ntsnecomp = 2
 # temperature distribution
-bins = 64
-tdist = np.histogram(T, bins, range=(np.min(T), np.max(T)), density=False)
+tdist = np.histogram(T, n_dat, range=(np.min(T), np.max(T)), density=False)
 plxty = int(np.mean(tdist[0]))
-tdist = np.histogram(T, bins, range=(np.min(T), np.max(T)), density=True)
+tdist = np.histogram(T, n_dat, range=(np.min(T), np.max(T)), density=True)
 # reduction initialization
 pca = PCA(n_components=npcacomp)
-tsne = TSNE(n_jobs=cpu_count(), n_components=ntsnecomp, perplexity=plxty, init='random')
+tsne = TSNE(n_jobs=nproc, n_components=ntsnecomp, perplexity=plxty, init='random')
 print('scaler and reduction initialized')
 print('------------------------------------------------------------')
 # clustering initialization
 agglom = AgglomerativeClustering(n_clusters=2)
-kmeans = KMeans(n_jobs=cpu_count(), n_clusters=2, init='k-means++')
-spectral = SpectralClustering(n_jobs=cpu_count(), n_clusters=2)
+kmeans = KMeans(n_jobs=nproc, n_clusters=2, init='k-means++')
+spectral = SpectralClustering(n_jobs=nproc, n_clusters=2)
 clustering = {'agglomerative':agglom, 'kmeans':kmeans, 'spectral':spectral}
 print('clustering initialized')
 print('------------------------------------------------------------')
@@ -145,6 +145,7 @@ if reduction == 'tsne':
     print('kullback-leibler divergence: ', error)
     print('------------------------------------------------------------')
 # clustering prediction
+rdata = rdata[:, np.argsort(np.max(rdata, 0)-np.min(rdata, 0))]
 pred = clustering[clust].fit_predict(rdata)
 if clust == 'kmeans':
     print('kmeans fit information')
@@ -157,7 +158,7 @@ ctdist = []
 cmtemp = np.zeros(2, dtype=float)
 for i in xrange(2):
     cind.append(np.where(pred == i))
-    ctdist.append(np.histogram(T[cind[i]], bins, range=(np.min(T), np.max(T)), density=True))
+    ctdist.append(np.histogram(T[cind[i]], n_dat, range=(np.min(T), np.max(T)), density=True))
     cmtemp[i] = np.mean(T[cind[i]])
 pind = np.argsort(cmtemp)
 # max solid phase temp and min liquid phase temp 
@@ -228,7 +229,7 @@ grid0[0].set_xlabel('$x_0$')
 grid0[0].set_ylabel('$x_1$')
 grid0[0].set_title('$\mathrm{(a)\enspace Sample\enspace Temperature}$', y=1.02)
 for i in xrange(2):
-    grid0[1].scatter(rdata[pred == pind[i], 0], pdata[pred == pind[i], 1], c=cm(scale(cmtemp[pind[i]])), s=120, alpha=0.05, edgecolors='none')
+    grid0[1].scatter(rdata[pred == pind[i], 0], rdata[pred == pind[i], 1], c=cm(scale(cmtemp[pind[i]])), s=120, alpha=0.05, edgecolors='none')
 grid0[1].set_aspect('equal', 'datalim')
 grid0[1].set_xlabel('$x_0$')
 grid0[1].set_ylabel('$x_1$')
@@ -245,17 +246,17 @@ ax10.set_xlabel('$T$')
 ax10.set_ylabel('$p(T)$')
 for i in xrange(2):
     ax11.fill_between(ctdist[pind[i]][1][1:], 0, ctdist[pind[i]][0], color=cm(scale(cmtemp[pind[i]])), alpha=0.25)
-ax11.axvline(amt, color=cm(.25))
-ax11.axvline(gmt, color=cm(.25))
+ax11.axvline(amt, color=cm(scale(amt)))
+# ax11.axvline(gmt, color=cm(.25))
 for i in xrange(2):
-    ax11.axvline(amt+(-1)**i*ast, color=cm(.25), linestyle='--')
-    ax11.axvline(gmt+(-1)**i*(gst-1)*gmt, color=cm(.75), linestyle='--')
+    ax11.axvline(amt+(-1)**i*ast, color=cm(scale(amt+(-1)**i*ast)), linestyle='--')
+    # ax11.axvline(gmt+(-1)**i*(gst-1)*gmt, color=cm(scale(gmt+(-1)**i*(gst-1)*gmt)), linestyle='--')
 if el == 'LJ':
-    ax11.text(1.1*(amt+ast), 1.0, ' '.join(['$T_{\mathrm{arith}} =', '{:2.2f}'.format(amt), '$']))
-    ax11.text(1.1*(amt+ast), 1.5, ' '.join(['$T_{\mathrm{geo}} =', '{:2.2f}'.format(gmt), '$']))
+    ax11.text(1.25*(amt+ast), 1.25*np.min([np.max(ctdist[pind[i]][0]) for i in xrange(2)]), '$T_{\mathrm{arith}} = %2.2f \pm %2.2f$' % (amt, ast))
+    # ax11.text(1.25*(amt+ast), 1.5, '$T_{\mathrm{geo}} = %2.2f \pm %2.2f$' % (gmt, gst))
 else:
-    ax11.text(1.1*(amt+ast), 1.0, ' '.join(['$T_{\mathrm{arith}} =', '{:4.0f}'.format(amt), 'K$']))
-    ax11.text(1.1*(amt+ast), 1.5, ' '.join(['$T_{\mathrm{geo}} =', '{:4.0f}'.format(gmt), 'K$']))
+    ax11.text(1.25*(amt+ast), 1.25*np.min([np.max(ctdist[pind[i]][0]) for i in xrange(2)]), '$T_{\mathrm{arith}} = %4.0f \pm %4.0f$' % (amt, ast))
+    # ax11.text(1.25*(amt+ast), 1.5, '$T_{\mathrm{arith}} = %4.0f \pm %4.0f$' % (gmt, gst))
 ax11.set_xlabel('$T$')
 ax11.set_ylabel('$p(T)$')
 # property plot

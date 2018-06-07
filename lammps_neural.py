@@ -8,7 +8,8 @@ Created on Wed May 22 13:31:27 2018
 from __future__ import division, print_function
 import sys, logging, pickle
 import numpy as np
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA
 from lasagne import layers as lasagne, nonlinearities as nl
 from sknn.platform import cpu32, threading
@@ -19,7 +20,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 
-logging.basicConfig(format='%(message)s', level=logging.DEBUG, stream=sys.stdout)
+# logging.basicConfig(format='%(message)s', level=logging.DEBUG, stream=sys.stdout)
 # plotting parameters
 plt.rc('text', usetex=True)
 plt.rc('font', family='sans-serif')
@@ -57,14 +58,14 @@ lat = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # simulation name
-name = 'hmc'
+name = 'mc'
 # file prefix
 prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el], int(P[el]), name)
 # run details
 property = 'radial_distribution'  # property for classification
 n_dat = 64                        # number of datasets
 ntrainsets = 8                    # number of training sets
-scaler = 'minmax'                 # data scaling method
+scaler = 'tanh'                   # data scaling method
 network = 'sknn_convolution_2d'   # neural network type
 bpca = False                      # boolean for pca reduction
 fit_func = 'logistic'             # fitting function
@@ -82,6 +83,7 @@ print('fitting function: ', fit_func)
 print('pca reduction: ', str(bpca).lower())
 print('------------------------------------------------------------')
 # fitting functions
+# the confidence interval for transition temps is best with logistic
 def logistic(t, b, m):
     a = 0.0
     k = 1.0
@@ -103,25 +105,18 @@ print('------------------------------------------------------------')
 # bounds for training data
 lb = 0+ntrainsets
 ub = n_dat-(ntrainsets+1)
-# scaler dict
-scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(feature_range=(-1,1))}
-# pca initialization
-npcacomp = 256
-pca = PCA(n_components=npcacomp)
-print('scaler and pca reduction initialized')
-print('------------------------------------------------------------')
 # neural network construction
 # simple dense network with relu activation
 sknn_class = Classifier(layers=[Layer('Rectifier', units=64), Layer('Softmax')], learning_rate=2**-6, n_iter=256, random_state=0, verbose=True)
 # 1d cnn - lasagne layers do not work currently
-sknn_convol_1d = Classifier(layers=[Native(lasagne.NINLayer, num_units=64, nonlinearity=nl.rectify),
-                                    Native(lasagne.Conv1DLayer, num_filters=4, filter_size=4, stride=1, pad=0, nonlinearity=nl.rectify),
+il = lasagne.InputLayer((None, None, None))
+sknn_convol_1d = Classifier(layers=[Native(lasagne.Conv1DLayer, num_filters=4, filter_size=4, stride=1, pad=0, nonlinearity=nl.rectify),
                                     Native(lasagne.MaxPool1DLayer, pool_size=4),
                                     Native(lasagne.Conv1DLayer, num_filters=4, filter_size=4, stride=1, pad=0, nonlinearity=nl.rectify),
                                     Native(lasagne.MaxPool1DLayer, pool_size=4),
                                     Layer('Softmax')], learning_rate=2**-5, n_iter=64, random_state=0, verbose=True)
 # 2d cnn using 1d filters of gradually decreasing size; input must be square (or transformable into square)
-sknn_convol_2d = Classifier(layers=[Convolution('Rectifier', channels=4, kernel_shape=(8,1), kernel_stride=(1,1)),
+sknn_convol_2d = Classifier(layers=[# Convolution('Rectifier', channels=4, kernel_shape=(8,1), kernel_stride=(1,1)),
                                     Convolution('Rectifier', channels=4, kernel_shape=(4,1), kernel_stride=(1,1)),
                                     Convolution('Rectifier', channels=4, kernel_shape=(2,1), kernel_stride=(1,1)),
                                     Convolution('Rectifier', channels=4, kernel_shape=(1,1), kernel_stride=(1,1)),
@@ -156,11 +151,18 @@ print('------------------------------------------------------------')
 # property dictionary
 propdom = {'radial_distribution':R, 'structure_factor':Q}
 properties = {'radial_distribution':G, 'structure_factor':S}
+# scaler dict
+scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(feature_range=(0,1)), 'robust':RobustScaler(), 'tanh':TanhScaler()}
+# pca initialization
+npcacomp = np.shape(properties[property])[1]
+pca = PCA(n_components=npcacomp)
+print('scaler and pca reduction initialized')
+print('------------------------------------------------------------')
 # change pca properties for 2d convolution to prevent error
 # 2d convolution expects square input
 if network == 'sknn_convolution_2d':
-    npcacomp = np.square(int(np.sqrt(np.shape(properties[property])[1])))
-    pca.set_params(n_components=npcacomp)
+    nrsqr = np.square(int(np.sqrt(np.shape(properties[property])[1]))) # nearest square to total observations
+    pca.set_params(n_components=nrsqr) # set pca component parameter
 # indices for partitioning data
 sind = (O < lb)               # solid training indices
 lind = (O > ub)               # liquid training indices
@@ -172,17 +174,24 @@ scalers[scaler].fit(data[tind])          # fit scaler to training data
 sdata = scalers[scaler].transform(data)  # transform data with scaler
 # apply pca reduction
 if bpca:
-    tdata = pca.fit_transform(sdata[tind])  # fit pca to training data
-    cdata = pca.transform(sdata[cind])      # pca transform of data
-    evar = pca.explained_variance_ratio_    # extract explained variance ratios
+    pca.fit(sdata[tind])                  # pca fit to training data
+    tdata = pca.transform(sdata[tind])    # pca transform training data
+    cdata = pca.transform(sdata[cind])    # pca transform classification data
+    evar = pca.explained_variance_ratio_  # extract explained variance ratios
 # extract training/classification data/temperatures
 if not bpca:
-    tdata = sdata[tind]  # extract training data
-    cdata = sdata[cind]  # extract classification data
+    if network == 'sknn_convolution_2d':
+        tdata = sdata[tind, :nrsqr] # extract nearest square training data
+        cdata = sdata[cind, :nrsqr] # extract nearest square classification data
+    else:
+        tdata = sdata[tind]  # extract training data
+        cdata = sdata[cind]  # extract classification data
 tT = T[tind]  # training temperatures
 cT = T[cind]  # classification temperatures
 ustdata = data[tind]  # unscaled training data
 uscdata = data[cind]  # unscaled classification data
+tshape = np.shape(tdata)
+cshape = np.shape(cdata)
 print('data scaled')
 print('------------------------------------------------------------')
 # display pca information
@@ -221,18 +230,19 @@ print('colormap and scale defined')
 print('------------------------------------------------------------')
 # curve fitting and transition temp extraction
 temps = np.unique(cT)                      # temperature domain of classification data
+stemps = np.unique(stT[cind])              # standard error of temperature domain
 mprob = np.zeros(len(temps), dtype=float)  # mean probability array
 # loop through temperature domain
 for i in xrange(len(temps)):
     mprob[i] = np.mean(prob[cT == temps[i], 1])  # mean probability of samples at temp i being liquid
 # curve fitting
-adjtemp = np.linspace(0, 1, len(temps))                                                               # domain for curve fitting
-n_dom = 4096                                                                                          # expanded number of curve samples
-adjdom = np.linspace(0, 1, n_dom)                                                                     # expanded domain for curve fitting
-fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)                                             # expanded domain for curve plotting
-popt, pcov = curve_fit(fit_funcs[fit_func], adjtemp, mprob, p0=fit_guess[fit_func], method='dogbox')  # fitting parameters
-perr = np.sqrt(np.diag(pcov))                                                                         # fit standard error
-fitrng = fit_funcs[fit_func](adjdom, *popt)                                                           # fit values
+adjtemps = np.linspace(0, 1, len(temps))                                                               # domain for curve fitting
+n_dom = 4096                                                                                           # expanded number of curve samples
+adjdom = np.linspace(0, 1, n_dom)                                                                      # expanded domain for curve fitting
+fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)                                              # expanded domain for curve plotting
+popt, pcov = curve_fit(fit_funcs[fit_func], adjtemps, mprob, p0=fit_guess[fit_func], method='dogbox')  # fitting parameters
+perr = np.sqrt(np.diag(pcov))                                                                          # fit standard error
+fitrng = fit_funcs[fit_func](adjdom, *popt)                                                            # fit values
 # extract transition
 if fit_func == 'gompertz':
     trans = -np.log(np.log(2)/popt[0])/popt[1]                                        # midpoint formula
@@ -242,10 +252,14 @@ if fit_func == 'gompertz':
     tintrvl = tintrvl*(np.max(temps)-np.min(temps))+np.min(temps)                     # transformation to temperature interval
     cfitrng = [fit_funcs[fit_func](adjdom, *(popt+cerr[i, :])) for i in xrange(2)]    # critical fit values
 if fit_func == 'logistic':
-    trans = popt[1]*(np.max(temps)-np.min(temps))+np.min(temps)                           # midpoint temperature
-    cerr = perr[1]*np.array([-1, 1])                                                      # critical error
-    tintrvl = (popt[1]+cerr)*(np.max(temps)-np.min(temps))+np.min(temps)                  # transformation to temperature interval
-    cfitrng = [fit_funcs[fit_func](adjdom, popt[0], popt[1]+cerr[i]) for i in xrange(2)]  # critical fit values
+    trans = popt[1]*(np.max(temps)-np.min(temps))+np.min(temps)                        # midpoint temperature
+    ferr = perr[1]*(np.max(temps)-np.min(temps))                                       # temperature fit error
+    werr = 1/np.abs(temps-trans)                                                       # temperature error weight
+    terr = np.sum(np.multiply(werr, stemps))/np.sum(werr)                              # temperature simulation error
+    cerr = ferr+terr                                                                   # total critical error
+    tintrvl = trans+cerr*np.array([-1, 1])                                             # temperature interval
+    adjintrvl = (tintrvl-np.min(temps))/(np.max(temps)-np.min(temps))                  # adjusted interval
+    cfitrng = [fit_funcs[fit_func](adjdom, popt[0], adjintrvl[i]) for i in xrange(2)]  # critical fit values
 else:
     trans = adjdom[np.argmin(np.abs(fitrng-0.5))]
     trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)
@@ -263,22 +277,25 @@ ax0.spines['right'].set_visible(False)
 ax0.spines['top'].set_visible(False)
 ax0.xaxis.set_ticks_position('bottom')
 ax0.yaxis.set_ticks_position('left')
-ax0.plot(fitdom, fitrng, color=cm(scale(trans)), alpha=1.00, label='$\mathrm{Phase\enspace Probability\enspace Curve}$')
+ax0.plot(fitdom, fitrng, color=cm(scale(trans)), label='$\mathrm{Phase\enspace Probability\enspace Curve}$')
 ax0.axvline(trans, color=cm(scale(trans)), alpha=0.50)
 if fit_func == 'gompertz' or fit_func == 'logistic':
     for i in xrange(2):
-        ax0.plot(fitdom, cfitrng[i], color=cm(scale(tintrvl[i])), alpha=1.00, linestyle='-.')
-        ax0.axvline(tintrvl[i], color=cm(scale(tintrvl[i])), alpha=0.50, linestyle='-.')
+        # ax0.plot(fitdom, cfitrng[i], color=cm(scale(tintrvl[i])), alpha=0.50, linestyle='--')
+        ax0.axvline(tintrvl[i], color=cm(scale(tintrvl[i])), alpha=0.50, linestyle='--')
 for i in xrange(2):
     ax0.scatter(cT[pred == i], prob[pred == i, 1], c=cm(scale(mtemp[1, i])), s=120, alpha=0.05, edgecolors='none')
-ax0.scatter(temps, mprob, color=cm(scale(temps)), alpha=1.00, s=240, marker='*')
-ax0.text(trans+2*np.diff(temps)[0], .5, ' '.join(['$T_{\mathrm{trans}} =', '{:1.3f}'.format(trans), '$']))
+ax0.scatter(temps, mprob, color=cm(scale(temps)), s=240, edgecolors='none', marker='*')
+if el == 'LJ':
+    ax0.text(trans+2*np.diff(temps)[0], .5, '$T_{\mathrm{trans}} = %.4f \pm %.4f$' % (trans, cerr))
+else:
+    ax0.text(trans+2*np.diff(temps)[0], .5, '$T_{\mathrm{trans}} = %4.0f \pm %4.0fK$' % (trans, cerr))
 ax0.set_ylim(0.0, 1.0)
 for tick in ax0.get_xticklabels():
     tick.set_rotation(16)
 scitxt = ax0.yaxis.get_offset_text()
 scitxt.set_x(.025)
-ax0.legend(loc='lower right')      
+ax0.legend(loc='lower right')
 ax0.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
 ax0.set_xlabel('$\mathrm{Temperature}$')
 ax0.set_ylabel('$\mathrm{Probability}$')
@@ -292,11 +309,11 @@ ax1.spines['top'].set_visible(False)
 ax1.xaxis.set_ticks_position('bottom')
 ax1.yaxis.set_ticks_position('left')
 for i in xrange(2):
-    plabels = ['$\mathrm{Trained\enspace '+labels[i]+'\enspace Phase}$', '$\mathrm{Classified\enspace '+labels[i]+'\enspace Phase}$']
+    plabels = ['$\mathrm{Trained\enspace %s\enspace Phase}$' % labels[i], '$\mathrm{Classified\enspace %s\enspace Phase}$' % labels[i]]
     ax1.plot(propdom[property], np.mean(ustdata[tclass == i], axis=0), color=cm(scale(mtemp[0, i])), alpha=1.00, label=plabels[0])
     ax1.plot(propdom[property], np.mean(uscdata[pred == i], axis=0), color=cm(scale(mtemp[1, i])), alpha=1.00, linestyle='--', label=plabels[1])
 ax1.legend()
-if property == 'radial_distribution':      
+if property == 'radial_distribution':
     ax1.set_xlabel('$\mathrm{Distance}$')
     ax1.set_ylabel('$\mathrm{Radial Distribution}$')
     ax1.set_title('$\mathrm{%s\enspace Phase\enspace RDFs}$' % el, y=1.015)
@@ -311,14 +328,15 @@ else:
     plt_pref = [prefix, network, property, scaler, 'not-reduced', fit_func]
 # generate convolution images
 if 'sknn_convolution' in network:
-    train0 = np.reshape(np.mean(tdata[tclass == 0], axis=0), (int(np.sqrt(npcacomp)),int(np.sqrt(npcacomp))))
-    train1 = np.reshape(np.mean(tdata[tclass == 1], axis=0), (int(np.sqrt(npcacomp)),int(np.sqrt(npcacomp))))
+    imgsd = int(np.sqrt(npcacomp))
+    train0 = np.reshape(np.mean(tdata[tclass == 0], axis=0), 2*(imgsd,))
+    train1 = np.reshape(np.mean(tdata[tclass == 1], axis=0), 2*(imgsd,))
     train0 = Image.fromarray(np.uint8(cm(train0)*255))
     train0 = train0.resize((400,400), Image.ANTIALIAS)
     train1 = Image.fromarray(np.uint8(cm(train1)*255))
     train1 = train1.resize((400,400), Image.ANTIALIAS)
-    class0 = np.reshape(np.mean(cdata[pred == 0], axis=0), (int(np.sqrt(npcacomp)),int(np.sqrt(npcacomp))))
-    class1 = np.reshape(np.mean(cdata[pred == 1], axis=0), (int(np.sqrt(npcacomp)),int(np.sqrt(npcacomp))))
+    class0 = np.reshape(np.mean(cdata[pred == 0], axis=0), 2*(imgsd,))
+    class1 = np.reshape(np.mean(cdata[pred == 1], axis=0), 2*(imgsd,))
     class0 = Image.fromarray(np.uint8(cm(class0)*255))
     class0 = class0.resize((400,400), Image.ANTIALIAS)
     class1 = Image.fromarray(np.uint8(cm(class1)*255))
@@ -332,6 +350,7 @@ if 'sknn_convolution' in network:
     
     print('images saved')
     print('------------------------------------------------------------')
+# plt.show()
 # save figures
 fig0.savefig('.'.join(plt_pref+['prob.png']))
 if property == 'radial_distribution':

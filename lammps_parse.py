@@ -30,7 +30,7 @@ lat = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # simulation name
-name = 'hmc'
+name = 'mc'
 # file prefix
 prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el], int(P[el]), name)
 # get full directory
@@ -40,15 +40,13 @@ print('parsing data for %s' % el.lower())
 with open(file+'.thrm', 'r') as fi:
     stp = []
     temp = []
-    terr = []
     pe = []
     ke = []
     virial = []
     vol = []
     acchmc = []
+    accpos = []
     accvol = []
-    mdpehmc = []
-    mdpevol = []
     iters = iter(fi)
     for lina in iters:
         # ignore header
@@ -56,15 +54,13 @@ with open(file+'.thrm', 'r') as fi:
             dat = lina.split()
             stp.append(int(dat[0]))
             temp.append(float(dat[1]))
-            terr.append(float(dat[2]))
-            pe.append(float(dat[3]))
-            ke.append(float(dat[4]))
-            virial.append(float(dat[5]))
-            vol.append(float(dat[6]))
-            acchmc.append(float(dat[7]))
+            pe.append(float(dat[2]))
+            ke.append(float(dat[3]))
+            virial.append(float(dat[4]))
+            vol.append(float(dat[5]))
+            acchmc.append(float(dat[6]))
+            accpos.append(float(dat[7]))
             accvol.append(float(dat[8]))
-            mdpehmc.append(float(dat[9]))
-            mdpevol.append(float(dat[10]))
     # close file
     fi.close()
 print('%d thermodynamic property steps parsed' % len(stp))
@@ -90,15 +86,13 @@ print('%d trajectory steps parsed' % len(natoms))
 # pickle data
 pickle.dump(np.array(stp, dtype=int), open(prefix+'.stp.pickle', 'wb'))
 pickle.dump(np.array(temp, dtype=float), open(prefix+'.temp.pickle', 'wb'))
-pickle.dump(np.array(terr, dtype=float), open(prefix+'.terr.pickle', 'wb'))
 pickle.dump(np.array(pe, dtype=float), open(prefix+'.pe.pickle', 'wb'))
 pickle.dump(np.array(ke, dtype=float), open(prefix+'.ke.pickle', 'wb'))
 pickle.dump(np.array(virial, dtype=float), open(prefix+'.virial.pickle', 'wb'))
 pickle.dump(np.array(vol, dtype=float), open(prefix+'.vol.pickle', 'wb'))
 pickle.dump(np.array(acchmc, dtype=float), open(prefix+'.acchmc.pickle', 'wb'))
+pickle.dump(np.array(accpos, dtype=float), open(prefix+'.accpos.pickle', 'wb'))
 pickle.dump(np.array(accvol, dtype=float), open(prefix+'.accvol.pickle', 'wb'))
-pickle.dump(np.array(mdpehmc, dtype=float), open(prefix+'.mdpehmc.pickle', 'wb'))
-pickle.dump(np.array(mdpevol, dtype=float), open(prefix+'.mdpevol.pickle', 'wb'))
 pickle.dump(np.array(natoms, dtype=int), open(prefix+'.natoms.pickle', 'wb'))
 pickle.dump(np.array(box, dtype=float), open(prefix+'.box.pickle', 'wb'))
 pickle.dump(np.array(pos, dtype=float), open(prefix+'.pos.pickle', 'wb'))
