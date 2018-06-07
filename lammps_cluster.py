@@ -16,7 +16,6 @@ from MulticoreTSNE import MulticoreTSNE as TSNE
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
-from colormaps import cmaps
 
 nproc = 2  # cpu_count()
 # plotting parameters
@@ -204,7 +203,7 @@ print('gemoetric mean:      ', gmt, '+/-', (gst-1)*gmt)
 print('geometric interval:   [', gmt-(gst-1)*gmt, ', ', gmt+(gst-1)*gmt, ']')
 print('------------------------------------------------------------')
 # color scale
-cm = cmaps['plasma']
+cm = plt.get_cmap('plasma')
 scale = lambda temp: (temp-np.min(T))/np.max(T-np.min(T))
 print('colormap and scale defined')
 print('------------------------------------------------------------')
