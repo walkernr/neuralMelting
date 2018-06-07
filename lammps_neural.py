@@ -15,7 +15,6 @@ from lasagne import layers as lasagne, nonlinearities as nl
 from sknn.platform import cpu32, threading
 from sknn.mlp import Classifier, Layer, Convolution, Native
 from scipy.optimize import curve_fit
-from colormaps import cmaps
 import matplotlib.pyplot as plt
 from PIL import Image
 
@@ -116,7 +115,7 @@ sknn_convol_1d = Classifier(layers=[Native(lasagne.Conv1DLayer, num_filters=4, f
                                     Native(lasagne.MaxPool1DLayer, pool_size=4),
                                     Layer('Softmax')], learning_rate=2**-5, n_iter=64, random_state=0, verbose=True)
 # 2d cnn using 1d filters of gradually decreasing size; input must be square (or transformable into square)
-sknn_convol_2d = Classifier(layers=[# Convolution('Rectifier', channels=4, kernel_shape=(8,1), kernel_stride=(1,1)),
+sknn_convol_2d = Classifier(layers=[Convolution('Rectifier', channels=4, kernel_shape=(8,1), kernel_stride=(1,1)),
                                     Convolution('Rectifier', channels=4, kernel_shape=(4,1), kernel_stride=(1,1)),
                                     Convolution('Rectifier', channels=4, kernel_shape=(2,1), kernel_stride=(1,1)),
                                     Convolution('Rectifier', channels=4, kernel_shape=(1,1), kernel_stride=(1,1)),
@@ -224,7 +223,7 @@ for i in xrange(2):
     mtemp[0, i] = np.mean(tT[tclass == i])  # mean temp of training class i
     mtemp[1, i] = np.mean(cT[ind[i]])       # mean temp of class i
 # colormap and color scaler
-cm = cmaps['plasma']
+cm = plt.get_cmap('plasma')
 scale = lambda temp: (temp-np.min(T))/np.max(T-np.min(T))
 print('colormap and scale defined')
 print('------------------------------------------------------------')
