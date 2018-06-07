@@ -65,6 +65,7 @@ This program classifies samples as either solids or liquids by passing either th
 - Dense Classifier: fully-connected classifier MLP (ReLu -> SoftMax)
 - 1-D CNN: not currently working due to incompatibilities between Scikit-NeuralNetwork and Lasagne convolution layers
 - 2-D CNN: 5-layer convolutional neural network classifier
+
            1. convolution (ReLu, 4 channels, (8,1) kernel, (1,1) stride)
            2. convolution (ReLu, 4 channels, (4,1) kernel, (1,1) stride)
            3. convolution (ReLu, 4 channels, (2,1) kernel, (1,1) stride)
