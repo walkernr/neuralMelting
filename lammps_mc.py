@@ -29,12 +29,13 @@ n_dat = 64
 name = 'mc'
 # monte carlo parameters
 mod = 128             # frequency of data storage
-n_swps = 1024*mod     # total mc sweeps
+n_smpl = 1024         # number of samples
+n_swps = n_smpl*mod   # total mc sweeps
 n_stps = 8            # md steps during hmc
 seed = 256            # random seed
-phmc = 0.734375       # probability of hmc move
 ppos = 0.015625       # probability of pos move
-pvol = 1-phmc-ppos    # probability of vol move
+pvol = 0.25           # probability of vol move
+phmc = 1-ppos-pvol    # probability of hmc move
 np.random.seed(seed)  # initialize rng
 
 # -------------------
@@ -54,7 +55,7 @@ P = {'Ti': 1.0,
      'Al': 1.0,
      'Ni': 1.0,
      'Cu': 1.0,
-     'LJ': 1.0}
+     'LJ': 2.0}
 # temperature
 T = {'Ti': np.linspace(256, 2560, n_dat, dtype=np.float64),
      'Al': np.linspace(256, 2560, n_dat, dtype=np.float64),
@@ -105,10 +106,9 @@ def lammps_input():
         takes element name, lattice definitions, size, and simulation name
         returns input file name '''
     # convert lattice definition list to strings
-    prefix = '%s.%s.%d.lammps' % (el.lower(), lat[el][0], int(P[el]))
+    prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el][0], int(P[el]))
     # set lammps file name
-    job = prefix+'.'+name
-    lmpsfilein = job+'.in'
+    lmpsfilein = prefix+'.in'
     # open lammps file
     lmpsfile = open(lmpsfilein, 'w')
     # file header
@@ -178,12 +178,13 @@ thermo.write('#----------------------\n')
 thermo.write('# simulation parameters\n')
 thermo.write('#----------------------\n')
 thermo.write('# ndat:     %d\n' % n_dat)
+thermo.write('# nsmpl:    %d\n' % n_smpl)
 thermo.write('# mod:      %d\n' % mod)
 thermo.write('# nswps:    %d\n' % n_swps)
-thermo.write('# nstps:    %d\n' % n_stps)
-thermo.write('# phmc:     %f\n' % phmc)
 thermo.write('# ppos:     %f\n' % ppos)
 thermo.write('# pvol:     %f\n' % pvol)
+thermo.write('# phmc:     %f\n' % phmc)
+thermo.write('# nstps:    %d\n' % n_stps)
 thermo.write('# seed:     %d\n' % seed)
 thermo.write('#----------------------\n')
 thermo.write('# material properties\n')
@@ -197,12 +198,12 @@ thermo.write('# mass:     %f\n' % mass[el])
 thermo.write('# press:    %f\n' % P[el])
 thermo.write('# mintemp:  %f\n' % T[el][0])
 thermo.write('# maxtemp:  %f\n' % T[el][-1])
-thermo.write('# timestep: %f\n' % dt[units[el]])
 thermo.write('# dposmax:  %f\n' % dpos[el])
 thermo.write('# dboxmax:  %f\n' % dbox[el])
-thermo.write('# ------------------------------------------------------------------\n')
-thermo.write('# | stp | temp | pe | ke | virial | vol | acchmc | accpos | accvol |\n')
-thermo.write('# ------------------------------------------------------------------\n')
+thermo.write('# timestep: %f\n' % dt[units[el]])
+thermo.write('# ------------------------------------------------------------\n')
+thermo.write('# | temp | pe | ke | virial | vol | accpos | accvol | acchmc |\n')
+thermo.write('# ------------------------------------------------------------\n')
 
 # -------------------------------
 # constant definitions
@@ -250,20 +251,82 @@ for i in xrange(len(T[el])):
     boxmax = lmps.extract_global('boxhi', 1)
     box = boxmax-boxmin
     vol = np.power(box, 3)
-    print('---------------------------------------')
+    print('---------------------------------')
     print('NPT-HMC Run %d at Temperature %fK for %s' % (i, T[el][i], el))
-    print('---------------------------------------')
-    print('| stp | temp | pe | ke | virial | vol |')
-    print('---------------------------------------')
-    print('%d %.4f %.4E %.4E %.4E %.4f' % (1, temp, Et[i]*pe, Et[i]*ke, virial, vol))
-    print('------------------------------------------------------------------')
-    print('| stp | temp | pe | ke | virial | vol | acchmc | accpos | accvol |')
-    print('------------------------------------------------------------------')
+    print('---------------------------------')
+    print('| temp | pe | ke | virial | vol |')
+    print('---------------------------------')
+    print('%.4E %.4E %.4E %.4E %.4E' % (temp, Et[i]*pe, Et[i]*ke, virial, vol))
+    print('------------------------------------------------------------')
+    print('| temp | pe | ke | virial | vol | accpos | accvol | acchmc |')
+    print('------------------------------------------------------------')
     # loop through hmc sweeps
     for j in xrange(n_swps):
         roll = np.random.rand()
+        # pos monte carlo
+        if roll <= ppos:
+            # loop through atoms
+            for k in xrange(natoms):
+                # update position tries
+                ntrypos += 1
+                # save current physical properties
+                x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
+                pe = lmps.extract_compute('thermo_pe', None, 0)/Et[i]
+                xnew = np.copy(x)
+                xnew[3*k:3*k+3] += (np.random.rand(3)-0.5)*dpos[el]
+                xnew[3*k:3*k+3] -= np.floor(xnew[3*k:3*k+3]/box)*box
+                lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
+                lmps.command('run 0')
+                penew = lmps.extract_compute('thermo_pe', None, 0)/Et[i]
+                dE = penew-pe
+                if np.random.rand() <= np.min([1, np.exp(-dE)]):
+                    # update pos acceptations
+                    naccpos += 1
+                    # save new physical properties
+                    x = xnew
+                    pe = penew
+                else:
+                    # revert physical properties
+                    lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
+                    lmps.command('run 0')
+        # npt monte carlo
+        elif roll <= (ppos+pvol):
+            # update volume tries
+            ntryvol += 1
+            # save current physical properties
+            boxmin = lmps.extract_global('boxlo', 1)
+            boxmax = lmps.extract_global('boxhi', 1)
+            box = boxmax-boxmin
+            vol = np.power(box, 3)
+            x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
+            pe = lmps.extract_compute('thermo_pe', None, 0)/Et[i]
+            # save new physical properties
+            boxnew = box+(np.random.rand()-0.5)*dbox[el]
+            volnew = np.power(boxnew, 3)
+            scalef = boxnew/box
+            xnew = scalef*x
+            # apply new physical properties
+            lmps.command('change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box' % (3*(boxnew,)))
+            lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
+            lmps.command('run 0')
+            penew = lmps.extract_compute('thermo_pe', None, 0)/Et[i]
+            # calculate enthalpy criterion
+            dH = (penew-pe)+Pf[i]*(volnew-vol)-natoms*np.log(volnew/vol)
+            if np.random.rand() <= np.min([1, np.exp(-dH)]):
+                # update volume acceptations
+                naccvol += 1
+                # save new physical properties
+                box = boxnew
+                vol = volnew
+                x = xnew
+                pe = penew
+            else:
+                # revert physical properties
+                lmps.command('change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box' % (3*(box,)))
+                lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
+                lmps.command('run 0')
         # hamiltonian monte carlo
-        if roll <= phmc:
+        else:
             # update hmc tries
             ntryhmc += 1
             # set new atom velocities and initialize
@@ -302,79 +365,13 @@ for i in xrange(len(T[el])):
                 lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
                 lmps.scatter_atoms('v', 1, 3, np.ctypeslib.as_ctypes(v))
                 lmps.command('run 0')
-        # pos monte carlo
-        elif roll > phmc and roll <= (phmc+ppos):
-            # loop through atoms
-            for k in xrange(natoms):
-                # update position tries
-                ntrypos += 1
-                # save current physical properties
-                x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
-                pe = lmps.extract_compute('thermo_pe', None, 0)/Et[i]
-                xnew = np.copy(x)
-                xnew[3*k:3*k+3] += (np.random.rand(3)-0.5)*dpos[el]
-                xnew[3*k:3*k+3] -= np.floor(xnew[3*k:3*k+3]/box)*box
-                lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
-                lmps.command('run 0')
-                penew = lmps.extract_compute('thermo_pe', None, 0)/Et[i]
-                dE = penew-pe
-                if np.random.rand() <= np.min([1, np.exp(-dE)]):
-                    # update pos acceptations
-                    naccpos += 1
-                    # save new physical properties
-                    x = xnew
-                    pe = penew
-                else:
-                    # revert physical properties
-                    lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
-                    lmps.command('run 0')
-        # npt monte carlo
-        else:
-            # update volume tries
-            ntryvol += 1
-            # save current physical properties
-            boxmin = lmps.extract_global('boxlo', 1)
-            boxmax = lmps.extract_global('boxhi', 1)
-            box = boxmax-boxmin
-            vol = np.power(box, 3)
-            x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
-            pe = lmps.extract_compute('thermo_pe', None, 0)/Et[i]
-            # save new physical properties
-            boxnew = box+(np.random.rand()-0.5)*dbox[el]
-            volnew = np.power(boxnew, 3)
-            scalef = boxnew/box
-            xnew = scalef*x
-            # apply new physical properties
-            lmps.command('change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box' % (3*(boxnew,)))
-            lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
-            lmps.command('run 0')
-            penew = lmps.extract_compute('thermo_pe', None, 0)/Et[i]
-            # calculate enthalpy criterion
-            dH = (penew-pe)+Pf[i]*(volnew-vol)-natoms*np.log(volnew/vol)
-            if np.random.rand() <= np.min([1, np.exp(-dH)]):
-                # update volume acceptations
-                naccvol += 1
-                # save new physical properties
-                box = boxnew
-                vol = volnew
-                x = xnew
-                pe = penew
-            else:
-                # revert physical properties
-                lmps.command('change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box' % (3*(box,)))
-                lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
-                lmps.command('run 0')
         # monte carlo param update; data storage
         if (j+1) % mod == 0:
             # acceptance ratios
-            acchmc = np.nan_to_num(np.float64(nacchmc)/np.float64(ntryhmc))
             accpos = np.nan_to_num(np.float64(naccpos)/np.float64(ntrypos))
             accvol = np.nan_to_num(np.float64(naccvol)/np.float64(ntryvol))
+            acchmc = np.nan_to_num(np.float64(nacchmc)/np.float64(ntryhmc))
             # update monte carlo params
-            if acchmc < 0.5:
-                dt[units[el]] *= 0.9375
-            else:
-                dt[units[el]] *= 1.0625
             if accpos < 0.5:
                 dpos[el] *= 0.9375
             else:
@@ -383,17 +380,21 @@ for i in xrange(len(T[el])):
                 dbox[el] *= 0.9375
             else:
                 dbox[el] *= 1.0625
+            if acchmc < 0.5:
+                dt[units[el]] *= 0.9375
+            else:
+                dt[units[el]] *= 1.0625
             # calculate physical properties
             virial = lmps.extract_compute('thermo_press', None, 0)
             temp = lmps.extract_compute('thermo_temp', None, 0)
             # print thermal argument string
-            therm_args = (j+1, temp, Et[i]*pe, Et[i]*ke, virial, vol, acchmc, accpos, accvol)
-            print('%d %.4f %.4E %.4E %.4E %.4f %.4f %.4f %.4f' % therm_args)
+            therm_args = (temp, Et[i]*pe, Et[i]*ke, virial, vol, accpos, accvol, acchmc)
+            print('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E' % therm_args)
             # write data to file
-            thermo.write('%d %.4f %.4E %.4E %.4E %.4f %.4f %.4f %.4f\n' % therm_args)
-            traj.write('%d %.4f\n' % (natoms, box))
+            thermo.write('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E\n' % therm_args)
+            traj.write('%d %.4E\n' % (natoms, box))
             for k in xrange(natoms):
-                traj.write('%.4f %.4f %.4f\n' % tuple(x[3*k:3*k+3]))
+                traj.write('%.4E %.4E %.4E\n' % tuple(x[3*k:3*k+3]))
     # flush write buffer
     thermo.flush()
     traj.flush()

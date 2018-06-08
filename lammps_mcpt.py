@@ -25,8 +25,8 @@ n_temp = 64
 # simulation name
 name = 'mcpt'
 # monte carlo parameters
-n_smpl = 64           # number of samples
-mod = 64              # frequency of data storage
+n_smpl = 1536         # number of samples
+mod = 128             # frequency of data storage
 n_swps = n_smpl*mod   # total mc sweeps
 ppos = 0.015625       # probability of pos move
 pvol = 0.25           # probability of vol move
@@ -49,10 +49,10 @@ units = {'Ti': 'metal',
 # lennard-jones parameters
 lj_param = (1.0, 1.0)
 # pressure
-P = {'Ti': np.array([2, 4], dtype=np.float64),
-     'Al': np.array([2, 4], dtype=np.float64),
-     'Ni': np.array([2, 4], dtype=np.float64),
-     'Cu': np.array([2, 4], dtype=np.float64),
+P = {'Ti': np.array([2, 4, 8], dtype=np.float64),
+     'Al': np.array([2, 4, 8], dtype=np.float64),
+     'Ni': np.array([2, 4, 8], dtype=np.float64),
+     'Cu': np.array([2, 4, 8], dtype=np.float64),
      'LJ': np.array([2, 4, 8], dtype=np.float64)}
 n_press = len(P[el])
 # temperature
@@ -80,9 +80,9 @@ mass = {'Ti': 47.867,
         'Cu': 63.546,
         'LJ': 1.0}
 # max box adjustment
-dbox = 0.0009765625*lat[el][1]*np.ones((n_press, n_temp))
+dbox = 4*0.0009765625*lat[el][1]*np.ones((n_press, n_temp))
 # max pos adjustment
-dpos = 0.0009765625*lat[el][1]*np.ones((n_press, n_temp))  
+dpos = 4*0.0009765625*lat[el][1]*np.ones((n_press, n_temp))  
 # timestep
 timestep = {'real': 4.0,
             'metal': 0.00390625,
@@ -94,6 +94,7 @@ dt = timestep[units[el]]*np.ones((n_press, n_temp))
 # ----------------
 
 def define_constants(units, P, T):
+    ''' sets thermodynamic constants according to chosen unit system '''
     if units == 'real':
         N_A = 6.0221409e23                       # avagadro number [num/mol]
         kB = 3.29983e-27                         # boltzmann constant [kcal/K]
@@ -115,6 +116,7 @@ def define_constants(units, P, T):
 # ---------------------------------
 
 def fpref(name, el, lat, P):
+    ''' returns file prefix for simulation '''
     prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[0], int(P))
     return prefix
 
@@ -175,6 +177,7 @@ def lammps_input(el, units, lat, sz, mass, P, dt, lj_param=None):
     return lmpsfilein
     
 def init_lammps(i, j, el, units, lat, sz, mass, P, dt, lj_param=None):
+    ''' initializes lammps object and data storage files '''
     # generate input file
     lmpsfilein = lammps_input(el, units, lat, sz, mass, P, dt, lj_param)
     # initialize lammps
@@ -183,6 +186,7 @@ def init_lammps(i, j, el, units, lat, sz, mass, P, dt, lj_param=None):
     # open data storage files
     thermo = open(lmpsfilein.replace('.in', '%02d%02d.thrm' % (i, j)), 'w')
     traj = open(lmpsfilein.replace('.in', '%02d%02d.traj' % (i, j)), 'w')
+    # return lammps object and data storage files
     return lmps, thermo, traj
     
 # -----------------------------
@@ -191,6 +195,7 @@ def init_lammps(i, j, el, units, lat, sz, mass, P, dt, lj_param=None):
     
 def thermo_header(thermo, n_smpl, mod, n_swps, ppos, pvol, phmc, n_stps, seed,
                   el, units, lat, sz, mass, P, T, dt, dpos, dbox):
+    ''' writes header containing simulation information to thermo file '''
     thermo.write('#----------------------\n')
     thermo.write('# simulation parameters\n')
     thermo.write('#----------------------\n')
@@ -221,6 +226,8 @@ def thermo_header(thermo, n_smpl, mod, n_swps, ppos, pvol, phmc, n_stps, seed,
     thermo.write('# ------------------------------------------------------------\n')
 
 def write_thermo(thermo, lmps, accpos, accvol, acchmc):
+    ''' writes thermodynamic properties to thermo file '''
+    # extract physical properties
     temp = lmps.extract_compute('thermo_temp', None, 0)
     pe = lmps.extract_compute('thermo_pe', None, 0)
     ke = lmps.extract_compute('thermo_ke', None, 0)
@@ -236,11 +243,14 @@ def write_thermo(thermo, lmps, accpos, accvol, acchmc):
     thermo.write('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E\n' % therm_args)
 
 def write_traj(traj, lmps):
+    ''' writes trajectory data to traj file '''
+    # extract physical properties
     natoms = lmps.extract_global('natoms', 0)
     boxmin = lmps.extract_global('boxlo', 1)
     boxmax = lmps.extract_global('boxhi', 1)
     box = boxmax-boxmin
     x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
+    # write data to file
     traj.write('%d %.4E\n' % (natoms, box))
     for k in xrange(natoms):
         traj.write('%.4E %.4E %.4E\n' % tuple(x[3*k:3*k+3]))
@@ -250,6 +260,9 @@ def write_traj(traj, lmps):
 # -----------------
 
 def position_mc(lmps, Et, ntrypos, naccpos, dpos):
+    ''' classic position monte carlo 
+        loops through nudging atoms
+        accepts/rejects based on energy metropolis criterion ''' 
     # get number of atoms
     natoms = lmps.extract_global('natoms', 0)
     boxmin = lmps.extract_global('boxlo', 1)
@@ -279,9 +292,13 @@ def position_mc(lmps, Et, ntrypos, naccpos, dpos):
             # revert physical properties
             lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
             lmps.command('run 0')
+    # return lammps object and tries/acceptations
     return lmps, ntrypos, naccpos
     
 def volume_mc(lmps, Et, Pf, ntryvol, naccvol, dbox):
+    ''' isobaric-isothermal volume monte carlo
+        scales box and positions
+        accepts/rejects based on enthalpy metropolis criterion '''
     # update volume tries
     ntryvol += 1
     # save current physical properties
@@ -317,9 +334,13 @@ def volume_mc(lmps, Et, Pf, ntryvol, naccvol, dbox):
         lmps.command('change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box' % (3*(box,)))
         lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
         lmps.command('run 0')
+    # return lammps object and tries/acceptations
     return lmps, ntryvol, naccvol
     
 def hamiltonian_mc(lmps, Et, ntryhmc, nacchmc, T, dt):
+    ''' hamiltionian monte carlo
+        short md run at generated velocities for desired temp
+        accepts/rejects based on energy metropolis criterion '''
     # update hmc tries
     ntryhmc += 1
     # set new atom velocities and initialize
@@ -358,6 +379,7 @@ def hamiltonian_mc(lmps, Et, ntryhmc, nacchmc, T, dt):
         lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
         lmps.scatter_atoms('v', 1, 3, np.ctypeslib.as_ctypes(v))
         lmps.command('run 0')
+    # return lammps object and tries/acceptations
     return lmps, ntryhmc, nacchmc
     
 # ----------------------------
@@ -365,68 +387,151 @@ def hamiltonian_mc(lmps, Et, ntryhmc, nacchmc, T, dt):
 # ----------------------------
 
 def update_mc_param(dpos, dbox, dt, accpos, accvol, acchmc):
+    ''' adaptive update of monte carlo parameters '''
+    # update position displacment for pos-mc
     if accpos < 0.5:
         dpos *= 0.9375
     else:
         dpos *= 1.0625
+    # update box displacement for vol-mc
     if accvol < 0.5:
         dbox *= 0.9375
     else:
         dbox *= 1.0625
+    # update timestep for hmc
     if acchmc < 0.5:
         dt *= 0.9375
     else:
         dt *= 1.0625
+    # return new mc params
     return dpos, dbox, dt
     
 # ------------------
 # parallel tempering
 # ------------------
 
-def par_tempering_swap(lmps, Et, Pf):
+def rep_exch(lmps, Et, Pf):
+    ''' performs parallel tempering acrros all samples 
+        accepts/rejects based on enthalpy metropolis criterion '''
+    # simulation set shape
     n_press, n_temp = lmps.shape
+    # flatten lammps objects and constants
     lmps = lmps.reshape(-1)
     Et = Et.reshape(-1)
     Pf = Pf.reshape(-1)
-    dH = 256*np.ones((len(Et), len(Et)))
+    # catalog swaps and swapping pairs
+    swaps = 0
+    pairs = []
+    # loop through upper right triangular matrix
     for i in xrange(len(lmps)):
-        for j in xrange(i, len(lmps)):
+        for j in xrange(i+1, len(lmps)):
+            # energies for configuration i
             pei = lmps[i].extract_compute('thermo_pe', None, 0)
             kei = lmps[i].extract_compute('thermo_ke', None, 0)
             etoti = pei+kei
+            # box dimensions for configuration i
             boxmini = lmps[i].extract_global('boxlo', 1)
             boxmaxi = lmps[i].extract_global('boxhi', 1)
             boxi = boxmaxi-boxmini
             voli = np.power(boxi, 3)
+            # energies for configuration j
             pej = lmps[j].extract_compute('thermo_pe', None, 0)
             kej = lmps[j].extract_compute('thermo_ke', None, 0)
             etotj = pej+kej
+            # box dimensions for configuration j
             boxminj = lmps[j].extract_global('boxlo', 1)
             boxmaxj = lmps[j].extract_global('boxhi', 1)
             boxj = boxmaxj-boxminj
             volj = np.power(boxj, 3)
-            dH[i, j] = (etoti-etotj)*(1/Et[i]-1/Et[j])+(Pf[i]-Pf[j])*(voli-volj)
-    minind = np.dstack(np.unravel_index(np.argsort(dH.ravel()), (len(Et), len(Et))))[0]
-    possind = np.reshape(minind[0, :], (1, 2))
-    for i in xrange(1, len(Et)):
-        if minind[i, 0] not in possind and minind[i, 1] not in possind:
-            possind = np.concatenate((possind, np.reshape(minind[i, :], (1, 2))), axis=0)
+            # change in enthalpy
+            dH = (etoti-etotj)*(1/Et[i]-1/Et[j])+(Pf[i]-Pf[j])*(voli-volj)
+            if np.random.rand() <= np.min([1, np.exp(dH)]):
+                swaps += 1
+                pairs.append('(%d, %d)' % (i, j))
+                # swap lammps objects
+                lmps[j], lmps[i] = lmps[i], lmps[j]
+    print('%d parallel tempering swaps performed: ' % swaps, ' '.join(pairs))
+    # return list of lammps objects
+    return np.reshape(lmps, (n_press, n_temp))
+
+def rep_exch_bias(lmps, Et, Pf):
+    ''' performs parallel tempering acrros all samples 
+        accepts/rejects based on enthalpy metropolis criterion '''
+    # simulation set shape
+    n_press, n_temp = lmps.shape
+    n_cfg = n_press*n_temp
+    # flatten lammps objects and constants
+    lmps = lmps.reshape(-1)
+    Et = Et.reshape(-1)
+    Pf = Pf.reshape(-1)
+    # initialize enthalpy matrix
+    ind = np.zeros((n_cfg*(n_cfg-1)/2, 2), dtype=int) 
+    dH = np.zeros(n_cfg*(n_cfg-1)/2, dtype=float)
+    # loop through upper right triangular matrix
+    k = 0
+    for i in xrange(n_cfg):
+        for j in xrange(i+1, n_cfg):
+            # energies for configuration i
+            pei = lmps[i].extract_compute('thermo_pe', None, 0)
+            kei = lmps[i].extract_compute('thermo_ke', None, 0)
+            etoti = pei+kei
+            # box dimensions for configuration i
+            boxmini = lmps[i].extract_global('boxlo', 1)
+            boxmaxi = lmps[i].extract_global('boxhi', 1)
+            boxi = boxmaxi-boxmini
+            voli = np.power(boxi, 3)
+            # energies for configuration j
+            pej = lmps[j].extract_compute('thermo_pe', None, 0)
+            kej = lmps[j].extract_compute('thermo_ke', None, 0)
+            etotj = pej+kej
+            # box dimensions for configuration j
+            boxminj = lmps[j].extract_global('boxlo', 1)
+            boxmaxj = lmps[j].extract_global('boxhi', 1)
+            boxj = boxmaxj-boxminj
+            volj = np.power(boxj, 3)
+            # change in enthalpy
+            ind[k] = [i, j]
+            dH[k] = (etoti-etotj)*(1/Et[i]-1/Et[j])+(Pf[i]-Pf[j])*(voli-volj)
+            k += 1
+    # order from largest to greatest by change in enthalphy
+    ind = ind[np.argsort(dH)[::-1]]
+    dH = np.sort(dH)[::-1]
+    candind = np.reshape(ind[0, :], (1, 2))
+    # catalog swaps and swapping pairs
     swaps = 0
     pairs = []
-    for k in xrange(possind.shape[1]):
-        i, j = tuple(possind[k, :])
-        if np.random.rand() <= np.min([1, np.exp(-dH[i, j])]):
-            swaps += 1
-            pairs.append('(%d, %d)' % (i, j))
-            lmps[j], lmps[i] = lmps[i], lmps[j]
+    for k in xrange(0, len(ind)):
+        if k == 0:
+            i, j = ind[0, :]
+            candind = np.reshape(ind[0, :], (1, 2))
+            if np.random.rand() <= np.min([1, np.exp(dH[k])]):
+                swaps += 1
+                pairs.append('(%d, %d)' % (i, j))
+                # swap lammps objects
+                lmps[j], lmps[i] = lmps[i], lmps[j]
+        else:
+            i, j = ind[k, :]
+            if (i not in candind) and (j not in candind):
+                candind = np.concatenate((candind, np.reshape(ind[k, :], (1, 2))), axis=0)
+                if np.random.rand() <= np.min([1, np.exp(dH[k])]):
+                    swaps += 1
+                    pairs.append('(%d, %d)' % (i, j))
+                    # swap lammps objects
+                    lmps[j], lmps[i] = lmps[i], lmps[j]
     print('%d parallel tempering swaps performed: ' % swaps, ' '.join(pairs))
+    # return list of lammps objects
     return np.reshape(lmps, (n_press, n_temp))
     
 # ---------------------
 # monte carlo procedure
 # ---------------------
 
-def move_mc(lmps, Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, T, dt):
+def move_mc(lmps, Et, Pf,
+            ppos, pvol, phmc,
+            ntrypos, naccpos,
+            ntryvol, naccvol,
+            ntryhmc, nacchmc, 
+            dpos, dbox, T, dt):
     roll = np.random.rand()
     if roll <= ppos:
         lmps, ntrypos, naccpos = position_mc(lmps, Et, ntrypos, naccpos, dpos)
@@ -436,10 +541,24 @@ def move_mc(lmps, Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, 
         lmps, ntryhmc, nacchmc = hamiltonian_mc(lmps, Et, ntryhmc, nacchmc, T, dt)
     return lmps, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc
     
-def get_sample(lmps, Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, T, dt, mod, thermo, traj):
+def get_sample(lmps, Et, Pf,
+               ppos, pvol, phmc,
+               ntrypos, naccpos,
+               ntryvol, naccvol,
+               ntryhmc, nacchmc,
+               dpos, dbox, T, dt,
+               mod, thermo, traj):
     for i in xrange(mod):
-        dat =  move_mc(lmps, Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, T, dt)
-        lmps, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc = dat
+        dat =  move_mc(lmps, Et, Pf,
+                       ppos, pvol, phmc,
+                       ntrypos, naccpos,
+                       ntryvol, naccvol,
+                       ntryhmc, nacchmc,
+                       dpos, dbox, T, dt)
+        lmps = dat[0]
+        ntrypos, naccpos = dat[1:3]
+        ntryvol, naccvol = dat[3:5]
+        ntryhmc, nacchmc = dat[5:7]
     # acceptance ratios
     accpos = np.nan_to_num(np.float64(naccpos)/np.float64(ntrypos))
     accvol = np.nan_to_num(np.float64(naccvol)/np.float64(ntryvol))
@@ -449,12 +568,22 @@ def get_sample(lmps, Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvo
     write_traj(traj, lmps)
     return lmps, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
     
-def get_samples(lmps, Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, T, dt, mod, thermo, traj):
+def get_samples(lmps, Et, Pf, 
+                ppos, pvol, phmc,
+                ntrypos, naccpos,
+                ntryvol, naccvol,
+                ntryhmc, nacchmc,
+                dpos, dbox, T, dt,
+                mod, thermo, traj):
     for i in xrange(lmps.shape[0]):
         for j in xrange(lmps.shape[1]):
-            dat = get_sample(lmps[i, j], Et[i, j], Pf[i, j], ppos, pvol, phmc,
-                             ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
-                             dpos[i, j], dbox[i, j], T[j], dt[i, j], mod, thermo[i, j], traj[i, j])
+            dat = get_sample(lmps[i, j], Et[i, j], Pf[i, j],
+                             ppos, pvol, phmc,
+                             ntrypos[i, j], naccpos[i, j],
+                             ntryvol[i, j], naccvol[i, j],
+                             ntryhmc[i, j], nacchmc[i, j],
+                             dpos[i, j], dbox[i, j], T[j], dt[i, j],
+                             mod, thermo[i, j], traj[i, j])
             lmps[i, j] = dat[0]
             ntrypos[i, j], naccpos[i, j] = dat[1:3]
             ntryvol[i, j], naccvol[i, j] = dat[3:5]
@@ -479,8 +608,12 @@ nacchmc = np.zeros((n_press, n_temp), dtype=float)
 for i in xrange(len(P[el])):
     for j in xrange(n_temp):
         Et[i, j], Pf[i, j] = define_constants(units[el], P[el][i], T[el][j])
-        lmps[i, j], thermo[i, j], traj[i, j] = init_lammps(i, j, el, units[el], lat[el], sz[el], mass[el], P[el][i], dt[i, j], lj_param)
-        thermo_header(thermo[i, j], n_smpl, mod, n_swps, ppos, pvol, phmc, n_stps, seed, el, units[el], lat[el], sz[el], mass[el], 
+        dat = init_lammps(i, j, el, units[el], lat[el], sz[el], mass[el],
+                          P[el][i], dt[i, j], lj_param)
+        lmps[i, j] = dat[0]
+        thermo[i, j], traj[i, j] = dat[1:]
+        thermo_header(thermo[i, j], n_smpl, mod, n_swps, ppos, pvol, phmc,
+                      n_stps, seed, el, units[el], lat[el], sz[el], mass[el],
                       P[el][i], T[el][j], dt[i, j], dpos[i, j], dbox[i, j])
 
 # -----------                      
@@ -488,8 +621,12 @@ for i in xrange(len(P[el])):
 # -----------
 
 for i in xrange(n_smpl):
-    get_samples(lmps, Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, T[el], dt, mod, thermo, traj)
-    lmps = par_tempering_swap(lmps, Et, Pf)
+    get_samples(lmps, Et, Pf, ppos, pvol, phmc,
+                ntrypos, naccpos, ntryvol,
+                naccvol, ntryhmc, nacchmc,
+                dpos, dbox, T[el], dt,
+                mod, thermo, traj)
+    lmps = rep_exch(lmps, Et, Pf)
 
 # ----------------------
 # close files and lammps
@@ -505,23 +642,23 @@ for i in xrange(n_press):
 # output file names
 # -----------------
 
-thermo_names = [[thermo[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
-traj_names = [[traj[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
+thnms = [[thermo[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
+trnms = [[traj[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
 
 for i in xrange(n_press):
     prefix = fpref(name, el, lat[el], P[el][i])
     with open(prefix+'.thrm', 'w') as fout:
-        fin = fileinput.input(thermo_names[i])
+        fin = fileinput.input(thnms[i])
         for line in fin:
             fout.write(line)
         fin.close()
     with open(prefix+'.traj', 'w') as fout:
-        fin = fileinput.input(traj_names[i])
+        fin = fileinput.input(trnms[i])
         for line in fin:
             fout.write(line)
         fin.close()
         
 for i in xrange(n_press):
     for j in xrange(n_temp):
-        os.remove(thermo_names[i][j])
-        os.remove(traj_names[i][j])
+        os.remove(thnms[i][j])
+        os.remove(trnms[i][j])
