@@ -40,21 +40,13 @@ LAMMPS Libraries
 File Descriptions
 =================
 
-lammps_mc.py
+lammps_mc{pt}.py
 -------------
 
-This program interfaces with LAMMPS to produce thermodynamic information and trajectories from NPT-HMC simulations that sweep through a range of temperatures at fixed pressure. LAMMPS is used to constuct the system and run the dynamics. The Monte Carlo moves are performed in Python. Three type of Monte Carlo moves are defined: the NPT volume move (VMC), the classic atom-wise position move (PMC), and the Hamiltonian Monte Carlo move (HMC). Different probabilities can be chosen for each type of MC move (specified for HMC and PMC while VMC takes the remaining probability). Other general user-controlled parameters include the number of total MC move attempts, the number of timesteps in HMC moves, the number of data sets, and the name of the simulation. Material specific parameters are stored dictionaries with the atomic symbols serving as the keys ('LJ' for Lennard-Jones). The default is Lennard-Jones since it is useful for testing and is included with LAMMPS with no extra libraries needed. These dictionaries control the simulation pressure, the temperature array (length determined by the number of data sets), the lattice type and parameter, the various MC parameters (box adjustment for VMC, position adjustment for PMC, and timestep for HMC). The MC parameters are adaptively adjusted during the simulation. Two output files are written to, one containing general thermodynamic properties and simulation details, and another containing the atom trajectories.
+This program interfaces with LAMMPS to produce thermodynamic information and trajectories from NPT-HMC simulations that sweep through a range of temperatures at fixed pressure. LAMMPS is used to constuct the system and run the dynamics. The Monte Carlo moves are performed in Python. Three type of Monte Carlo moves are defined: the NPT volume move (VMC), the classic atom-wise position move (PMC), and the Hamiltonian Monte Carlo move (HMC). Different probabilities can be chosen for each type of MC move (specified for HMC and PMC while VMC takes the remaining probability). Other general user-controlled parameters include the number of total MC move attempts, the number of timesteps in HMC moves, the number of data sets, and the name of the simulation. Material specific parameters are stored dictionaries with the atomic symbols serving as the keys ('LJ' for Lennard-Jones). The default is Lennard-Jones since it is useful for testing and is included with LAMMPS with no extra libraries needed. These dictionaries control the simulation pressure, the temperature array (length determined by the number of data sets), the lattice type and parameter, the various MC parameters (box adjustment for VMC, position adjustment for PMC, and timestep for HMC). The MC parameters are adaptively adjusted during the simulation. Two output files are written to, one containing general thermodynamic properties and simulation details, and another containing the atom trajectories. The parallel tempering file allows for the simultaneous simulation of multiple simulations at different pressures and temperatures. The parallel tempering, also known as replica exchange Markov chain Monte Carlo (REMCMC) allows for configurations at different pressures and temperatures to be swapped periodically to improve convergence.
 
 ### Plans for the future
-- Parallelize LAMMPS
-
-lammps_mcpt.py
---------------
-
-Largely the same as 'lammps_mc.py', but implements parallel tempering. As such, multiple pressures are chosen for the simulation.
-
-### Plans for the future
-- Parallelize the parallel tempering
+- Parallelize REMCMC
 - Parallelize LAMMPS
 
 lammps_parse.py
