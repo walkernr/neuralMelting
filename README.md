@@ -24,6 +24,7 @@ Python
 - NumPy
 - SciPy
 - Joblib
+- Dask
 - Scikit-Learn
 - MulticoreTSNE
 - Lasagne
@@ -40,19 +41,34 @@ LAMMPS Libraries
 File Descriptions
 =================
 
-lammps_mc{pt}.py
+lammps_mc.py
 -------------
 
-This program interfaces with LAMMPS to produce thermodynamic information and trajectories from NPT-HMC simulations that sweep through a range of temperatures at fixed pressure. LAMMPS is used to constuct the system and run the dynamics. The Monte Carlo moves are performed in Python. Three type of Monte Carlo moves are defined: the NPT volume move (VMC), the classic atom-wise position move (PMC), and the Hamiltonian Monte Carlo move (HMC). Different probabilities can be chosen for each type of MC move (specified for HMC and PMC while VMC takes the remaining probability). Other general user-controlled parameters include the number of total MC move attempts, the number of timesteps in HMC moves, the number of data sets, and the name of the simulation. Material specific parameters are stored dictionaries with the atomic symbols serving as the keys ('LJ' for Lennard-Jones). The default is Lennard-Jones since it is useful for testing and is included with LAMMPS with no extra libraries needed. These dictionaries control the simulation pressure, the temperature array (length determined by the number of data sets), the lattice type and parameter, the various MC parameters (box adjustment for VMC, position adjustment for PMC, and timestep for HMC). The MC parameters are adaptively adjusted during the simulation. Two output files are written to, one containing general thermodynamic properties and simulation details, and another containing the atom trajectories. The parallel tempering file allows for the simultaneous simulation of multiple simulations at different pressures and temperatures. The parallel tempering, also known as replica exchange Markov chain Monte Carlo (REMCMC) allows for configurations at different pressures and temperatures to be swapped periodically to improve convergence.
+This program interfaces with LAMMPS to produce thermodynamic information and trajectories from NPT-HMC simulations that sweep through a range of temperatures at fixed pressure. LAMMPS is used to constuct the system and run the dynamics. The Monte Carlo moves are performed in Python. Three type of Monte Carlo moves are defined: the NPT volume move (VMC), the classic atom-wise position move (PMC), and the Hamiltonian Monte Carlo move (HMC). Different probabilities can be chosen for each type of MC move (specified for HMC and PMC while VMC takes the remaining probability). Other general user-controlled parameters include the number of total MC move attempts, the number of timesteps in HMC moves, the number of data sets, and the name of the simulation. Material specific parameters are stored dictionaries with the atomic symbols serving as the keys ('LJ' for Lennard-Jones). The default is Lennard-Jones since it is useful for testing and is included with LAMMPS with no extra libraries needed. These dictionaries control the simulation pressure, the temperature array (length determined by the number of data sets), the lattice type and parameter, the various MC parameters (box adjustment for VMC, position adjustment for PMC, and timestep for HMC). The MC parameters are adaptively adjusted during the simulation. Two output files are written to, one containing general thermodynamic properties and simulation details, and another containing the atom trajectories.
 
 ### Plans for the future
-- Parallelize REMCMC
 - Parallelize LAMMPS
+
+lammps_remcmc_local.py
+----------------------
+
+This program implements replica exchange Markov chain Monte Carlo alongside the Monte carlo methods described in lammps_mc.py. This involves running NPT-HMC Monte Carlo simulations at multiple different pressures and temperatures and attempting to swap the atomic configurations between said simulations at regular intervals. Since there are multiple concurrent simulations running between each replica exchange, that part of the algorithm is embarassingly parallel and should be implemented as such. However, there have been issues with the parallel implementation thus far. This is meant to be used on a single machine and also has a mode for serial execution.
+
+### Plans for the future
+- Fix parallelization (many different MPI errors; example: underlying C++ code attempting to free memory that was not allocated to it)
+
+lammps_remcmc_distributed.py
+----------------------------------
+
+This is essentially the same as lammps_remcmc_local.py but is meant to run on a distributed network (though it still works in serial). There have also been problems with this parallel implementation.
+
+### Plans for the future
+- Fix parallelization (Dask errors when pickling LAMMPS function objects)
 
 lammps_parse.py
 ---------------
 
-This program parses the output from lammps_mc{pt}.py and pickles the data.
+This program parses the output from Monte Carlo simulations and pickles the data.
 
 lammps_rdf.py
 -------------
