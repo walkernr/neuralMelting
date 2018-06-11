@@ -652,6 +652,13 @@ for i in xrange(n_smpl):
 # final data storage
 # ------------------
 
+# loop through pressures
+for i in xrange(n_press):
+    # loop through temperatures
+    for j in xrange(n_temp):
+        thermo[i, j].close()
+        traj[i, j].close()
+
 # construct data storage file name lists
 fthrm = [[thermo[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
 ftraj = [[traj[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
@@ -660,46 +667,42 @@ for i in xrange(n_press):
     # get prefix
     prefix = fpref(name, el, lat[el], P[el][i])
     # open collected thermo data file
-    with open(prefix+'.thrm', 'w') as fout:
+    with open(prefix+'.thrm', 'w') as fo:
         # write data to collected thermo file
         for j in xrange(n_temp):
-            with open(fthrm[i][j], 'r') as fin:
+            with open(fthrm[i][j], 'r') as fi:
                 k = 0
-                for line in fin:
+                for line in fi:
                     if '#' in line:
-                        fout.write(line)
+                        fo.write(line)
                     else:
                         k += 1
                         if k > cutoff:
-                            fout.write(line)
-        fin.close()
+                            fo.write(line)
     # open collected traj data file
-    with open(prefix+'.traj', 'w') as fout:
+    with open(prefix+'.traj', 'w') as fo:
         # write data to collected traj file
         for j in xrange(n_temp):
             natoms = lmps[i, j].extract_global('natoms', 0)
-            with open(ftraj[i][j], 'r') as fin:
+            with open(ftraj[i][j], 'r') as fi:
                 k = 0
-                for line in fin:
+                for line in fi:
                     k += 1
                     if k > (natoms+1)*cutoff:
-                        fout.write(line)
-        fin.close()
+                        fo.write(line)
         
 # -------------------------------
 # clean up files and close lammps
 # -------------------------------
-
-# loop through pressures
-for i in xrange(n_press):
-    # loop through temperatures
-    for j in xrange(n_temp):
-        lmps[i, j].close()
-        thermo[i, j].close()
-        traj[i, j].close()
 
 # remove old files 
 for i in xrange(n_press):
     for j in xrange(n_temp):
         os.remove(fthrm[i][j])
         os.remove(ftraj[i][j])
+        
+# loop through pressures
+for i in xrange(n_press):
+    # loop through temperatures
+    for j in xrange(n_temp):
+        lmps[i, j].close()

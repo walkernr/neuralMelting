@@ -11,8 +11,6 @@ import numpy as np
 from lammps import lammps
 from multiprocessing import cpu_count
 from joblib import Parallel, delayed
-# from distributed import Client, progress
-# from dask import delayed
 
 # --------------
 # run parameters
@@ -24,13 +22,13 @@ try:
 except:
     el = 'LJ'
 # number of data sets
-n_temp = 4
+n_temp = 64
 # simulation name
 name = 'remcmc_test'
 # monte carlo parameters
-cutoff = 4            # sample cutoff
-n_smpl = cutoff+4     # number of samples
-mod = 4               # frequency of data storage
+cutoff = 512          # sample cutoff
+n_smpl = cutoff+1024  # number of samples
+mod = 128             # frequency of data storage
 n_swps = n_smpl*mod   # total mc sweeps
 ppos = 0.015625       # probability of pos move
 pvol = 0.25           # probability of vol move
@@ -38,7 +36,7 @@ phmc = 1-ppos-pvol    # probability of hmc move
 n_stps = 8            # md steps during hmc
 seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
-parallel = True       # boolean for controlling parallel run
+parallel = False      # boolean for controlling parallel run
 nproc = 4  # cpu_count()
 
 # -------------------
@@ -189,8 +187,8 @@ def init_lammps(i, j):
     lmps = lammps(cmdargs=['-log', 'none', '-screen', 'none'])
     lmps.file(lmpsfilein)
     # open data storage files
-    thermo = open(lmpsfilein.replace('.in', '%02d%02d.thrm' % (i, j)), 'w')
-    traj = open(lmpsfilein.replace('.in', '%02d%02d.traj' % (i, j)), 'w')
+    thermo = open(lmpsfilein.replace('.in', '%02d%02d.thrm' % (i, j)), 'wb')
+    traj = open(lmpsfilein.replace('.in', '%02d%02d.traj' % (i, j)), 'wb')
     # return lammps object and data storage files
     return lmps, thermo, traj
     
@@ -505,12 +503,6 @@ def generate_samples_par():
             - runs that complete return different results '''
     # generate new sample configurations for press/temp combos in parallel
     Parallel(n_jobs=nproc, backend='threading', verbose=4)(delayed(generate_sample)(i, j) for i in xrange(n_press) for j in xrange(n_temp))
-    # client = Client(processes=False)
-    # print(client)
-    # operations = [delayed(generate_sample)(i, j) for i in xrange(n_press) for j in xrange(n_temp)]
-    # futures = client.compute(operations)
-    # progress(futures)
-    # client.close()
     # write to data storage files
     for i in xrange(n_press):
         for j in xrange(n_temp):
@@ -569,6 +561,13 @@ for i in xrange(n_smpl):
 # final data storage
 # ------------------
 
+# loop through pressures
+for i in xrange(n_press):
+    # loop through temperatures
+    for j in xrange(n_temp):
+        thermo[i, j].close()
+        traj[i, j].close()
+
 # construct data storage file name lists
 fthrm = [[thermo[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
 ftraj = [[traj[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
@@ -577,46 +576,42 @@ for i in xrange(n_press):
     # get prefix
     prefix = fpref(i)
     # open collected thermo data file
-    with open(prefix+'.thrm', 'w') as fout:
+    with open(prefix+'.thrm', 'w') as fo:
         # write data to collected thermo file
         for j in xrange(n_temp):
-            with open(fthrm[i][j], 'r') as fin:
+            with open(fthrm[i][j], 'r') as fi:
                 k = 0
-                for line in fin:
+                for line in fi:
                     if '#' in line:
-                        fout.write(line)
+                        fo.write(line)
                     else:
                         k += 1
                         if k > cutoff:
-                            fout.write(line)
-        fin.close()
+                            fo.write(line)
     # open collected traj data file
-    with open(prefix+'.traj', 'w') as fout:
+    with open(prefix+'.traj', 'w') as fo:
         # write data to collected traj file
         for j in xrange(n_temp):
             natoms = lmps[i, j].extract_global('natoms', 0)
-            with open(ftraj[i][j], 'r') as fin:
+            with open(ftraj[i][j], 'r') as fi:
                 k = 0
-                for line in fin:
+                for line in fi:
                     k += 1
                     if k > (natoms+1)*cutoff:
-                        fout.write(line)
-        fin.close()
+                        fo.write(line)
         
 # -------------------------------
 # clean up files and close lammps
 # -------------------------------
-
-# loop through pressures
-for i in xrange(n_press):
-    # loop through temperatures
-    for j in xrange(n_temp):
-        lmps[i, j].close()
-        thermo[i, j].close()
-        traj[i, j].close()
 
 # remove old files 
 for i in xrange(n_press):
     for j in xrange(n_temp):
         os.remove(fthrm[i][j])
         os.remove(ftraj[i][j])
+        
+# loop through pressures
+for i in xrange(n_press):
+    # loop through temperatures
+    for j in xrange(n_temp):
+        lmps[i, j].close()
