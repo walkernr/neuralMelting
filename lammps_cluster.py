@@ -43,11 +43,11 @@ try:
 except:
     el = 'LJ'
 # pressure
-P = {'Ti': 1.0,
-     'Al': 1.0,
-     'Ni': 1.0,
-     'Cu': 1.0,
-     'LJ': 1.0}
+P = {'Ti': 2.0,
+     'Al': 2.0,
+     'Ni': 2.0,
+     'Cu': 2.0,
+     'LJ': 2.0}
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -55,7 +55,7 @@ lat = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # simulation name
-name = 'mc'
+name = 'remcmc_test'
 # file prefix
 prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el], int(P[el]), name)
 # run details
@@ -86,7 +86,7 @@ T = pickle.load(open(prefix+'.temp.pickle'))
 G = pickle.load(open(prefix+'.rdf.pickle'))
 S = pickle.load(open(prefix+'.sf.pickle'))
 # sample space reduction for improving performance
-smplspc = np.arange(0, N.size, 8)
+smplspc = np.arange(0, N.size, 1)
 N = N[smplspc]
 O = O[smplspc]
 P = P[smplspc]

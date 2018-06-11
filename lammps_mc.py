@@ -28,8 +28,9 @@ n_dat = 64
 # simulation name
 name = 'mc'
 # monte carlo parameters
+cutoff = 512          # sample cutoff
+n_smpl = cutoff+1024  # number of samples
 mod = 128             # frequency of data storage
-n_smpl = 1024         # number of samples
 n_swps = n_smpl*mod   # total mc sweeps
 n_stps = 8            # md steps during hmc
 seed = 256            # random seed
@@ -179,6 +180,7 @@ thermo.write('# simulation parameters\n')
 thermo.write('#----------------------\n')
 thermo.write('# ndat:     %d\n' % n_dat)
 thermo.write('# nsmpl:    %d\n' % n_smpl)
+thermo.write('# cutoff:   %d\n' % cutoff)
 thermo.write('# mod:      %d\n' % mod)
 thermo.write('# nswps:    %d\n' % n_swps)
 thermo.write('# ppos:     %f\n' % ppos)
@@ -384,17 +386,18 @@ for i in xrange(len(T[el])):
                 dt[units[el]] *= 0.9375
             else:
                 dt[units[el]] *= 1.0625
-            # calculate physical properties
-            virial = lmps.extract_compute('thermo_press', None, 0)
-            temp = lmps.extract_compute('thermo_temp', None, 0)
-            # print thermal argument string
-            therm_args = (temp, Et[i]*pe, Et[i]*ke, virial, vol, accpos, accvol, acchmc)
-            print('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E' % therm_args)
-            # write data to file
-            thermo.write('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E\n' % therm_args)
-            traj.write('%d %.4E\n' % (natoms, box))
-            for k in xrange(natoms):
-                traj.write('%.4E %.4E %.4E\n' % tuple(x[3*k:3*k+3]))
+            if (j+1)/mod > cutoff:
+                # calculate physical properties
+                virial = lmps.extract_compute('thermo_press', None, 0)
+                temp = lmps.extract_compute('thermo_temp', None, 0)
+                # print thermal argument string
+                therm_args = (temp, Et[i]*pe, Et[i]*ke, virial, vol, accpos, accvol, acchmc)
+                print('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E' % therm_args)
+                # write data to file
+                thermo.write('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E\n' % therm_args)
+                traj.write('%d %.4E\n' % (natoms, box))
+                for k in xrange(natoms):
+                    traj.write('%.4E %.4E %.4E\n' % tuple(x[3*k:3*k+3]))
     # flush write buffer
     thermo.flush()
     traj.flush()

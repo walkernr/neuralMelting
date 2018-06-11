@@ -9,6 +9,8 @@ from __future__ import division, print_function
 import sys, os
 import numpy as np
 from lammps import lammps
+from multiprocessing import cpu_count
+from joblib import Parallel, delayed
 import fileinput
 
 # --------------
@@ -21,12 +23,13 @@ try:
 except:
     el = 'LJ'
 # number of data sets
-n_temp = 64
+n_temp = 16
 # simulation name
-name = 'mcpt'
+name = 'remcmc_test'
 # monte carlo parameters
-n_smpl = 1536         # number of samples
-mod = 128             # frequency of data storage
+cutoff = 8            # sample cutoff
+n_smpl = cutoff+16    # number of samples
+mod = 16              # frequency of data storage
 n_swps = n_smpl*mod   # total mc sweeps
 ppos = 0.015625       # probability of pos move
 pvol = 0.25           # probability of vol move
@@ -34,7 +37,8 @@ phmc = 1-ppos-pvol    # probability of hmc move
 n_stps = 8            # md steps during hmc
 seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
-nproc = 2  # cpu_count()
+parallel = False      # boolean for controlling parallel run
+nproc = 4  # cpu_count()
 
 # -------------------
 # material properties
@@ -80,9 +84,9 @@ mass = {'Ti': 47.867,
         'Cu': 63.546,
         'LJ': 1.0}
 # max box adjustment
-dbox = 4*0.0009765625*lat[el][1]*np.ones((n_press, n_temp))
+dbox = 0.00390625*lat[el][1]*np.ones((n_press, n_temp))
 # max pos adjustment
-dpos = 4*0.0009765625*lat[el][1]*np.ones((n_press, n_temp))  
+dpos = 0.00390625*lat[el][1]*np.ones((n_press, n_temp))  
 # timestep
 timestep = {'real': 4.0,
             'metal': 0.00390625,
@@ -193,13 +197,14 @@ def init_lammps(i, j, el, units, lat, sz, mass, P, dt, lj_param=None):
 # output file utility functions
 # -----------------------------
     
-def thermo_header(thermo, n_smpl, mod, n_swps, ppos, pvol, phmc, n_stps, seed,
+def thermo_header(thermo, n_smpl, cutoff, mod, n_swps, ppos, pvol, phmc, n_stps, seed,
                   el, units, lat, sz, mass, P, T, dt, dpos, dbox):
     ''' writes header containing simulation information to thermo file '''
     thermo.write('#----------------------\n')
     thermo.write('# simulation parameters\n')
     thermo.write('#----------------------\n')
     thermo.write('# nsmpl:    %d\n' % n_smpl)
+    thermo.write('# cutoff:   %d\n' % cutoff)
     thermo.write('# mod:      %d\n' % mod)
     thermo.write('# nswps:    %d\n' % n_swps)
     thermo.write('# ppos:     %f\n' % ppos)
@@ -450,7 +455,7 @@ def rep_exch(lmps, Et, Pf):
                 pairs.append('(%d, %d)' % (i, j))
                 # swap lammps objects
                 lmps[j], lmps[i] = lmps[i], lmps[j]
-    print('%d parallel tempering swaps performed: ' % swaps, ' '.join(pairs))
+    print('%d replica exchanges performed: ' % swaps, ' '.join(pairs))
     # return list of lammps objects
     return np.reshape(lmps, (n_press, n_temp))
 
@@ -551,8 +556,7 @@ def get_sample(lmps, Et, Pf,
                ntrypos, naccpos,
                ntryvol, naccvol,
                ntryhmc, nacchmc,
-               dpos, dbox, T, dt,
-               mod, thermo, traj):
+               dpos, dbox, T, dt, mod):
     ''' performs enough monte carlo moves to generate a sample (determined by mod) '''
     # loop through monte carlo moves
     for i in xrange(mod):
@@ -572,9 +576,6 @@ def get_sample(lmps, Et, Pf,
     acchmc = np.nan_to_num(np.float64(nacchmc)/np.float64(ntryhmc))
     # update mc params
     dpos, dbox, dt = update_mc_param(dpos, dbox, dt, accpos, accvol, acchmc)
-    # write to data storage files
-    write_thermo(thermo, lmps, accpos, accvol, acchmc)
-    write_traj(traj, lmps)
     # return lammps object, tries/acceptation counts, and mc params
     return lmps, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
     
@@ -597,13 +598,62 @@ def get_samples(lmps, Et, Pf,
                              ntrypos[i, j], naccpos[i, j],
                              ntryvol[i, j], naccvol[i, j],
                              ntryhmc[i, j], nacchmc[i, j],
-                             dpos[i, j], dbox[i, j], T[j], dt[i, j],
-                             mod, thermo[i, j], traj[i, j])
+                             dpos[i, j], dbox[i, j], T[j], dt[i, j], mod)
             lmps[i, j] = dat[0]
             ntrypos[i, j], naccpos[i, j] = dat[1:3]
             ntryvol[i, j], naccvol[i, j] = dat[3:5]
             ntryhmc[i, j], nacchmc[i, j] = dat[5:7]
-            dpos[i, j], dbox[i, j], dt[i, j] = dat[7:]
+            dpos[i, j], dbox[i, j], dt[i, j] = dat[7:10]
+    # write to data storage files
+    for i in xrange(n_press):
+        for j in xrange(n_temp):
+            accpos = np.nan_to_num(np.float64(naccpos[i, j])/np.float64(ntrypos[i, j]))
+            accvol = np.nan_to_num(np.float64(naccvol[i, j])/np.float64(ntryvol[i, j]))
+            acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
+            write_thermo(thermo[i, j], lmps[i, j], accpos, accvol, acchmc)
+            write_traj(traj[i, j], lmps[i, j])
+    # return lammps object, tries/acceptation counts, and mc params
+    return lmps, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
+    
+def get_samples_par(lmps, Et, Pf, 
+                    ppos, pvol, phmc,
+                    ntrypos, naccpos,
+                    ntryvol, naccvol,
+                    ntryhmc, nacchmc,
+                    dpos, dbox, T, dt,
+                    mod, thermo, traj):
+    ''' performs monte carlo in parallel for all configurations to generate new samples 
+        not currently working
+            - inconsistent errors (mpi aborts most of the time)
+            - runs that complete return different results '''
+    n_press, n_temp = lmps.shape
+    res = Parallel(n_jobs=nproc,
+                   backend='threading',
+                   verbose=4)(delayed(get_sample)(lmps[i, j], Et[i, j], Pf[i, j], 
+                                                  ppos, pvol, phmc,
+                                                  ntrypos[i, j], naccpos[i, j],
+                                                  ntryvol[i, j], naccvol[i, j],
+                                                  ntryhmc[i, j], nacchmc[i, j],
+                                                  dpos[i, j], dbox[i, j], T[j], dt[i, j],
+                                                  mod) for i in xrange(n_press) for j in xrange(n_temp))
+    k = 0
+    for i in xrange(n_press):
+        for j in xrange(n_temp):
+            dat = res[k]
+            k += 1
+            lmps[i, j] = dat[0]
+            ntrypos[i, j], naccpos[i, j] = dat[1:3]
+            ntryvol[i, j], naccvol[i, j] = dat[3:5]
+            ntryhmc[i, j], nacchmc[i, j] = dat[5:7]
+            dpos[i, j], dbox[i, j], dt[i, j] = dat[7:10]
+    # write to data storage files
+    for i in xrange(n_press):
+        for j in xrange(n_temp):
+            accpos = np.nan_to_num(np.float64(naccpos[i, j])/np.float64(ntrypos[i, j]))
+            accvol = np.nan_to_num(np.float64(naccvol[i, j])/np.float64(ntryvol[i, j]))
+            acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
+            write_thermo(thermo[i, j], lmps[i, j], accpos, accvol, acchmc)
+            write_traj(traj[i, j], lmps[i, j])
     # return lammps object, tries/acceptation counts, and mc params
     return lmps, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
 
@@ -637,7 +687,7 @@ for i in xrange(len(P[el])):
         lmps[i, j] = dat[0]
         thermo[i, j], traj[i, j] = dat[1:]
         # write thermo file header
-        thermo_header(thermo[i, j], n_smpl, mod, n_swps, ppos, pvol, phmc,
+        thermo_header(thermo[i, j], n_smpl, cutoff, mod, n_swps, ppos, pvol, phmc,
                       n_stps, seed, el, units[el], lat[el], sz[el], mass[el],
                       P[el][i], T[el][j], dt[i, j], dpos[i, j], dbox[i, j])
 
@@ -648,11 +698,18 @@ for i in xrange(len(P[el])):
 # loop through to number of samples that need to be collected
 for i in xrange(n_smpl):
     # collect samples for all configurations
-    dat = get_samples(lmps, Et, Pf, ppos, pvol, phmc,
-                      ntrypos, naccpos, ntryvol,
-                      naccvol, ntryhmc, nacchmc,
-                      dpos, dbox, T[el], dt,
-                      mod, thermo, traj)
+    if parallel:
+        dat = get_samples_par(lmps, Et, Pf, ppos, pvol, phmc,
+                              ntrypos, naccpos, ntryvol,
+                              naccvol, ntryhmc, nacchmc,
+                              dpos, dbox, T[el], dt,
+                              mod, thermo, traj)
+    else:
+        dat = get_samples(lmps, Et, Pf, ppos, pvol, phmc,
+                          ntrypos, naccpos, ntryvol,
+                          naccvol, ntryhmc, nacchmc,
+                          dpos, dbox, T[el], dt,
+                          mod, thermo, traj)
     lmps = dat[0]
     ntrypos, naccpos = dat[1:3]
     ntryvol, naccvol = dat[3:5]
@@ -678,30 +735,39 @@ for i in xrange(n_press):
 # ------------------
 
 # construct data storage file name lists
-thnms = [[thermo[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
-trnms = [[traj[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
+fthrm = [[thermo[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
+ftraj = [[traj[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
 # loop through pressures
 for i in xrange(n_press):
     # get prefix
     prefix = fpref(name, el, lat[el], P[el][i])
     # open collected thermo data file
     with open(prefix+'.thrm', 'w') as fout:
-        # open all thermo files
-        fin = fileinput.input(thnms[i])
         # write data to collected thermo file
-        for line in fin:
-            fout.write(line)
+        for fname in fthrm[i]:
+            with open(fname, 'r') as fin:
+                j = 0
+                for line in fin:
+                    if '#' in line:
+                        fout.write(line)
+                    else:
+                        j += 1
+                        if j > cutoff:
+                            fout.write(line)
         fin.close()
     # open collected traj data file
     with open(prefix+'.traj', 'w') as fout:
-        # open traj files
-        fin = fileinput.input(trnms[i])
         # write data to collected traj file
-        for line in fin:
-            fout.write(line)
+        for fname in ftraj[i]:
+            with open(fname, 'r') as fin:
+                j = 0
+                for line in fin:
+                    j += 1
+                    if j > 257*cutoff:
+                        fout.write(line)
         fin.close()
 # remove old files 
 for i in xrange(n_press):
     for j in xrange(n_temp):
-        os.remove(thnms[i][j])
-        os.remove(trnms[i][j])
+        os.remove(fthrm[i][j])
+        os.remove(ftraj[i][j])

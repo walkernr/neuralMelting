@@ -18,11 +18,11 @@ try:
 except:
     el = 'LJ'
 # pressure
-P = {'Ti': 1.0,
-     'Al': 1.0,
-     'Ni': 1.0,
-     'Cu': 1.0,
-     'LJ': 1.0}
+P = {'Ti': 2.0,
+     'Al': 2.0,
+     'Ni': 2.0,
+     'Cu': 2.0,
+     'LJ': 2.0}
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -30,40 +30,38 @@ lat = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # simulation name
-name = 'mc'
+name = 'remcmc_test'
 # file prefix
-prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el], int(P[el]), name)
+prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 # get full directory
 file = os.getcwd()+'/'+prefix
 print('parsing data for %s' % el.lower())
 # parse thermo file
 with open(file+'.thrm', 'r') as fi:
-    stp = []
     temp = []
     pe = []
     ke = []
     virial = []
     vol = []
-    acchmc = []
     accpos = []
     accvol = []
+    acchmc = []
     iters = iter(fi)
     for lina in iters:
         # ignore header
         if '#' not in lina:
             dat = lina.split()
-            stp.append(int(dat[0]))
-            temp.append(float(dat[1]))
-            pe.append(float(dat[2]))
-            ke.append(float(dat[3]))
-            virial.append(float(dat[4]))
-            vol.append(float(dat[5]))
-            acchmc.append(float(dat[6]))
-            accpos.append(float(dat[7]))
-            accvol.append(float(dat[8]))
+            temp.append(float(dat[0]))
+            pe.append(float(dat[1]))
+            ke.append(float(dat[2]))
+            virial.append(float(dat[3]))
+            vol.append(float(dat[4]))
+            accpos.append(float(dat[5]))
+            accvol.append(float(dat[6]))
+            acchmc.append(float(dat[7]))
     # close file
     fi.close()
-print('%d thermodynamic property steps parsed' % len(stp))
+print('%d thermodynamic property steps parsed' % len(temp))
 # parse trajectory file
 with open(file+'.traj', 'r') as fi:
     iters = iter(fi)
@@ -84,15 +82,14 @@ with open(file+'.traj', 'r') as fi:
     fi.close()
 print('%d trajectory steps parsed' % len(natoms))
 # pickle data
-pickle.dump(np.array(stp, dtype=int), open(prefix+'.stp.pickle', 'wb'))
 pickle.dump(np.array(temp, dtype=float), open(prefix+'.temp.pickle', 'wb'))
 pickle.dump(np.array(pe, dtype=float), open(prefix+'.pe.pickle', 'wb'))
 pickle.dump(np.array(ke, dtype=float), open(prefix+'.ke.pickle', 'wb'))
 pickle.dump(np.array(virial, dtype=float), open(prefix+'.virial.pickle', 'wb'))
 pickle.dump(np.array(vol, dtype=float), open(prefix+'.vol.pickle', 'wb'))
-pickle.dump(np.array(acchmc, dtype=float), open(prefix+'.acchmc.pickle', 'wb'))
 pickle.dump(np.array(accpos, dtype=float), open(prefix+'.accpos.pickle', 'wb'))
 pickle.dump(np.array(accvol, dtype=float), open(prefix+'.accvol.pickle', 'wb'))
+pickle.dump(np.array(acchmc, dtype=float), open(prefix+'.acchmc.pickle', 'wb'))
 pickle.dump(np.array(natoms, dtype=int), open(prefix+'.natoms.pickle', 'wb'))
 pickle.dump(np.array(box, dtype=float), open(prefix+'.box.pickle', 'wb'))
 pickle.dump(np.array(pos, dtype=float), open(prefix+'.pos.pickle', 'wb'))
