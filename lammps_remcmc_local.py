@@ -24,13 +24,13 @@ try:
 except:
     el = 'LJ'
 # number of data sets
-n_temp = 64
+n_temp = 4
 # simulation name
 name = 'remcmc_test'
 # monte carlo parameters
-cutoff = 512          # sample cutoff
-n_smpl = cutoff+1024  # number of samples
-mod = 128             # frequency of data storage
+cutoff = 4            # sample cutoff
+n_smpl = cutoff+4     # number of samples
+mod = 4               # frequency of data storage
 n_swps = n_smpl*mod   # total mc sweeps
 ppos = 0.015625       # probability of pos move
 pvol = 0.25           # probability of vol move
@@ -38,7 +38,7 @@ phmc = 1-ppos-pvol    # probability of hmc move
 n_stps = 8            # md steps during hmc
 seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
-parallel = False      # boolean for controlling parallel run
+parallel = True       # boolean for controlling parallel run
 nproc = 4  # cpu_count()
 
 # -------------------
@@ -98,23 +98,23 @@ dt = timestep[units[el]]*np.ones((n_press, n_temp))
 # unit definitions
 # ----------------
 
-def define_constants(units, P, T):
+def define_constants(i, j):
     ''' sets thermodynamic constants according to chosen unit system '''
-    if units == 'real':
-        N_A = 6.0221409e23                       # avagadro number [num/mol]
-        kB = 3.29983e-27                         # boltzmann constant [kcal/K]
-        R = kB*N_A                               # gas constant [kcal/(mol K)]
-        Et = R*T                                 # thermal energy [kcal/mol]
-        Pf = 1e-30*(1.01325e5*P)/(4.184e3*kB*T)  # metropolis prefactor [1/A^3]
-    if units == 'metal':
-        kB = 8.61733e-5                          # boltzmann constant [eV/K]
-        Et = kB*T                                # thermal energy [eV]
-        Pf = 1e-30*(1e5*P)/(1.60218e-19*kB*T)    # metropolis prefactor [1/A^3]
-    if units == 'lj':
-        kB = 1.0                                 # boltzmann constant (normalized and unitless)
-        Et = kB*T                                # thermal energy [T*]
-        Pf = P/(kB*T)                            # metropolis prefactor [1/r*^3]
-    return Et, Pf
+    if units[el] == 'real':
+        N_A = 6.0221409e23                                          # avagadro number [num/mol]
+        kB = 3.29983e-27                                            # boltzmann constant [kcal/K]
+        R = kB*N_A                                                  # gas constant [kcal/(mol K)]
+        Etherm = R*T[el][j]                                         # thermal energy [kcal/mol]
+        Pfactor = 1e-30*(1.01325e5*P[el][i])/(4.184e3*kB*T[el][j])  # metropolis pressure prefactor [1/A^3]
+    if units[el] == 'metal':
+        kB = 8.61733e-5                                             # boltzmann constant [eV/K]
+        Etherm = kB*T[el][i]                                        # thermal energy [eV]
+        Pfactor = 1e-30*(1e5*P[el][i])/(1.60218e-19*kB*T[el][j])    # metropolis pressure prefactor [1/A^3]
+    if units[el] == 'lj':
+        kB = 1.0                                                    # boltzmann constant (normalized and unitless)
+        Etherm = kB*T[el][j]                                        # thermal energy [T*]
+        Pfactor = P[el][i]/(kB*T[el][j])                            # metropolis pressure prefactor [1/r*^3]
+    return Etherm, Pfactor
 
 # ---------------------------------
 # lammps file/object initialization 
@@ -543,7 +543,7 @@ for i in xrange(len(P[el])):
     # loop through temperatures
     for j in xrange(n_temp):
         # set thermo constants
-        Et[i, j], Pf[i, j] = define_constants(units[el], P[el][i], T[el][j])
+        Et[i, j], Pf[i, j] = define_constants(i, j)
         # initialize lammps object and data storage files
         dat = init_lammps(i, j)
         lmps[i, j] = dat[0]
