@@ -65,8 +65,8 @@ property = 'radial_distribution'  # property for classification
 n_dat = 64                        # number of datasets
 ntrainsets = 8                    # number of training sets
 scaler = 'tanh'                   # data scaling method
-network = 'sknn_convolution_2d'   # neural network type
-bpca = False                      # boolean for pca reduction
+network = 'sknn_classifier'       # neural network type
+bpca = True                       # boolean for pca reduction
 fit_func = 'logistic'             # fitting function
 # summary of input
 print('------------------------------------------------------------')

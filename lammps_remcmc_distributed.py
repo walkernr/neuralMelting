@@ -241,7 +241,8 @@ def sample_init(i, j, el, units, lat, sz, mass, P, dt):
 # output file utility functions
 # -----------------------------
     
-def thermo_header(thermo, n_smpl, cutoff, mod, n_swps, ppos, pvol, phmc, n_stps, seed, el, units, lat, sz, mass, P, T, dt, dpos, dbox):
+def thermo_header(thermo, n_smpl, cutoff, mod, n_swps, ppos, pvol, phmc, n_stps, 
+                  seed, el, units, lat, sz, mass, P, T, dt, dpos, dbox):
     ''' writes header containing simulation information to thermo file '''
     thermo.write('#----------------------\n')
     thermo.write('# simulation parameters\n')
@@ -528,7 +529,8 @@ def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
     ''' performs monte carlo in parallel for all configurations to generate new samples '''
     n_press, n_temp = Pf.shape
     operations = [delayed(get_sample)(x[i, j], v[i, j], box[i, j], el, units, lat, sz, mass, P[i], dt[i, j], 
-                                      Et[i, j], Pf[i, j], ppos, pvol, phmc, ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
+                                      Et[i, j], Pf[i, j], ppos, pvol, phmc, 
+                                      ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
                                       dpos[i, j], dbox[i, j], T[j], mod) for i in xrange(n_press) for j in xrange(n_temp)]
     futures = client.compute(operations)
     progress(futures)
