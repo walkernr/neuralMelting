@@ -49,22 +49,31 @@ This program interfaces with LAMMPS to produce thermodynamic information and tra
 lammps_remcmc_local.py
 ----------------------
 
-This program implements replica exchange Markov chain Monte Carlo alongside the Monte carlo methods described in lammps_mc.py. This involves running NPT-HMC Monte Carlo simulations at multiple different pressures and temperatures and attempting to swap the atomic configurations between said simulations at regular intervals. The simulations at different temperatures and pressures can be run in parallel. Note that for the parallel mode to work, the serial version of the LAMMPS shared library must be used or else there will be memory management errors.
+This program implements replica exchange Markov chain Monte Carlo alongside the Monte carlo methods described in lammps_mc.py. This involves running NPT-HMC Monte Carlo simulations at multiple different pressures and temperatures and attempting to swap the atomic configurations between said simulations at regular intervals. The simulations at different temperatures and pressures can be run in parallel using a multithreading approach. Note that for the parallel mode to work, the serial version of the LAMMPS shared library must be used or else there will be memory management errors. Conducting the simulations in serial is supported for the purposes of debugging.
 
 lammps_remcmc_distributed.py
 ----------------------------------
 
-This is essentially the same as lammps_remcmc_local.py with both serial and parallel modes, but this script is intended to be used on distributed networks. The program works fine on a single machine, but proper setup on distributed networks has been difficult to implement.
+In effect, this is essentially the same as lammps_remcmc_local.py, but with a parallel solution supporting multiprocessing for use on distributed networks. The program also works fine on a single machine and a serial mode is available for debugging.
+
+NOTE: not confirmed to work on a cluster environment yet.
 
 lammps_parse.py
 ---------------
 
 This program parses the output from Monte Carlo simulations and pickles the data.
 
-lammps_rdf.py
--------------
+lammps_rdf_local.py
+-------------------
 
-This program calculates the radial distributions and structure factors for each sample using the pickled trajectory information from the parsing script. The radial distributions are performed in parallel and the structure factors are calculated as Fourier transitions of the radial distributions. The script pickles the data, which also includes density information.
+This program calculates the radial distributions and structure factors for each sample using the pickled trajectory information from the parsing script. The radial distributions are performed in parallel using multithreading and the structure factors are calculated as Fourier transitions of the radial distributions. The script pickles the data, which also includes density information.
+
+lammps_rdf_distributed.py
+-------------------------
+
+Once again, this is essentially the same as lammps_rdf_local.py in effect, but with a parallel solution supporting multiprocessing for use on distributed networks. The program also works fine on a single machine and a serial mode is available for debugging.
+
+NOTE: not confirmed to work on a cluster environment yet.
 
 lammps_neural.py
 ----------------
