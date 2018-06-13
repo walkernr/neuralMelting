@@ -54,7 +54,7 @@ This program implements replica exchange Markov chain Monte Carlo alongside the 
 lammps_remcmc_distributed.py
 ----------------------------------
 
-This is essentially the same as lammps_remcmc_local.py with both serial and parallel modes, but this script is intended to be used on distributed networks. This implementation is not currently working, however, due to issues with pickling the functions and objects associated with the LAMMPS library for passing information between processes.
+This is essentially the same as lammps_remcmc_local.py with both serial and parallel modes, but this script is intended to be used on distributed networks. The program works fine on a single machine, but proper setup on distributed networks has been difficult to implement.
 
 lammps_parse.py
 ---------------
