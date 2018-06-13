@@ -9,7 +9,7 @@ from __future__ import division, print_function
 import sys, os, subprocess
 import numpy as np
 from lammps import lammps
-from distributed import Client, progress
+from distributed import Client, LocalCluster, progress
 from dask import delayed
 
 # --------------
@@ -37,6 +37,11 @@ n_stps = 8            # md steps during hmc
 seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
 parallel = True       # boolean for controlling parallel run
+distributed = False   # boolean for choosing distributed or local cluster
+
+system = 'mpi'                         # switch for mpirun or aprun
+nproc = 4                              # number of processors
+path = os.getcwd()+'/dask_sched.json'  # path for scheduler file
 
 # -------------------
 # material properties
@@ -92,10 +97,6 @@ dt = timestep[units[el]]*np.ones((n_press, n_temp))
 # ---------------------
 # client initialization
 # ---------------------
-
-system = 'mpi'
-nproc = 4
-path = os.getcwd()+'/dask_sched.json'
 
 def sched_init(system, nproc, path):
     if system == 'mpi':
@@ -662,9 +663,12 @@ for i in xrange(len(P[el])):
 # -----------
 
 if parallel:
-    # sched_init(system, nproc, path)
-    # client = Client(scheduler=path)
-    client = Client()
+    if distributed:
+        sched_init(system, nproc, path)
+        client = Client(scheduler=path)
+    else:
+        cluster = LocalCluster(n_workers=nproc, threads_per_worker=1)
+        client = Client(cluster)
     print(client)
 # loop through to number of samples that need to be collected
 for i in xrange(n_smpl):

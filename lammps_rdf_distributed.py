@@ -8,7 +8,7 @@ Created on Wed May 22 08:32:52 2018
 from __future__ import division, print_function
 import os, sys, pickle
 import numpy as np
-from distributed import Client, progress
+from distributed import Client, LocalCluster, progress
 from dask import delayed
 
 
@@ -34,6 +34,7 @@ name = 'remcmc'
 # file prefix
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 
+distributed = False
 system = 'mpi'
 nproc = 4
 path = os.getcwd()+'/dask_sched.json'
@@ -113,11 +114,14 @@ def calculate_rdf(box, pos, R, bins, rb, ra):
 # get spatial properties
 natoms, box, pos, R, bins, r, dr, nrho, dni, gs, rb, ra = calculate_spatial()
 # calculate radial distribution for each sample in parallel
-# sched_init(system, nproc, path)
-# client = Client(scheduler=path)
-client = Client()
-print(client)
 operations = [delayed(calculate_rdf)(box[j], pos[j, :], R, bins, rb, ra) for j in xrange(len(natoms))]
+if distributed:
+    sched_init(system, nproc, path)
+    client = Client(scheduler=path)
+else:
+    cluster = LocalCluster(n_workers=nproc, threads_per_worker=1)
+    client = Client(cluster)
+print(client)
 futures = client.compute(operations)
 progress(futures)
 for j in xrange(len(natoms)):
