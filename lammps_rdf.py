@@ -30,11 +30,11 @@ lat = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # simulation name
-name = 'remcmc_test'
+name = 'remcmc'
 # file prefix
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 
-nproc = 2  # cpu_count()
+nproc = 4  # cpu_count()
 
 def load_data():
     ''' load atom count, box dimension, and atom positions '''

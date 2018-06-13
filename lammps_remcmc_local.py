@@ -24,7 +24,7 @@ except:
 # number of data sets
 n_temp = 64
 # simulation name
-name = 'remcmc_test'
+name = 'remcmc'
 # monte carlo parameters
 cutoff = 512          # sample cutoff
 n_smpl = cutoff+1024  # number of samples
@@ -36,8 +36,8 @@ phmc = 1-ppos-pvol    # probability of hmc move
 n_stps = 8            # md steps during hmc
 seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
-parallel = False      # boolean for controlling parallel run
-nproc = 4  # cpu_count()
+parallel = True       # boolean for controlling parallel run
+nproc = 2  # cpu_count()
 
 # -------------------
 # material properties
@@ -405,54 +405,6 @@ def update_mc_param(i, j):
     else:
         dt[i, j] *= 1.0625
     
-# ------------------
-# parallel tempering
-# ------------------
-
-def rep_exch():
-    ''' performs parallel tempering acrros all samples 
-        accepts/rejects based on enthalpy metropolis criterion '''
-    global lmps, Et, Pf
-    # flatten lammps objects and constants
-    lmps = np.reshape(lmps, -1)
-    Et = np.reshape(Et, -1)
-    Pf = np.reshape(Pf, -1)
-    # catalog swaps and swapping pairs
-    swaps = 0
-    pairs = []
-    # loop through upper right triangular matrix
-    for i in xrange(len(lmps)):
-        for j in xrange(i+1, len(lmps)):
-            # energies for configuration i
-            pei = lmps[i].extract_compute('thermo_pe', None, 0)
-            kei = lmps[i].extract_compute('thermo_ke', None, 0)
-            etoti = pei+kei
-            # box dimensions for configuration i
-            boxmini = lmps[i].extract_global('boxlo', 1)
-            boxmaxi = lmps[i].extract_global('boxhi', 1)
-            boxi = boxmaxi-boxmini
-            voli = np.power(boxi, 3)
-            # energies for configuration j
-            pej = lmps[j].extract_compute('thermo_pe', None, 0)
-            kej = lmps[j].extract_compute('thermo_ke', None, 0)
-            etotj = pej+kej
-            # box dimensions for configuration j
-            boxminj = lmps[j].extract_global('boxlo', 1)
-            boxmaxj = lmps[j].extract_global('boxhi', 1)
-            boxj = boxmaxj-boxminj
-            volj = np.power(boxj, 3)
-            # change in enthalpy
-            dH = (etoti-etotj)*(1/Et[i]-1/Et[j])+(Pf[i]-Pf[j])*(voli-volj)
-            if np.random.rand() <= np.min([1, np.exp(dH)]):
-                swaps += 1
-                pairs.append('(%d, %d)' % (i, j))
-                # swap lammps objects
-                lmps[j], lmps[i] = lmps[i], lmps[j]
-    lmps = np.reshape(lmps, (n_press, n_temp))
-    Et = np.reshape(Et, (n_press, n_temp))
-    Pf = np.reshape(Pf, (n_press, n_temp))
-    print('%d replica exchanges performed: ' % swaps, ' '.join(pairs))
-    
 # ---------------------
 # monte carlo procedure
 # ---------------------
@@ -497,10 +449,7 @@ def generate_samples():
             write_traj(i, j)
     
 def generate_samples_par():
-    ''' performs monte carlo in parallel for all configurations to generate new samples 
-        not currently working
-            - inconsistent errors (mpi aborts most of the time)
-            - runs that complete return different results '''
+    ''' performs monte carlo in parallel for all configurations to generate new samples '''
     # generate new sample configurations for press/temp combos in parallel
     Parallel(n_jobs=nproc, backend='threading', verbose=4)(delayed(generate_sample)(i, j) for i in xrange(n_press) for j in xrange(n_temp))
     # write to data storage files
@@ -508,6 +457,54 @@ def generate_samples_par():
         for j in xrange(n_temp):
             write_thermo(i, j)
             write_traj(i, j)
+            
+# -----------------------------------------
+# replica exchange markov chain monte carlo
+# -----------------------------------------
+
+def rep_exch():
+    ''' performs parallel tempering acrros all samples 
+        accepts/rejects based on enthalpy metropolis criterion '''
+    global lmps, Et, Pf
+    # flatten lammps objects and constants
+    lmps = np.reshape(lmps, -1)
+    Et = np.reshape(Et, -1)
+    Pf = np.reshape(Pf, -1)
+    # catalog swaps and swapping pairs
+    swaps = 0
+    pairs = []
+    # loop through upper right triangular matrix
+    for i in xrange(len(lmps)):
+        for j in xrange(i+1, len(lmps)):
+            # energies for configuration i
+            pei = lmps[i].extract_compute('thermo_pe', None, 0)
+            kei = lmps[i].extract_compute('thermo_ke', None, 0)
+            etoti = pei+kei
+            # box dimensions for configuration i
+            boxmini = lmps[i].extract_global('boxlo', 1)
+            boxmaxi = lmps[i].extract_global('boxhi', 1)
+            boxi = boxmaxi-boxmini
+            voli = np.power(boxi, 3)
+            # energies for configuration j
+            pej = lmps[j].extract_compute('thermo_pe', None, 0)
+            kej = lmps[j].extract_compute('thermo_ke', None, 0)
+            etotj = pej+kej
+            # box dimensions for configuration j
+            boxminj = lmps[j].extract_global('boxlo', 1)
+            boxmaxj = lmps[j].extract_global('boxhi', 1)
+            boxj = boxmaxj-boxminj
+            volj = np.power(boxj, 3)
+            # change in enthalpy
+            dH = (etoti-etotj)*(1/Et[i]-1/Et[j])+(Pf[i]-Pf[j])*(voli-volj)
+            if np.random.rand() <= np.min([1, np.exp(dH)]):
+                swaps += 1
+                pairs.append('(%d, %d)' % (i, j))
+                # swap lammps objects
+                lmps[j], lmps[i] = lmps[i], lmps[j]
+    lmps = np.reshape(lmps, (n_press, n_temp))
+    Et = np.reshape(Et, (n_press, n_temp))
+    Pf = np.reshape(Pf, (n_press, n_temp))
+    print('%d replica exchanges performed: ' % swaps, ' '.join(pairs))
 
 # -----------
 # build lists
@@ -603,15 +600,9 @@ for i in xrange(n_press):
 # -------------------------------
 # clean up files and close lammps
 # -------------------------------
-
-# remove old files 
+ 
 for i in xrange(n_press):
-    for j in xrange(n_temp):
-        os.remove(fthrm[i][j])
-        os.remove(ftraj[i][j])
-        
-# loop through pressures
-for i in xrange(n_press):
-    # loop through temperatures
     for j in xrange(n_temp):
         lmps[i, j].close()
+        os.remove(fthrm[i][j])
+        os.remove(ftraj[i][j])      

@@ -57,9 +57,9 @@ lat = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # simulation name
-name = 'remcmc_test'
+name = 'remcmc'
 # file prefix
-prefix = '%s.%s.%d.lammps.%s' % (el.lower(), lat[el], int(P[el]), name)
+prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 # run details
 property = 'radial_distribution'  # property for classification
 n_dat = 64                        # number of datasets

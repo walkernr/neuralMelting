@@ -9,10 +9,6 @@ from __future__ import division, print_function
 import sys
 import numpy as np
 from lammps import lammps
-#  from mpi4py import MPI
-
-#  parallel support not currently implemented
-#  comm = MPI.COMM_WORLD
 
 # --------------
 # run parameters
