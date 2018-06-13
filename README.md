@@ -24,7 +24,7 @@ Python
 - NumPy
 - SciPy
 - Joblib
-- Dask (not truly needed since the script reliant on it does not work)
+- Dask (distributed)
 - Scikit-Learn
 - MulticoreTSNE
 - Lasagne
