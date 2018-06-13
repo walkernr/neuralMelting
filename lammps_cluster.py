@@ -17,7 +17,7 @@ from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
-nproc = 2  # cpu_count()
+nproc = 4  # cpu_count()
 # plotting parameters
 plt.rc('text', usetex=True)
 plt.rc('font', family='sans-serif')

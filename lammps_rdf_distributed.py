@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed May 22 08:32:52 2018
+Created on Tue Jun 12 20:11:57 2018
 
 @author: Nicholas
 """
@@ -10,7 +10,6 @@ import os, sys, pickle
 import numpy as np
 from distributed import Client, LocalCluster, progress
 from dask import delayed
-
 
 # element choice
 try:

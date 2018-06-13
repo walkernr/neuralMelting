@@ -11,7 +11,6 @@ import numpy as np
 from multiprocessing import cpu_count
 from joblib import Parallel, delayed
 
-
 # element choice
 try:
     el = sys.argv[1]

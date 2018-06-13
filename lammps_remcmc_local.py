@@ -24,7 +24,7 @@ except:
 # number of data sets
 n_temp = 64
 # simulation name
-name = 'remcmc'
+name = 'remcmc_test_local'
 # monte carlo parameters
 cutoff = 512          # sample cutoff
 n_smpl = cutoff+1024  # number of samples
@@ -37,7 +37,7 @@ n_stps = 8            # md steps during hmc
 seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
 parallel = True       # boolean for controlling parallel run
-nproc = 2  # cpu_count()
+nproc = 4  # cpu_count()
 
 # -------------------
 # material properties

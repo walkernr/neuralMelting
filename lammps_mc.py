@@ -22,7 +22,7 @@ except:
 # number of data sets
 n_dat = 64
 # simulation name
-name = 'mc'
+name = 'mc_test'
 # monte carlo parameters
 cutoff = 512          # sample cutoff
 n_smpl = cutoff+1024  # number of samples

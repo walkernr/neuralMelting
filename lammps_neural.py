@@ -11,15 +11,33 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA
-from lasagne import layers as lasagne, nonlinearities as nl
-from sknn.platform import cpu32, threading
+
+mode = 'cpu'
+nproc = 4
+
+if mode == 'cpu':
+    from sknn.platform import cpu64, threading
+    if nproc == 2:
+        from sknn.platform import threads2
+    if nproc == 4:
+        from sknn.platform import threads4
+    if nproc == 6:
+        from sknn.platform import threads6
+    if nproc == 8:
+        from sknn.platform import threads8
+    if nproc == 12:
+        from sknn.platform import threads12
+    if nproc == 16:
+        from sknn.platform import threads16
+if mode == 'gpu':
+    from sknn.platform import gpu64
+    
 from sknn.mlp import Classifier, Layer, Convolution, Native
+from lasagne import layers as lasagne, nonlinearities as nl
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from PIL import Image
 
-
-# logging.basicConfig(format='%(message)s', level=logging.DEBUG, stream=sys.stdout)
 # plotting parameters
 plt.rc('text', usetex=True)
 plt.rc('font', family='sans-serif')
@@ -63,10 +81,10 @@ prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 # run details
 property = 'radial_distribution'  # property for classification
 n_dat = 64                        # number of datasets
-ntrainsets = 8                    # number of training sets
+ntrainsets = 12                   # number of training sets
 scaler = 'tanh'                   # data scaling method
-network = 'sknn_classifier'       # neural network type
-bpca = True                       # boolean for pca reduction
+network = 'sknn_convolution_2d'   # neural network type
+bpca = False                      # boolean for pca reduction
 fit_func = 'logistic'             # fitting function
 # summary of input
 print('------------------------------------------------------------')
@@ -108,7 +126,6 @@ ub = n_dat-(ntrainsets+1)
 # simple dense network with relu activation
 sknn_class = Classifier(layers=[Layer('Rectifier', units=64), Layer('Softmax')], learning_rate=2**-6, n_iter=256, random_state=0, verbose=True)
 # 1d cnn - lasagne layers do not work currently
-il = lasagne.InputLayer((None, None, None))
 sknn_convol_1d = Classifier(layers=[Native(lasagne.Conv1DLayer, num_filters=4, filter_size=4, stride=1, pad=0, nonlinearity=nl.rectify),
                                     Native(lasagne.MaxPool1DLayer, pool_size=4),
                                     Native(lasagne.Conv1DLayer, num_filters=4, filter_size=4, stride=1, pad=0, nonlinearity=nl.rectify),
@@ -238,7 +255,7 @@ for i in xrange(len(temps)):
 adjtemps = np.linspace(0, 1, len(temps))                                                               # domain for curve fitting
 n_dom = 4096                                                                                           # expanded number of curve samples
 adjdom = np.linspace(0, 1, n_dom)                                                                      # expanded domain for curve fitting
-fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)                                              # expanded domain for curve plotting
+fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)                                                      # expanded domain for curve plotting
 popt, pcov = curve_fit(fit_funcs[fit_func], adjtemps, mprob, p0=fit_guess[fit_func], method='dogbox')  # fitting parameters
 perr = np.sqrt(np.diag(pcov))                                                                          # fit standard error
 fitrng = fit_funcs[fit_func](adjdom, *popt)                                                            # fit values

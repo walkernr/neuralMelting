@@ -672,6 +672,7 @@ if parallel:
     print(client)
 # loop through to number of samples that need to be collected
 for i in xrange(n_smpl):
+    print('step:', i)
     # collect samples for all configurations
     if parallel:
         dat = get_samples_par(client, x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
