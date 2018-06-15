@@ -41,7 +41,7 @@ distributed = False   # boolean for choosing distributed or local cluster
 
 system = 'mpi'                         # switch for mpirun or aprun
 nproc = 4                              # number of processors
-path = os.getcwd()+'/dask_sched.json'  # path for scheduler file
+path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 
 # -------------------
 # material properties
@@ -58,7 +58,7 @@ P = {'Ti': np.array([2, 4, 8], dtype=np.float64),
      'Al': np.array([2, 4, 8], dtype=np.float64),
      'Ni': np.array([2, 4, 8], dtype=np.float64),
      'Cu': np.array([2, 4, 8], dtype=np.float64),
-     'LJ': np.array([2, 4, 8], dtype=np.float64)}
+     'LJ': np.array([2, 4, 6, 8], dtype=np.float64)}
 n_press = len(P[el])
 # temperature
 T = {'Ti': np.linspace(256, 2560, n_temp, dtype=np.float64),
@@ -675,6 +675,7 @@ for i in xrange(n_smpl):
     print('step:', i)
     # collect samples for all configurations
     if parallel:
+        client.restart()  # prevent memory leak
         dat = get_samples_par(client, x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
                               Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
                               dpos, dbox, T[el], mod, thermo, traj)

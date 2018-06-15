@@ -24,7 +24,7 @@ except:
 # number of data sets
 n_temp = 64
 # simulation name
-name = 'remcmc_test_local'
+name = 'remcmc'
 # monte carlo parameters
 cutoff = 512          # sample cutoff
 n_smpl = cutoff+1024  # number of samples
@@ -52,11 +52,11 @@ units = {'Ti': 'metal',
 # lennard-jones parameters
 lj_param = (1.0, 1.0)
 # pressure
-P = {'Ti': np.array([2, 4, 8], dtype=np.float64),
-     'Al': np.array([2, 4, 8], dtype=np.float64),
-     'Ni': np.array([2, 4, 8], dtype=np.float64),
-     'Cu': np.array([2, 4, 8], dtype=np.float64),
-     'LJ': np.array([2, 4, 8], dtype=np.float64)}
+P = {'Ti': np.array([2, 4, 6, 8], dtype=np.float64),
+     'Al': np.array([2, 4, 6, 8], dtype=np.float64),
+     'Ni': np.array([2, 4, 6, 8], dtype=np.float64),
+     'Cu': np.array([2, 4, 6, 8], dtype=np.float64),
+     'LJ': np.array([2, 4, 6, 8], dtype=np.float64)}
 n_press = len(P[el])
 # temperature
 T = {'Ti': np.linspace(256, 2560, n_temp, dtype=np.float64),
@@ -546,6 +546,7 @@ for i in xrange(len(P[el])):
 
 # loop through to number of samples that need to be collected
 for i in xrange(n_smpl):
+    print('step:', i)
     # collect samples for all configurations
     if parallel:
         generate_samples_par()

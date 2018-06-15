@@ -36,7 +36,7 @@ prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 distributed = False
 system = 'mpi'
 nproc = 4
-path = os.getcwd()+'/dask_sched.json'
+path = os.getcwd()+'/scheduler.json'
 
 def sched_init(system, nproc, path):
     if system == 'mpi':
@@ -123,6 +123,7 @@ else:
 print(client)
 futures = client.compute(operations)
 progress(futures)
+client.close()
 for j in xrange(len(natoms)):
     gs[j, :] = futures[j].result()
 # adjust rdf by atom count and atoms contained by shells
