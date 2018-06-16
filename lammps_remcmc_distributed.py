@@ -40,8 +40,9 @@ parallel = True       # boolean for controlling parallel run
 distributed = False   # boolean for choosing distributed or local cluster
 processes = False     # boolean for choosing whether to use processes
 
-system = 'mpi'                         # switch for mpirun or aprun
-nproc = 4                              # number of processors
+system = 'mpi'                        # switch for mpirun or aprun
+nworkers = 4                          # number of processors
+nthreads = 1                          # threads per worker
 path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 
 # -------------------
@@ -55,12 +56,11 @@ units = {'Ti': 'metal',
          'Cu': 'metal',
          'LJ': 'lj'}
 # pressure
-P = {'Ti': np.array([2, 4, 8], dtype=np.float64),
-     'Al': np.array([2, 4, 8], dtype=np.float64),
-     'Ni': np.array([2, 4, 8], dtype=np.float64),
-     'Cu': np.array([2, 4, 8], dtype=np.float64),
+P = {'Ti': np.array([2, 4, 6, 8], dtype=np.float64),
+     'Al': np.array([2, 4, 6, 8], dtype=np.float64),
+     'Ni': np.array([2, 4, 6, 8], dtype=np.float64),
+     'Cu': np.array([2, 4, 6, 8], dtype=np.float64),
      'LJ': np.array([2, 4, 6, 8], dtype=np.float64)}
-n_press = len(P[el])
 # temperature
 T = {'Ti': np.linspace(256, 2560, n_temp, dtype=np.float64),
      'Al': np.linspace(256, 2560, n_temp, dtype=np.float64),
@@ -74,7 +74,7 @@ lat = {'Ti': ('bcc', 2.951),
        'Cu': ('fcc', 3.615),
        'LJ': ('fcc', 1.122)}
 # box size
-sz = {'Ti': 5,
+sz = {'Ti': 4,
       'Al': 3,
       'Ni': 3,
       'Cu': 3,
@@ -85,14 +85,15 @@ mass = {'Ti': 47.867,
         'Ni': 58.693,
         'Cu': 63.546,
         'LJ': 1.0}
-# max box adjustment
-dbox = 0.00390625*lat[el][1]*np.ones((n_press, n_temp))
-# max pos adjustment
-dpos = 0.00390625*lat[el][1]*np.ones((n_press, n_temp))  
 # timestep
 timestep = {'real': 4.0,
             'metal': 0.00390625,
             'lj': 0.00390625}
+# max box adjustment
+dbox = 0.00390625*lat[el][1]*np.ones((n_press, n_temp))
+# max pos adjustment
+dpos = 0.00390625*lat[el][1]*np.ones((n_press, n_temp))  
+# hmc timestep
 dt = timestep[units[el]]*np.ones((n_press, n_temp))
 
 # ---------------------
@@ -100,8 +101,11 @@ dt = timestep[units[el]]*np.ones((n_press, n_temp))
 # ---------------------
 
 def sched_init(system, nproc, path):
+    ''' creates scheduler file using dask-mpi binary, network is initialized with mpi4py '''
+    # for use on most systems
     if system == 'mpi':
         subprocess.call(['mpirun', '--np', str(nproc), 'dask-mpi', '--scheduler-file', path])
+    # for use on cray systems
     if system == 'ap':
         subprocess.call(['aprun', '-n', str(nproc), 'dask-mpi', '--scheduler-file', path])
     return
@@ -665,11 +669,16 @@ for i in xrange(len(P[el])):
 
 if parallel:
     if distributed:
-        sched_init(system, nproc, path)
+        # construct scheduler with mpi
+        sched_init(system, nworkers, path)
+        # start client with scheduler file
         client = Client(scheduler=path)
     else:
-        cluster = LocalCluster(n_workers=nproc, threads_per_worker=1, processes=processes)
+        # construct local cluster
+        cluster = LocalCluster(n_workers=nworkers, threads_per_worker=nthreads, processes=processes)
+        # start client with local cluster
         client = Client(cluster)
+    # display client information
     print(client)
 # loop through to number of samples that need to be collected
 for i in xrange(n_smpl):
@@ -684,6 +693,7 @@ for i in xrange(n_smpl):
         dat = get_samples(x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
                           Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
                           dpos, dbox, T[el], mod, thermo, traj)
+    # update system data
     natoms, x, v = dat[:3]
     temp, pe, ke, virial, box, vol = dat[3:9]
     ntrypos, naccpos = dat[9:11]
@@ -693,6 +703,7 @@ for i in xrange(n_smpl):
     # perform replica exchange markov chain monte carlo (parallel tempering)
     natoms, x, v, temp, pe, ke, virial, box, vol = rep_exch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf)
 if parallel:
+    # terminate client after completion
     client.close()
 
 # ------------------
@@ -736,11 +747,12 @@ for i in xrange(n_press):
                     k += 1
                     if k > (natoms[i, j]+1)*cutoff:
                         fo.write(line)
-        
+
 # --------------
 # clean up files
 # --------------
 
+# remove all temporary files
 for i in xrange(n_press):
     for j in xrange(n_temp):
         os.remove(fthrm[i][j])

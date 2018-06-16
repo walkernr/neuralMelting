@@ -35,13 +35,17 @@ prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 
 distributed = False  # boolean for choosing distributed or local cluster
 processes = False    # boolean for choosing whether to use processes
-system = 'mpi'
-nproc = 4
-path = os.getcwd()+'/scheduler.json'
+system = 'mpi'                        # switch for mpirun or aprun
+nworkers = 4                          # number of processors
+nthreads = 1                          # threads per worker
+path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 
 def sched_init(system, nproc, path):
+    ''' creates scheduler file using dask-mpi binary, network is initialized with mpi4py '''
+    # for use on most systems
     if system == 'mpi':
         subprocess.call(['mpirun', '--np', str(nproc), 'dask-mpi', '--scheduler-file', path])
+    # for use on cray systems
     if system == 'ap':
         subprocess.call(['aprun', '-n', str(nproc), 'dask-mpi', '--scheduler-file', path])
     return
@@ -116,11 +120,16 @@ natoms, box, pos, R, bins, r, dr, nrho, dni, gs, rb, ra = calculate_spatial()
 # calculate radial distribution for each sample in parallel
 operations = [delayed(calculate_rdf)(box[j], pos[j, :], R, bins, rb, ra) for j in xrange(len(natoms))]
 if distributed:
-    sched_init(system, nproc, path)
+    # construct scheduler with mpi
+    sched_init(system, nworkers, path)
+    # start client with scheduler file
     client = Client(scheduler=path)
 else:
-    cluster = LocalCluster(n_workers=nproc, threads_per_worker=1, processes=processes)
+    # construct local cluster
+    cluster = LocalCluster(n_workers=nworkers, threads_per_worker=nthreads, processes=processes)
+    # start client with local cluster
     client = Client(cluster)
+# display client information
 print(client)
 futures = client.compute(operations)
 progress(futures)
