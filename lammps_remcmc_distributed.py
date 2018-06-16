@@ -89,6 +89,8 @@ mass = {'Ti': 47.867,
 timestep = {'real': 4.0,
             'metal': 0.00390625,
             'lj': 0.00390625}
+# number of pressure samples
+n_press = len(P[el])
 # max box adjustment
 dbox = 0.00390625*lat[el][1]*np.ones((n_press, n_temp))
 # max pos adjustment
