@@ -13,7 +13,7 @@ from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA
 
 mode = 'cpu'
-nproc = 4
+nproc = 2
 
 if mode == 'cpu':
     from sknn.platform import cpu64, threading
@@ -67,7 +67,7 @@ P = {'Ti': 2.0,
      'Al': 2.0,
      'Ni': 2.0,
      'Cu': 2.0,
-     'LJ': 2.0}
+     'LJ': 4.0}
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -79,7 +79,7 @@ name = 'remcmc'
 # file prefix
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 # run details
-property = 'radial_distribution'  # property for classification
+property = 'entropic_fingerprint' # property for classification
 n_dat = 64                        # number of datasets
 ntrainsets = 12                   # number of training sets
 scaler = 'tanh'                   # data scaling method
@@ -162,11 +162,12 @@ T = T[smplspc]
 stT = stT[smplspc]
 G = G[smplspc]
 S = S[smplspc]
+I = np.multiply(np.nan_to_num(np.multiply(G, np.log(G)))-G+1, np.square(R))
 print('data loaded')
 print('------------------------------------------------------------')
 # property dictionary
-propdom = {'radial_distribution':R, 'structure_factor':Q}
-properties = {'radial_distribution':G, 'structure_factor':S}
+propdom = {'radial_distribution':R, 'entropic_fingerprint':R, 'structure_factor':Q}
+properties = {'radial_distribution':G, 'entropic_fingerprint':I, 'structure_factor':S}
 # scaler dict
 scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(feature_range=(0,1)), 'robust':RobustScaler(), 'tanh':TanhScaler()}
 # pca initialization
@@ -333,6 +334,10 @@ if property == 'radial_distribution':
     ax1.set_xlabel('$\mathrm{Distance}$')
     ax1.set_ylabel('$\mathrm{Radial Distribution}$')
     ax1.set_title('$\mathrm{%s\enspace Phase\enspace RDFs}$' % el, y=1.015)
+if property == 'entropic_fingerprint':
+    ax1.set_xlabel('$\mathrm{Distance}$')
+    ax1.set_ylabel('$\mathrm{Entropic Fingerprint}$')
+    ax1.set_title('$\mathrm{%s\enspace Phase\enspace EFs}$' % el, y=1.015)
 if property == 'structure_factor':
     ax1.set_xlabel('$\mathrm{Wavenumber}$')
     ax1.set_ylabel('$\mathrm{Structure Factor}$')
@@ -369,10 +374,7 @@ if 'sknn_convolution' in network:
 # plt.show()
 # save figures
 fig0.savefig('.'.join(plt_pref+['prob.png']))
-if property == 'radial_distribution':
-    fig1.savefig('.'.join(plt_pref+['rdf', 'png']))
-if property == 'structure_factor':
-    fig1.savefig('.'.join(plt_pref+['sf', 'png']))
+fig1.savefig('.'.join(plt_pref+['strf', 'png']))
 # close plots
 plt.close('all')
 print('plots saved')

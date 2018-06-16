@@ -38,6 +38,7 @@ seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
 parallel = True       # boolean for controlling parallel run
 distributed = False   # boolean for choosing distributed or local cluster
+processes = False     # boolean for choosing whether to use processes
 
 system = 'mpi'                         # switch for mpirun or aprun
 nproc = 4                              # number of processors
@@ -667,7 +668,7 @@ if parallel:
         sched_init(system, nproc, path)
         client = Client(scheduler=path)
     else:
-        cluster = LocalCluster(n_workers=nproc, threads_per_worker=1)
+        cluster = LocalCluster(n_workers=nproc, threads_per_worker=1, processes=processes)
         client = Client(cluster)
     print(client)
 # loop through to number of samples that need to be collected

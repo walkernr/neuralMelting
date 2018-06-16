@@ -17,7 +17,7 @@ from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
-nproc = 4  # cpu_count()
+nproc = 2  # cpu_count()
 # plotting parameters
 plt.rc('text', usetex=True)
 plt.rc('font', family='sans-serif')
@@ -47,7 +47,7 @@ P = {'Ti': 2.0,
      'Al': 2.0,
      'Ni': 2.0,
      'Cu': 2.0,
-     'LJ': 2.0}
+     'LJ': 8.0}
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -93,11 +93,12 @@ P = P[smplspc]
 T = T[smplspc]
 G = G[smplspc]
 S = S[smplspc]
+I = np.multiply(np.nan_to_num(np.multiply(G, np.log(G)))-G+1, np.square(R))
 print('data loaded')
 print('------------------------------------------------------------')
 # property dictionary
-propdom = {'radial_distribution':R, 'structure_factor':Q}
-properties = {'radial_distribution':G, 'structure_factor':S}
+propdom = {'radial_distribution':R, 'entropic_fingerprint':R, 'structure_factor':Q}
+properties = {'radial_distribution':G, 'entropic_fingerprint':I, 'structure_factor':S}
 # scaler dict
 scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(), 'robust':RobustScaler(), 'tanh':TanhScaler()}
 # reduction dimension
@@ -264,6 +265,9 @@ ax2 = fig2.add_subplot(111)
 if property == 'radial_distribution':
     ax2.set_xlabel('$\mathrm{Radius}$')
     ax2.set_ylabel('$g(r)$')
+if property == 'entropic_fingerprint':
+    ax2.set_xlabel('$\mathrm{Radius}$')
+    ax2.set_ylabel('$I(r)$')
 if property == 'structure_factor':
     ax2.set_xlabel('$\mathrm{Wavenumber}$')
     ax2.set_ylabel('$S(q)$')
@@ -277,7 +281,7 @@ else:
 plt_pref = [prefix, property, scaler, reduction, clust]
 fig0.savefig('.'.join(plt_pref+['red', 'png']))
 fig1.savefig('.'.join(plt_pref+['dist', 'png']))
-fig2.savefig('.'.join(plt_pref+['rdf', 'png']))
+fig2.savefig('.'.join(plt_pref+['strf', 'png']))
 # close plots
 plt.close('all')
 print('plots saved')

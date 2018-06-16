@@ -33,7 +33,8 @@ name = 'remcmc'
 # file prefix
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 
-distributed = False
+distributed = False  # boolean for choosing distributed or local cluster
+processes = False    # boolean for choosing whether to use processes
 system = 'mpi'
 nproc = 4
 path = os.getcwd()+'/scheduler.json'
@@ -118,7 +119,7 @@ if distributed:
     sched_init(system, nproc, path)
     client = Client(scheduler=path)
 else:
-    cluster = LocalCluster(n_workers=nproc, threads_per_worker=1)
+    cluster = LocalCluster(n_workers=nproc, threads_per_worker=1, processes=processes)
     client = Client(cluster)
 print(client)
 futures = client.compute(operations)
