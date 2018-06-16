@@ -47,7 +47,7 @@ P = {'Ti': 2.0,
      'Al': 2.0,
      'Ni': 2.0,
      'Cu': 2.0,
-     'LJ': 8.0}
+     'LJ': 2.0}
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -59,11 +59,11 @@ name = 'remcmc'
 # file prefix
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 # run details
-property = 'radial_distribution'  # property for classification
-n_dat = 64                        # number of datasets
-scaler = 'tanh'                   # data scaling method
-reduction = 'tsne'                # reduction method
-clust = 'agglomerative'           # clustering method
+property = 'entropic_fingerprint'  # property for classification
+n_dat = 64                         # number of datasets
+scaler = 'tanh'                    # data scaling method
+reduction = 'tsne'                 # reduction method
+clust = 'agglomerative'            # clustering method
 # summary of input
 print('------------------------------------------------------------')
 print('input summary')
