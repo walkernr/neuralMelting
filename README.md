@@ -141,4 +141,4 @@ This program implements a tanh-estimator as introduced by Hampel et al. with usa
 Further Development
 ===================
 
-Some more advanced Monte Carlo methods may be implemented to improve sampling in addition to more robust machine learning analysis.
+Some more advanced Monte Carlo methods may be implemented to improve sampling in addition to more robust machine learning analysis. GPU support for LAMMPS may also be added as well as support for more atomic simulation environments by way of ASE.
