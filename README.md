@@ -27,10 +27,9 @@ Python
 - Dask (core and distributed)
 - Scikit-Learn
 - MulticoreTSNE
-- Lasagne
-- Scikit-NeuralNetwork
+- TensorFlow (or Theano)
+- Keras
 - MatPlotLib
-- PIL
 
 LAMMPS Libraries
 ----------------
@@ -71,7 +70,7 @@ This program parses the output from Monte Carlo simulations and pickles the data
 lammps_rdf_local.py
 -------------------
 
-This program calculates the radial distributions and structure factors for each sample using the pickled trajectory information from the parsing script. The radial distributions are performed in parallel using multithreading and the structure factors are calculated as Fourier transitions of the radial distributions. The script pickles the data, which also includes density information. The parallelism is implemented with the Joblib library.
+This program calculates the radial distributions, structure factors, and entropic fingerprints (with domains and densities) for each sample using the pickled trajectory information from the parsing script. The radial distributions are performed in parallel using multithreading and the structure factors are calculated as Fourier transitions of the radial distributions. The script pickles the data, which also includes density information. The parallelism is implemented with the Joblib library.
 
 lammps_rdf_distributed.py
 -------------------------
@@ -92,15 +91,8 @@ This program classifies samples as either solids or liquids by passing either th
 - Tanh: resilient to outliers, guarantees a map to a common numerical range
 
 ### Available networks
-- Dense Classifier: fully-connected classifier MLP (ReLu -> SoftMax)
-- 1-D CNN: not currently working due to incompatibilities between Scikit-NeuralNetwork and Lasagne convolution layers
-- 2-D CNN: 5-layer convolutional neural network classifier
-
-           1. convolution (ReLu, 4 channels, (8,1) kernel, (1,1) stride)
-           2. convolution (ReLu, 4 channels, (4,1) kernel, (1,1) stride)
-           3. convolution (ReLu, 4 channels, (2,1) kernel, (1,1) stride)
-           4. convolution (ReLu, 4 channels, (1,1) kernel, (1,1) stride)
-           5. output (SoftMax)
+- Dense Classifier (not currently working)
+- 1-D Convolutional Neural Network Classifier
           
 ### Available fitting functions
 - Logistic: well-behaved and easily extracted transition temperature estimate, symmetric
