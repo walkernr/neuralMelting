@@ -6,37 +6,19 @@ Created on Wed May 22 13:31:27 2018
 """
 
 from __future__ import division, print_function
-import sys, logging, pickle
+import os, sys, pickle
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA
-
-mode = 'cpu'
-nproc = 2
-
-if mode == 'cpu':
-    from sknn.platform import cpu64, threading
-    if nproc == 2:
-        from sknn.platform import threads2
-    if nproc == 4:
-        from sknn.platform import threads4
-    if nproc == 6:
-        from sknn.platform import threads6
-    if nproc == 8:
-        from sknn.platform import threads8
-    if nproc == 12:
-        from sknn.platform import threads12
-    if nproc == 16:
-        from sknn.platform import threads16
-if mode == 'gpu':
-    from sknn.platform import gpu64
-    
-from sknn.mlp import Classifier, Layer, Convolution, Native
-from lasagne import layers as lasagne, nonlinearities as nl
+# os.environ['KERAS_BACKEND'] = 'theano'
+from keras.models import Sequential
+from keras.layers import Input, Conv1D, MaxPooling1D, GlobalAveragePooling1D, Dropout, Dense
+from keras.optimizers import Nadam
+from keras.wrappers.scikit_learn import KerasClassifier
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
-from PIL import Image
+from keras.utils import plot_model
 
 # plotting parameters
 plt.rc('text', usetex=True)
@@ -83,7 +65,7 @@ property = 'entropic_fingerprint'  # property for classification
 n_dat = 64                         # number of datasets
 ntrainsets = 12                    # number of training sets
 scaler = 'tanh'                    # data scaling method
-network = 'sknn_convolution_2d'    # neural network type
+network = 'keras_cnn1d'            # neural network type
 bpca = False                       # boolean for pca reduction
 fit_func = 'logistic'              # fitting function
 # summary of input
@@ -122,24 +104,6 @@ print('------------------------------------------------------------')
 # bounds for training data
 lb = 0+ntrainsets
 ub = n_dat-(ntrainsets+1)
-# neural network construction
-# simple dense network with relu activation
-sknn_class = Classifier(layers=[Layer('Rectifier', units=64), Layer('Softmax')], learning_rate=2**-6, n_iter=256, random_state=0, verbose=True)
-# 1d cnn - lasagne layers do not work currently
-sknn_convol_1d = Classifier(layers=[Native(lasagne.Conv1DLayer, num_filters=4, filter_size=4, stride=1, pad=0, nonlinearity=nl.rectify),
-                                    Native(lasagne.MaxPool1DLayer, pool_size=4),
-                                    Native(lasagne.Conv1DLayer, num_filters=4, filter_size=4, stride=1, pad=0, nonlinearity=nl.rectify),
-                                    Native(lasagne.MaxPool1DLayer, pool_size=4),
-                                    Layer('Softmax')], learning_rate=2**-5, n_iter=64, random_state=0, verbose=True)
-# 2d cnn using 1d filters of gradually decreasing size; input must be square (or transformable into square)
-sknn_convol_2d = Classifier(layers=[Convolution('Rectifier', channels=4, kernel_shape=(8,1), kernel_stride=(1,1)),
-                                    Convolution('Rectifier', channels=4, kernel_shape=(4,1), kernel_stride=(1,1)),
-                                    Convolution('Rectifier', channels=4, kernel_shape=(2,1), kernel_stride=(1,1)),
-                                    Convolution('Rectifier', channels=4, kernel_shape=(1,1), kernel_stride=(1,1)),
-                                    Layer('Softmax')], learning_rate=2**-6, n_iter=256, random_state=0, verbose=True)
-networks = {'sknn_classifier':sknn_class, 'sknn_convolution_1d':sknn_convol_1d, 'sknn_convolution_2d':sknn_convol_2d}
-print('network initialized')
-print('------------------------------------------------------------')
 # load domains for rdf and sf
 R = pickle.load(open(prefix+'.r.pickle'))[:]
 Q = pickle.load(open(prefix+'.q.pickle'))[:]
@@ -152,8 +116,10 @@ T = np.concatenate(tuple([np.mean(trT[O == i])*np.ones(int(len(N)/n_dat), dtype=
 stT = np.concatenate(tuple([np.std(trT[O == i])*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
 G = pickle.load(open(prefix+'.rdf.pickle'))
 S = pickle.load(open(prefix+'.sf.pickle'))
+I = pickle.load(open(prefix+'.ef.pickle'))
 # sample space reduction for improving performance
-smplspc = np.arange(0, N.size, 1)
+nsmpl = 256
+smplspc = np.concatenate(tuple([np.arange((i+1)*int(len(N)/n_dat)-nsmpl, (i+1)*int(len(N)/n_dat)) for i in xrange(n_dat)]))
 N = N[smplspc]
 O = O[smplspc]
 P = P[smplspc]
@@ -162,7 +128,7 @@ T = T[smplspc]
 stT = stT[smplspc]
 G = G[smplspc]
 S = S[smplspc]
-I = np.multiply(np.nan_to_num(np.multiply(G, np.log(G)))-G+1, np.square(R))
+I = I[smplspc]
 print('data loaded')
 print('------------------------------------------------------------')
 # property dictionary
@@ -171,15 +137,10 @@ properties = {'radial_distribution':G, 'entropic_fingerprint':I, 'structure_fact
 # scaler dict
 scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(feature_range=(0,1)), 'robust':RobustScaler(), 'tanh':TanhScaler()}
 # pca initialization
-npcacomp = np.shape(properties[property])[1]
+npcacomp = properties[property].shape[1]
 pca = PCA(n_components=npcacomp)
 print('scaler and pca reduction initialized')
 print('------------------------------------------------------------')
-# change pca properties for 2d convolution to prevent error
-# 2d convolution expects square input
-if network == 'sknn_convolution_2d':
-    nrsqr = np.square(int(np.sqrt(np.shape(properties[property])[1]))) # nearest square to total observations
-    pca.set_params(n_components=nrsqr) # set pca component parameter
 # indices for partitioning data
 sind = (O < lb)               # solid training indices
 lind = (O > ub)               # liquid training indices
@@ -189,30 +150,15 @@ cind = (O >= lb) & (O <= ub)  # classification indices
 data = properties[property]              # extract data from dictionary
 scalers[scaler].fit(data[tind])          # fit scaler to training data
 sdata = scalers[scaler].transform(data)  # transform data with scaler
-# apply pca reduction
+print('data scaled')
+print('------------------------------------------------------------')
+# apply pca reduction and extract training/classification data
 if bpca:
     pca.fit(sdata[tind])                  # pca fit to training data
     tdata = pca.transform(sdata[tind])    # pca transform training data
     cdata = pca.transform(sdata[cind])    # pca transform classification data
     evar = pca.explained_variance_ratio_  # extract explained variance ratios
-# extract training/classification data/temperatures
-if not bpca:
-    if network == 'sknn_convolution_2d':
-        tdata = sdata[tind, :nrsqr] # extract nearest square training data
-        cdata = sdata[cind, :nrsqr] # extract nearest square classification data
-    else:
-        tdata = sdata[tind]  # extract training data
-        cdata = sdata[cind]  # extract classification data
-tT = T[tind]  # training temperatures
-cT = T[cind]  # classification temperatures
-ustdata = data[tind]  # unscaled training data
-uscdata = data[cind]  # unscaled classification data
-tshape = np.shape(tdata)
-cshape = np.shape(cdata)
-print('data scaled')
-print('------------------------------------------------------------')
-# display pca information
-if bpca:
+    # display pca information
     print('data reduced')
     print('------------------------------------------------------------')
     print('pca fit information')
@@ -221,8 +167,46 @@ if bpca:
     print('explained variances: ', ', '.join(evar[:3].astype('|S32')), '...')
     print('total explained variance: ', np.sum(evar))
     print('------------------------------------------------------------')
+else:
+    tdata = sdata[tind]  # extract training data
+    cdata = sdata[cind]  # extract classification data
+tT = T[tind]  # training temperatures
+cT = T[cind]  # classification temperatures
+# reshape data for cnn1d
+if 'cnn1d' in network:
+    tdata = tdata[:, :, np.newaxis]
+    cdata = cdata[:, :, np.newaxis]
+# 2d convolution expects square input
+# if 'cnn2d' in network:
+    # nsqr = int(np.sqrt(np.shape(properties[property])[1]))
+    # tdata = tdata[:np.square(nsqr)]
+    # cdata = cdata[:np.square(nsqr)]
+    # tdata = tdata.reshape(-1, nsqr, nsqr)
+    # cdata = cdata.reshape(-1, nsqr, nsqr)
+ustdata = data[tind]  # unscaled training data
+uscdata = data[cind]  # unscaled classification data
+tshape = np.shape(tdata)
+cshape = np.shape(cdata)
 # classification indices
 tclass = np.array(np.count_nonzero(sind)*[0]+np.count_nonzero(lind)*[1], dtype=int)
+# neural network construction
+# keras - 1d cnn
+def build_keras_cnn1d():    
+    model = Sequential([Conv1D(filters=64, kernel_size=4, activation='relu', padding='causal', strides=1, input_shape=tshape[1:]),
+                        Conv1D(filters=64, kernel_size=4, activation='relu', padding='causal', strides=1),
+                        MaxPooling1D(strides=4),
+                        Conv1D(filters=128, kernel_size=4, activation='relu', padding='causal', strides=1),
+                        Conv1D(filters=128, kernel_size=4, activation='relu', padding='causal', strides=1),
+                        GlobalAveragePooling1D(),
+                        Dropout(rate=0.5),
+                        Dense(units=1, activation='sigmoid')])
+    nadam = Nadam(lr=0.00024414062, beta_1=0.9375, beta_2=0.9990234375, epsilon=None, schedule_decay=0.00390625)
+    model.compile(loss='binary_crossentropy', optimizer=nadam, metrics=['accuracy'])
+    return model
+keras_cnn1d = KerasClassifier(build_keras_cnn1d, epochs=2, verbose=True)
+networks = {'keras_cnn1d':keras_cnn1d}
+print('network initialized')
+print('------------------------------------------------------------')
 # fit neural network to training data
 networks[network].fit(tdata, tclass)
 print('network fit to training data')
@@ -256,7 +240,7 @@ for i in xrange(len(temps)):
 adjtemps = np.linspace(0, 1, len(temps))                                                               # domain for curve fitting
 n_dom = 4096                                                                                           # expanded number of curve samples
 adjdom = np.linspace(0, 1, n_dom)                                                                      # expanded domain for curve fitting
-fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)                                                      # expanded domain for curve plotting
+fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)                                              # expanded domain for curve plotting
 popt, pcov = curve_fit(fit_funcs[fit_func], adjtemps, mprob, p0=fit_guess[fit_func], method='dogbox')  # fitting parameters
 perr = np.sqrt(np.diag(pcov))                                                                          # fit standard error
 fitrng = fit_funcs[fit_func](adjdom, *popt)                                                            # fit values
@@ -344,37 +328,15 @@ if property == 'structure_factor':
     ax1.set_title('$\mathrm{%s\enspace Phase\enspace SFs}$' % el, y=1.015)
 # prefix for plot files
 if bpca:
-    plt_pref = [prefix, network, property, scaler, 'reduced', fit_func]
+    plt_pref = [prefix, network, property, scaler, 'red', fit_func]
 else:
-    plt_pref = [prefix, network, property, scaler, 'not-reduced', fit_func]
-# generate convolution images
-if 'sknn_convolution' in network:
-    imgsd = int(np.sqrt(npcacomp))
-    train0 = np.reshape(np.mean(tdata[tclass == 0], axis=0), 2*(imgsd,))
-    train1 = np.reshape(np.mean(tdata[tclass == 1], axis=0), 2*(imgsd,))
-    train0 = Image.fromarray(np.uint8(cm(train0)*255))
-    train0 = train0.resize((400,400), Image.ANTIALIAS)
-    train1 = Image.fromarray(np.uint8(cm(train1)*255))
-    train1 = train1.resize((400,400), Image.ANTIALIAS)
-    class0 = np.reshape(np.mean(cdata[pred == 0], axis=0), 2*(imgsd,))
-    class1 = np.reshape(np.mean(cdata[pred == 1], axis=0), 2*(imgsd,))
-    class0 = Image.fromarray(np.uint8(cm(class0)*255))
-    class0 = class0.resize((400,400), Image.ANTIALIAS)
-    class1 = Image.fromarray(np.uint8(cm(class1)*255))
-    class1 = class1.resize((400,400), Image.ANTIALIAS)
-    images = Image.new('RGB', (800,800))
-    images.paste(train0, (0, 0))
-    images.paste(train1, (400, 0))
-    images.paste(class0, (0, 400))
-    images.paste(class1, (400, 400))
-    images.save('.'.join(plt_pref+['img.png']))
-    
-    print('images saved')
-    print('------------------------------------------------------------')
-# plt.show()
+    plt_pref = [prefix, network, property, scaler, 'nred', fit_func]
+# network graph
+if 'keras' in network:
+    plot_model(networks[network].model, show_shapes=True, show_layer_names=True, to_file='.'.join(plt_pref+['mdl', str(nsmpl), 'png']))
 # save figures
-fig0.savefig('.'.join(plt_pref+['prob.png']))
-fig1.savefig('.'.join(plt_pref+['strf', 'png']))
+fig0.savefig('.'.join(plt_pref+['prob', str(nsmpl), 'png']))
+fig1.savefig('.'.join(plt_pref+['strf', str(nsmpl), 'png']))
 # close plots
 plt.close('all')
 print('plots saved')

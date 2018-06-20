@@ -22,15 +22,16 @@ try:
 except:
     el = 'LJ'
 # number of data sets
+n_press = 8
 n_temp = 64
 # simulation name
 name = 'remcmc'
 # monte carlo parameters
-cutoff = 512          # sample cutoff
-n_smpl = cutoff+1024  # number of samples
+cutoff = 1024         # sample cutoff
+n_smpl = cutoff+512   # number of samples
 mod = 128             # frequency of data storage
 n_swps = n_smpl*mod   # total mc sweeps
-ppos = 0.015625       # probability of pos move
+ppos = 0.25           # probability of pos move
 pvol = 0.25           # probability of vol move
 phmc = 1-ppos-pvol    # probability of hmc move
 n_stps = 8            # md steps during hmc
@@ -38,7 +39,8 @@ seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
 parallel = True       # boolean for controlling parallel run
 distributed = False   # boolean for choosing distributed or local cluster
-processes = False     # boolean for choosing whether to use processes
+processes = True      # boolean for choosing whether to use processes
+verbose = True        # boolean for controlling verbosity
 
 system = 'mpi'                        # switch for mpirun or aprun
 nworkers = 4                          # number of processors
@@ -56,11 +58,11 @@ units = {'Ti': 'metal',
          'Cu': 'metal',
          'LJ': 'lj'}
 # pressure
-P = {'Ti': np.array([2, 4, 6, 8], dtype=np.float64),
-     'Al': np.array([2, 4, 6, 8], dtype=np.float64),
-     'Ni': np.array([2, 4, 6, 8], dtype=np.float64),
-     'Cu': np.array([2, 4, 6, 8], dtype=np.float64),
-     'LJ': np.array([2, 4, 6, 8], dtype=np.float64)}
+P = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'Al': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'Ni': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'Cu': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'LJ': np.linspace(1.0, 8.0, n_press, dtype=np.float64)}
 # temperature
 T = {'Ti': np.linspace(256, 2560, n_temp, dtype=np.float64),
      'Al': np.linspace(256, 2560, n_temp, dtype=np.float64),
@@ -89,12 +91,10 @@ mass = {'Ti': 47.867,
 timestep = {'real': 4.0,
             'metal': 0.00390625,
             'lj': 0.00390625}
-# number of pressure samples
-n_press = len(P[el])
 # max box adjustment
-dbox = 0.00390625*lat[el][1]*np.ones((n_press, n_temp))
+dbox = 0.03125*lat[el][1]*np.ones((n_press, n_temp))
 # max pos adjustment
-dpos = 0.00390625*lat[el][1]*np.ones((n_press, n_temp))  
+dpos = 0.03125*lat[el][1]*np.ones((n_press, n_temp))  
 # hmc timestep
 dt = timestep[units[el]]*np.ones((n_press, n_temp))
 
@@ -282,11 +282,12 @@ def thermo_header(thermo, n_smpl, cutoff, mod, n_swps, ppos, pvol, phmc, n_stps,
     thermo.write('# | temp | pe | ke | virial | vol | accpos | accvol | acchmc |\n')
     thermo.write('# ------------------------------------------------------------\n')
 
-def write_thermo(thermo, temp, pe, ke, virial, vol, accpos, accvol, acchmc):
+def write_thermo(thermo, temp, pe, ke, virial, vol, accpos, accvol, acchmc, verbose):
     ''' writes thermodynamic properties to thermo file '''
     # print thermal argument string
     therm_args = (temp, pe, ke, virial, vol, accpos, accvol, acchmc)
-    print('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E' % therm_args)
+    if verbose:
+        print('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E' % therm_args)
     # write data to file
     thermo.write('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E\n' % therm_args)
 
@@ -407,7 +408,6 @@ def hamiltonian_mc(lmps, Et, ntryhmc, nacchmc, T, dt):
     etotnew = penew+kenew
     # calculate hamiltonian criterion
     dE = etotnew-etot
-    # print(penew-pe, kenew-ke)
     if np.random.rand() <= np.min([1, np.exp(-dE)]):
         # update hamiltonian acceptations
         nacchmc += 1
@@ -501,7 +501,7 @@ def get_sample(x, v, box, el, units, lat, sz, mass, P, dt,
     
 def get_samples(x, v, box, el, units, lat, sz, mass, P, dt,
                 Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-                dpos, dbox, T, mod, thermo, traj):
+                dpos, dbox, T, mod, thermo, traj, verbose):
     ''' performs monte carlo for all configurations to generate new samples '''
     n_press, n_temp = Pf.shape
     # loop through pressures
@@ -520,20 +520,21 @@ def get_samples(x, v, box, el, units, lat, sz, mass, P, dt,
             ntryhmc[i, j], nacchmc[i, j] = dat[13:15]
             dpos[i, j], dbox[i, j], dt[i, j] = dat[15:18]
     # write to data storage files
-    print('\n')
+    if verbose:
+        print('\n')
     for i in xrange(n_press):
         for j in xrange(n_temp):
             accpos = np.nan_to_num(np.float64(naccpos[i, j])/np.float64(ntrypos[i, j]))
             accvol = np.nan_to_num(np.float64(naccvol[i, j])/np.float64(ntryvol[i, j]))
             acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
-            write_thermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc)
+            write_thermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
             write_traj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
     # return lammps object, tries/acceptation counts, and mc params
     return natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
     
 def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
                     Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-                    dpos, dbox, T, mod, thermo, traj):
+                    dpos, dbox, T, mod, thermo, traj, verbose):
     ''' performs monte carlo in parallel for all configurations to generate new samples '''
     n_press, n_temp = Pf.shape
     operations = [delayed(get_sample)(x[i, j], v[i, j], box[i, j], el, units, lat, sz, mass, P[i], dt[i, j], 
@@ -541,7 +542,8 @@ def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
                                       ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
                                       dpos[i, j], dbox[i, j], T[j], mod) for i in xrange(n_press) for j in xrange(n_temp)]
     futures = client.compute(operations)
-    progress(futures)
+    if verbose:
+        progress(futures)
     k = 0
     for i in xrange(n_press):
         for j in xrange(n_temp):
@@ -559,7 +561,7 @@ def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
             accpos = np.nan_to_num(np.float64(naccpos[i, j])/np.float64(ntrypos[i, j]))
             accvol = np.nan_to_num(np.float64(naccvol[i, j])/np.float64(ntryvol[i, j]))
             acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
-            write_thermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc)
+            write_thermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
             write_traj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
     # return lammps object, tries/acceptation counts, and mc params
     return natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
@@ -568,7 +570,7 @@ def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
 # replica exchange markov chain monte carlo
 # -----------------------------------------
 
-def rep_exch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf):
+def rep_exch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf, verbose):
     ''' performs parallel tempering acrros all samples 
         accepts/rejects based on enthalpy metropolis criterion '''
     # simulation set shape
@@ -609,7 +611,8 @@ def rep_exch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf):
                 virial[j], virial[i] = virial[i], virial[j]
                 box[j], box[i] = box[i], box[j]
                 vol[j], vol[i] = vol[i], vol[j]
-    print('%d replica exchanges performed: ' % swaps, ' '.join(pairs))
+    if verbose:
+        print('%d replica exchanges performed: ' % swaps, ' '.join(pairs))
     natoms = natoms.reshape((n_press, n_temp))
     x = x.reshape((n_press, n_temp))
     v = v.reshape((n_press, n_temp))
@@ -681,20 +684,22 @@ if parallel:
         # start client with local cluster
         client = Client(cluster)
     # display client information
-    print(client)
+    if verbose:
+        print(client)
 # loop through to number of samples that need to be collected
 for i in xrange(n_smpl):
-    print('step:', i)
+    if verbose:
+        print('step:', i)
     # collect samples for all configurations
     if parallel:
-        client.restart()  # prevent memory leak
         dat = get_samples_par(client, x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
                               Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-                              dpos, dbox, T[el], mod, thermo, traj)
+                              dpos, dbox, T[el], mod, thermo, traj, verbose)
+        client.restart()  # prevent memory leak
     else:
         dat = get_samples(x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
                           Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-                          dpos, dbox, T[el], mod, thermo, traj)
+                          dpos, dbox, T[el], mod, thermo, traj, verbose)
     # update system data
     natoms, x, v = dat[:3]
     temp, pe, ke, virial, box, vol = dat[3:9]
@@ -703,7 +708,7 @@ for i in xrange(n_smpl):
     ntryhmc, nacchmc = dat[13:15]
     dpos, dbox, dt = dat[15:18]
     # perform replica exchange markov chain monte carlo (parallel tempering)
-    natoms, x, v, temp, pe, ke, virial, box, vol = rep_exch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf)
+    natoms, x, v, temp, pe, ke, virial, box, vol = rep_exch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf, verbose)
 if parallel:
     # terminate client after completion
     client.close()

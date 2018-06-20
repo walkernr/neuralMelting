@@ -34,7 +34,8 @@ name = 'remcmc'
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 
 distributed = False  # boolean for choosing distributed or local cluster
-processes = False    # boolean for choosing whether to use processes
+processes = True     # boolean for choosing whether to use processes
+verbose = True       # boolean for controlling verbosity
 system = 'mpi'                        # switch for mpirun or aprun
 nworkers = 4                          # number of processors
 nthreads = 1                          # threads per worker
@@ -132,10 +133,11 @@ else:
 # display client information
 print(client)
 futures = client.compute(operations)
-progress(futures)
-client.close()
+if verbose:
+    progress(futures)
 for j in xrange(len(natoms)):
     gs[j, :] = futures[j].result()
+client.close()
 # adjust rdf by atom count and atoms contained by shells
 g = np.divide(gs, natoms[0]*dni)
 # calculate domain for structure factor
@@ -144,6 +146,7 @@ q = 2*np.pi/dr*np.fft.fftfreq(r.size)[1:int(r.size/2)]
 ftg = -np.imag(dr*np.exp(-complex(0, 1)*q*r[0])*np.fft.fft(r[np.newaxis, :]*(g-1))[:, 1:int(r.size/2)])
 # structure factor
 s = 1+4*np.pi*nrho[:, np.newaxis]*np.divide(ftg, q)
+i = np.multiply(np.nan_to_num(np.multiply(g, np.log(g)))-g+1, np.square(r[:]))
 # pickle data
 pickle.dump(nrho, open(prefix+'.nrho.pickle', 'wb'))
 pickle.dump(dni, open(prefix+'.dni.pickle', 'wb'))
@@ -151,3 +154,4 @@ pickle.dump(r, open(prefix+'.r.pickle', 'wb'))
 pickle.dump(g, open(prefix+'.rdf.pickle', 'wb'))
 pickle.dump(q, open(prefix+'.q.pickle', 'wb'))
 pickle.dump(s, open(prefix+'.sf.pickle', 'wb'))
+pickle.dump(i, open(prefix+'.ef.pickle', 'wb'))

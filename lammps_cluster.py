@@ -47,7 +47,7 @@ P = {'Ti': 2.0,
      'Al': 2.0,
      'Ni': 2.0,
      'Cu': 2.0,
-     'LJ': 2.0}
+     'LJ': 6.0}
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -85,15 +85,17 @@ P = pickle.load(open(prefix+'.virial.pickle'))
 T = pickle.load(open(prefix+'.temp.pickle'))
 G = pickle.load(open(prefix+'.rdf.pickle'))
 S = pickle.load(open(prefix+'.sf.pickle'))
+I = pickle.load(open(prefix+'.ef.pickle'))
 # sample space reduction for improving performance
-smplspc = np.arange(0, N.size, 2)
+nsmpl = 256
+smplspc = np.concatenate(tuple([np.arange((i+1)*int(len(N)/n_dat)-nsmpl, (i+1)*int(len(N)/n_dat)) for i in xrange(n_dat)]))
 N = N[smplspc]
 O = O[smplspc]
 P = P[smplspc]
 T = T[smplspc]
 G = G[smplspc]
 S = S[smplspc]
-I = np.multiply(np.nan_to_num(np.multiply(G, np.log(G)))-G+1, np.square(R))
+I = I[smplspc]
 print('data loaded')
 print('------------------------------------------------------------')
 # property dictionary
@@ -279,9 +281,9 @@ else:
     ax2.legend(['$\mathrm{'+'{:4.0f}'.format(cmtemp[pind[i]])+'K}$' for i in xrange(2)])
 # save figures
 plt_pref = [prefix, property, scaler, reduction, clust]
-fig0.savefig('.'.join(plt_pref+['red', 'png']))
-fig1.savefig('.'.join(plt_pref+['dist', 'png']))
-fig2.savefig('.'.join(plt_pref+['strf', 'png']))
+fig0.savefig('.'.join(plt_pref+['red', str(nsmpl), 'png']))
+fig1.savefig('.'.join(plt_pref+['dist', str(nsmpl), 'png']))
+fig2.savefig('.'.join(plt_pref+['strf', str(nsmpl), 'png']))
 # close plots
 plt.close('all')
 print('plots saved')
