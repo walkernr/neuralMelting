@@ -100,7 +100,7 @@ This program classifies samples as either solids or liquids by passing either th
 - Richard: generalized logistic function, not recommended (too many fitting parameters)
 
 ### Plans for the future
-- Refine neural network structures and parameters (learning rate, weights, iterations, etc.)
+- Refine neural network structures and hyperparameters (learning rate, weights, iterations, grid searching, etc.)
 - Refine data preparation techniques (more appropriate scaling, data reorientation, etc.)
 - Refine data analysis techniques (better curve fitting, alternate approaches to transition etimation, etc.)
 
