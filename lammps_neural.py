@@ -14,7 +14,7 @@ from sklearn.decomposition import PCA
 # os.environ['KERAS_BACKEND'] = 'theano'
 from keras.models import Sequential
 from keras.layers import Input, Conv1D, MaxPooling1D, GlobalAveragePooling1D, Dropout, Dense
-from keras.optimizers import Nadam
+from keras.optimizers import SGD, Nadam
 from keras.wrappers.scikit_learn import KerasClassifier
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
@@ -190,6 +190,19 @@ cshape = np.shape(cdata)
 # classification indices
 tclass = np.array(np.count_nonzero(sind)*[0]+np.count_nonzero(lind)*[1], dtype=int)
 # neural network construction
+# keras - dense
+# not currently working
+def build_keras_dense():
+    model = Sequential([Dense(units=64, activation='relu', input_dim=tshape[1]),
+                        Dropout(rate=0.5),
+                        Dense(units=16, activation='relu'),
+                        Dropout(rate=0.5),
+                        Dense(units=8, activation='relu'),
+                        Dropout(rate=0.5),
+                        Dense(units=1, activation='softmax')])
+    nadam = Nadam(lr=0.00024414062, beta_1=0.9375, beta_2=0.9990234375, epsilon=None, schedule_decay=0.00390625)
+    model.compile(loss='binary_crossentropy', optimizer=nadam, metrics=['accuracy'])
+    return model
 # keras - 1d cnn
 def build_keras_cnn1d():    
     model = Sequential([Conv1D(filters=64, kernel_size=4, activation='relu', padding='causal', strides=1, input_shape=tshape[1:]),
@@ -203,8 +216,9 @@ def build_keras_cnn1d():
     nadam = Nadam(lr=0.00024414062, beta_1=0.9375, beta_2=0.9990234375, epsilon=None, schedule_decay=0.00390625)
     model.compile(loss='binary_crossentropy', optimizer=nadam, metrics=['accuracy'])
     return model
+keras_dense = KerasClassifier(build_keras_dense, epochs=2, verbose=True)
 keras_cnn1d = KerasClassifier(build_keras_cnn1d, epochs=2, verbose=True)
-networks = {'keras_cnn1d':keras_cnn1d}
+networks = {'keras_dense':keras_dense, 'keras_cnn1d':keras_cnn1d}
 print('network initialized')
 print('------------------------------------------------------------')
 # fit neural network to training data
