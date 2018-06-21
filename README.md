@@ -23,8 +23,7 @@ Python
 - LAMMPS
 - NumPy
 - SciPy
-- Joblib
-- Dask (core and distributed)
+- Dask
 - Scikit-Learn
 - MulticoreTSNE
 - TensorFlow (or Theano)
@@ -50,15 +49,10 @@ lammps_mc.py
 
 This program interfaces with LAMMPS to produce thermodynamic information and trajectories from NPT-HMC simulations that sweep through a range of temperatures at fixed pressure. LAMMPS is used to constuct the system and run the dynamics. The Monte Carlo moves are performed in Python. Three type of Monte Carlo moves are defined: the NPT volume move (VMC), the classic atom-wise position move (PMC), and the Hamiltonian Monte Carlo move (HMC). Different probabilities can be chosen for each type of MC move (specified for HMC and PMC while VMC takes the remaining probability). Other general user-controlled parameters include the number of total MC move attempts, the number of timesteps in HMC moves, the number of data sets, and the name of the simulation. Material specific parameters are stored dictionaries with the atomic symbols serving as the keys ('LJ' for Lennard-Jones). The default is Lennard-Jones since it is useful for testing and is included with LAMMPS with no extra libraries needed. These dictionaries control the simulation pressure, the temperature array (length determined by the number of data sets), the lattice type and parameter, the various MC parameters (box adjustment for VMC, position adjustment for PMC, and timestep for HMC). The MC parameters are adaptively adjusted during the simulation. Two output files are written to, one containing general thermodynamic properties and simulation details, and another containing the atom trajectories. Currently, there is no support for running LAMMPS in parallel within the Python script.
 
-lammps_remcmc_local.py
-----------------------
-
-This program implements replica exchange Markov chain Monte Carlo alongside the Monte carlo methods described in lammps_mc.py. This involves running NPT-HMC Monte Carlo simulations at multiple different pressures and temperatures and attempting to swap the atomic configurations between said simulations at regular intervals. The simulations at different temperatures and pressures can be run in parallel using a multithreading approach. Note that for the parallel mode to work, the serial version of the LAMMPS shared library must be used or else there will be memory management errors. Conducting the simulations in serial is supported for the purposes of debugging. The parallelism is implemented with the Joblib library.
-
 lammps_remcmc_distributed.py
 ----------------------------------
 
-In effect, this is essentially the same as lammps_remcmc_local.py, but with a parallel solution supporting multiprocessing for use on distributed networks. The program also works fine on a single machine and a serial mode is available for debugging. The parallelism is implemented with the Distributed library, which is a part of Dask. As such, parallel runs may be monitored at localhost:8787/status assuming the default scheduler TCP port is used.
+This program implements replica exchange Markov chain Monte Carlo alongside the Monte carlo methods described in lammps_mc.py. This involves running NPT-HMC Monte Carlo simulations at multiple different pressures and temperatures and attempting to swap the atomic configurations between said simulations at regular intervals. The simulations at different temperatures and pressures can be run in parallel using a multiprocessing approach. The implementation is meant to be run on distributed clusters, but the program also works fine on a single machine and a serial mode is available for debugging. The parallelism is implemented with the Distributed library, which is a part of Dask. As such, parallel runs may be monitored at localhost:8787/status assuming the default scheduler TCP port is used.
 
 NOTE: not confirmed to work on a cluster environment yet.
 
@@ -67,15 +61,10 @@ lammps_parse.py
 
 This program parses the output from Monte Carlo simulations and pickles the data.
 
-lammps_rdf_local.py
--------------------
-
-This program calculates the radial distributions, structure factors, and entropic fingerprints (with domains and densities) for each sample using the pickled trajectory information from the parsing script. The radial distributions are performed in parallel using multithreading and the structure factors are calculated as Fourier transitions of the radial distributions. The script pickles the data, which also includes density information. The parallelism is implemented with the Joblib library.
-
 lammps_rdf_distributed.py
 -------------------------
 
-Once again, this is essentially the same as lammps_rdf_local.py in effect, but with a parallel solution supporting multiprocessing for use on distributed networks. The program also works fine on a single machine and a serial mode is available for debugging. The parallelism is implemented with the Distributed library, which is a part of Dask. As such, parallel runs may be monitored at localhost:8787/status assuming the default scheduler TCP port is used.
+This program calculates the radial distributions, structure factors, and entropic fingerprints (with domains and densities) for each sample using the pickled trajectory information from the parsing script. The calculations can be run in parallel using a multiprocessing approach. The implementation is meant to be run on distributed clusters, but the program also works fine on a single machine and a serial mode is available for debugging. The parallelism is implemented with the Distributed library, which is a part of Dask. As such, parallel runs may be monitored at localhost:8787/status assuming the default scheduler TCP port is used.
 
 NOTE: not confirmed to work on a cluster environment yet.
 
