@@ -12,6 +12,8 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA, KernelPCA
 from scipy.optimize import curve_fit
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 theano = False

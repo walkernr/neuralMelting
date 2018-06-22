@@ -14,6 +14,8 @@ from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA
 from MulticoreTSNE import MulticoreTSNE as TSNE
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
