@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 # tanh function with range (0, 1)
 tanhScaler = lambda x: 0.5*(np.tanh(x)+1)
 class TanhScaler:
-    ''' this scaler just feeds the z-scre from the standard scaler into a tanh function
+    ''' this scaler feeds the z-scre from the standard scaler into a tanh function
     
         the tanh function allows for the output to be less sensitive to outliers and maps
         all features to a common numerical domain '''
