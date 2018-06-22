@@ -53,6 +53,17 @@ params = {'figure.figsize': (26, 20),
           'font.size': ftsz,
           'text.latex.preamble': r'\usepackage{amsmath}'r'\boldmath'}
 plt.rcParams.update(params)
+
+# run details
+property = 'entropic_fingerprint'  # property for classification
+n_dat = 64                         # number of datasets
+ntrainsets = 12                    # number of training sets
+nsmpl = 1024                       # number of samples from each set
+scaler = 'tanh'                    # data scaling method
+network = 'keras_cnn1d'            # neural network type
+reduc = 'pca'                      # reduction type
+fit_func = 'logistic'              # fitting function
+
 # element choice
 try:
     el = sys.argv[1]
@@ -74,15 +85,6 @@ lat = {'Ti': 'bcc',
 name = 'remcmc'
 # file prefix
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
-# run details
-property = 'entropic_fingerprint'  # property for classification
-n_dat = 64                         # number of datasets
-ntrainsets = 12                    # number of training sets
-nsmpl = 1024                       # number of samples from each set
-scaler = 'tanh'                    # data scaling method
-network = 'keras_cnn1d'            # neural network type
-reduc = 'pca'                      # reduction type
-fit_func = 'logistic'              # fitting function
 # summary of input
 print('------------------------------------------------------------')
 print('input summary')
