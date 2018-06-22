@@ -28,7 +28,7 @@ n_temp = 64
 name = 'remcmc'
 # monte carlo parameters
 cutoff = 1024         # sample cutoff
-n_smpl = cutoff+512   # number of samples
+n_smpl = cutoff+1024  # number of samples
 mod = 128             # frequency of data storage
 n_swps = n_smpl*mod   # total mc sweeps
 ppos = 0.25           # probability of pos move
@@ -92,9 +92,9 @@ timestep = {'real': 4.0,
             'metal': 0.00390625,
             'lj': 0.00390625}
 # max box adjustment
-dbox = 0.03125*lat[el][1]*np.ones((n_press, n_temp))
+dbox = 0.125*lat[el][1]*np.ones((n_press, n_temp))
 # max pos adjustment
-dpos = 0.03125*lat[el][1]*np.ones((n_press, n_temp))  
+dpos = 0.125*lat[el][1]*np.ones((n_press, n_temp))  
 # hmc timestep
 dt = timestep[units[el]]*np.ones((n_press, n_temp))
 
@@ -225,7 +225,7 @@ def lammps_extract(lmps):
     vol = np.power(box, 3)
     return natoms, x, v, temp, pe, ke, virial, box, vol
     
-def sample_init(i, j, el, units, lat, sz, mass, P, dt):
+def sample_init(i, j, el, units, lat, sz, mass, P, dpos, dt):
     ''' initializes system info and data storage files '''
     # generate input file
     lmpsfilein = lammps_input(el, units, lat, sz, mass, P, dt)
@@ -236,6 +236,7 @@ def sample_init(i, j, el, units, lat, sz, mass, P, dt):
     lmps.command('unfix 1')
     lmps.command('fix 1 all box/relax iso %f vmax %f' % (P, 0.0009765625))
     lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
+    lmps.command('displace_atoms random %f %f %f %d' % (3*(dpos,)+(np.random.randint(1, 2**16),)))
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # open data storage files
@@ -659,7 +660,7 @@ for i in xrange(len(P[el])):
         # set thermo constants
         Et[i, j], Pf[i, j] = define_constants(units[el], P[el][i], T[el][j])
         # initialize lammps object and data storage files
-        dat = sample_init(i, j, el, units[el], lat[el], sz[el], mass[el], P[el][i], dt[i, j])
+        dat = sample_init(i, j, el, units[el], lat[el], sz[el], mass[el], P[el][i], dpos[i, j], dt[i, j])
         natoms[i, j], x[i, j], v[i, j] = dat[:3]
         temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
         thermo[i, j], traj[i, j] = dat[9:11]

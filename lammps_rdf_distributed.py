@@ -11,6 +11,10 @@ import numpy as np
 from distributed import Client, LocalCluster, progress
 from dask import delayed
 
+verbose = True       # boolean for controlling verbosity
+if verbose:
+    from tqdm import tqdm
+
 # element choice
 try:
     el = sys.argv[1]
@@ -35,7 +39,6 @@ prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 
 distributed = False  # boolean for choosing distributed or local cluster
 processes = True     # boolean for choosing whether to use processes
-verbose = True       # boolean for controlling verbosity
 system = 'mpi'                        # switch for mpirun or aprun
 nworkers = 4                          # number of processors
 nthreads = 1                          # threads per worker
@@ -130,14 +133,20 @@ else:
     cluster = LocalCluster(n_workers=nworkers, threads_per_worker=nthreads, processes=processes)
     # start client with local cluster
     client = Client(cluster)
-# display client information
-print(client)
-futures = client.compute(operations)
 if verbose:
+    # display client information
+    print(client)
+    futures = client.compute(operations)
     progress(futures)
-for j in xrange(len(natoms)):
-    gs[j, :] = futures[j].result()
+    print('assigning rdfs')
+    for j in tqdm(xrange(len(natoms))):
+        gs[j, :] = futures[j].result()
+else:
+    futures = client.compute(operations)
+    for j in xrange(len(natoms)):
+        gs[j, :] = futures[j].result()
 client.close()
+
 # adjust rdf by atom count and atoms contained by shells
 g = np.divide(gs, natoms[0]*dni)
 # calculate domain for structure factor

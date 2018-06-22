@@ -8,8 +8,6 @@ Created on Wed May 22 08:23:12 2018
 from __future__ import division, print_function
 import sys, os, pickle
 import numpy as np
-from multiprocessing import cpu_count
-from joblib import Parallel, delayed
 
 # element choice
 try:

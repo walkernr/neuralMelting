@@ -17,7 +17,7 @@ from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
-nproc = 2  # cpu_count()
+nthreads = 4  # cpu_count()
 # plotting parameters
 plt.rc('text', usetex=True)
 plt.rc('font', family='sans-serif')
@@ -61,19 +61,22 @@ prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 # run details
 property = 'entropic_fingerprint'  # property for classification
 n_dat = 64                         # number of datasets
+nsmpl = 1024                       # number of samples per dataset
 scaler = 'tanh'                    # data scaling method
 reduction = 'tsne'                 # reduction method
-clust = 'agglomerative'            # clustering method
+clust = 'spectral'                 # clustering method
 # summary of input
 print('------------------------------------------------------------')
 print('input summary')
 print('------------------------------------------------------------')
-print('potential:       %s' % el.lower())
-print('number of sets: ', n_dat)
-print('property:       ', property)
-print('scaler:         ', scaler)
-print('reduction:      ', reduction)
-print('clustering:     ', clust)
+print('potential:         %s' % el.lower())
+print('pressure:          %f' % P[el])
+print('number of sets:    %d' % n_dat)
+print('number of samples: %d' % nsmpl)
+print('property:          %s' % property)
+print('scaler:            %s' % scaler)
+print('reduction:         %s' % reduction)
+print('clustering:        %s' % clust)
 print('------------------------------------------------------------')
 # load domains for rdf and sf
 R = pickle.load(open(prefix+'.r.pickle'))[:]
@@ -87,7 +90,6 @@ G = pickle.load(open(prefix+'.rdf.pickle'))
 S = pickle.load(open(prefix+'.sf.pickle'))
 I = pickle.load(open(prefix+'.ef.pickle'))
 # sample space reduction for improving performance
-nsmpl = 256
 smplspc = np.concatenate(tuple([np.arange((i+1)*int(len(N)/n_dat)-nsmpl, (i+1)*int(len(N)/n_dat)) for i in xrange(n_dat)]))
 N = N[smplspc]
 O = O[smplspc]
@@ -115,13 +117,13 @@ plxty = int(np.mean(tdist[0]))
 tdist = np.histogram(T, n_dat, range=(np.min(T), np.max(T)), density=True)
 # reduction initialization
 pca = PCA(n_components=npcacomp)
-tsne = TSNE(n_jobs=nproc, n_components=ntsnecomp, perplexity=plxty, init='random')
+tsne = TSNE(n_jobs=nthreads, n_components=ntsnecomp, perplexity=plxty, init='random', verbose=True)
 print('scaler and reduction initialized')
 print('------------------------------------------------------------')
 # clustering initialization
 agglom = AgglomerativeClustering(n_clusters=2)
-kmeans = KMeans(n_jobs=nproc, n_clusters=2, init='k-means++')
-spectral = SpectralClustering(n_jobs=nproc, n_clusters=2)
+kmeans = KMeans(n_jobs=nthreads, n_clusters=2, init='k-means++')
+spectral = SpectralClustering(n_jobs=nthreads, n_clusters=2)
 clustering = {'agglomerative':agglom, 'kmeans':kmeans, 'spectral':spectral}
 print('clustering initialized')
 print('------------------------------------------------------------')
@@ -133,15 +135,16 @@ print('data pca reduced')
 print('------------------------------------------------------------')
 print('pca fit information')
 print('------------------------------------------------------------')
-print('principal components:     ', len(evar))
-print('explained variances:      ', ', '.join(evar[:3].astype('|S32')), '...')
-print('total explained variance: ', np.sum(evar))
+print('principal components:     %d' % len(evar))
+print('explained variances:      %s' % ', '.join(evar[:3].astype('|S32'))+', ...')
+print('total explained variance: %f' % np.sum(evar))
 print('------------------------------------------------------------')
 if reduction == 'pca':
     rdata = pdata
 if reduction == 'tsne':
     rdata = tsne.fit_transform(pdata)
     error = tsne.kl_divergence_
+    print('------------------------------------------------------------')
     print('TSNE information')
     print('------------------------------------------------------------')
     print('kullback-leibler divergence: ', error)
@@ -195,15 +198,15 @@ gst = np.sqrt(sgstemp*lgstemp)
 # print results
 print('transition ')
 print('------------------------------------------------------------')
-print('transition region:    [', sdom[0], ', ', sdom[-1], ']')
-print('solid arith mean:    ', samtemp, '+/-', sastemp)
-print('liquid arith mean:   ', lamtemp, '+/-', lastemp)
-print('arithmetic mean:     ', amt, '+/-', ast)
-print('arithmetic interval:  [', amt-ast, ', ', amt+ast, ']')
-print('solid geo mean:      ', sgmtemp, '+/-', (sgstemp-1)*sgmtemp)
-print('liquid geo mean:     ', lgmtemp, '+/-', (lgstemp-1)*lgmtemp)
-print('gemoetric mean:      ', gmt, '+/-', (gst-1)*gmt)
-print('geometric interval:   [', gmt-(gst-1)*gmt, ', ', gmt+(gst-1)*gmt, ']')
+print('transition region:      %f, %f' % (sdom[0], sdom[-1]))
+print('solid arith mean, std:  %f, %f' % (samtemp, sastemp))
+print('liquid arith mean, std: %f, %f' % (lamtemp, lastemp))
+print('arithmetic mean, std:   %f, %f' % (amt, ast))
+print('arithmetic interval:    %f, %f' % (amt-ast, amt+ast))
+print('solid geo mean:         %f, %f' % (sgmtemp, (sgstemp-1)*sgmtemp))
+print('liquid geo mean:        %f, %f' % (lgmtemp, (lgstemp-1)*lgmtemp))
+print('gemoetric mean:         %f, %f' % (gmt, (gst-1)*gmt))
+print('geometric interval:     %f, %f' % (gmt-(gst-1)*gmt, gmt+(gst-1)*gmt))
 print('------------------------------------------------------------')
 # color scale
 cm = plt.get_cmap('plasma')
@@ -254,7 +257,7 @@ for i in xrange(2):
     ax11.axvline(amt+(-1)**i*ast, color=cm(scale(amt+(-1)**i*ast)), linestyle='--')
     # ax11.axvline(gmt+(-1)**i*(gst-1)*gmt, color=cm(scale(gmt+(-1)**i*(gst-1)*gmt)), linestyle='--')
 if el == 'LJ':
-    ax11.text(1.25*(amt+ast), 1.25*np.min([np.max(ctdist[pind[i]][0]) for i in xrange(2)]), '$T_{\mathrm{arith}} = %2.2f \pm %2.2f$' % (amt, ast))
+    ax11.text(1.25*(amt+ast), 1.25*np.min([np.max(ctdist[pind[i]][0]) for i in xrange(2)]), '$T_{\mathrm{arith}} = %.4f \pm %.4f$' % (amt, ast))
     # ax11.text(1.25*(amt+ast), 1.5, '$T_{\mathrm{geo}} = %2.2f \pm %2.2f$' % (gmt, gst))
 else:
     ax11.text(1.25*(amt+ast), 1.25*np.min([np.max(ctdist[pind[i]][0]) for i in xrange(2)]), '$T_{\mathrm{arith}} = %4.0f \pm %4.0f$' % (amt, ast))

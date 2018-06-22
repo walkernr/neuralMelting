@@ -10,14 +10,25 @@ import os, sys, pickle
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from TanhScaler import TanhScaler
-from sklearn.decomposition import PCA
-# os.environ['KERAS_BACKEND'] = 'theano'
+from sklearn.decomposition import PCA, KernelPCA
+from scipy.optimize import curve_fit
+import matplotlib.pyplot as plt
+
+theano = False
+nthreads = 4
+if theano:
+    os.environ['KERAS_BACKEND'] = 'theano'
+else:
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['MKL_NUM_THREADS'] = str(nthreads)
+os.environ['GOTO_NUM_THREADS'] = str(nthreads)
+os.environ['OMP_NUM_THREADS'] = str(nthreads)
+os.eviron['openmp'] = 'True'
+
 from keras.models import Sequential
 from keras.layers import Input, Conv1D, MaxPooling1D, GlobalAveragePooling1D, Dropout, Dense
 from keras.optimizers import SGD, Nadam
 from keras.wrappers.scikit_learn import KerasClassifier
-from scipy.optimize import curve_fit
-import matplotlib.pyplot as plt
 from keras.utils import plot_model
 
 # plotting parameters
@@ -64,22 +75,25 @@ prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 property = 'entropic_fingerprint'  # property for classification
 n_dat = 64                         # number of datasets
 ntrainsets = 12                    # number of training sets
+nsmpl = 1024                       # number of samples from each set
 scaler = 'tanh'                    # data scaling method
 network = 'keras_cnn1d'            # neural network type
-bpca = False                       # boolean for pca reduction
+reduc = 'pca'                      # reduction type
 fit_func = 'logistic'              # fitting function
 # summary of input
 print('------------------------------------------------------------')
 print('input summary')
 print('------------------------------------------------------------')
-print('potential: %s' % el.lower())
-print('number of sets: ', n_dat)
-print('property: ', property)
-print('training sets (per phase): ', ntrainsets)
-print('scaler: ', scaler)
-print('network: ', network)
-print('fitting function: ', fit_func)
-print('pca reduction: ', str(bpca).lower())
+print('potential:                 %s' % el.lower())
+print('pressure:                  %f' % P[el])  
+print('number of sets:            %d' % n_dat)
+print('number of samples:         %d' % nsmpl)
+print('property:                  %s' % property)
+print('training sets (per phase): %d' % ntrainsets)
+print('scaler:                    %s' % scaler)
+print('network:                   %s' % network)
+print('fitting function:          %s' % fit_func)
+print('reduction:                 %s' % reduc)
 print('------------------------------------------------------------')
 # fitting functions
 # the confidence interval for transition temps is best with logistic
@@ -118,7 +132,6 @@ G = pickle.load(open(prefix+'.rdf.pickle'))
 S = pickle.load(open(prefix+'.sf.pickle'))
 I = pickle.load(open(prefix+'.ef.pickle'))
 # sample space reduction for improving performance
-nsmpl = 256
 smplspc = np.concatenate(tuple([np.arange((i+1)*int(len(N)/n_dat)-nsmpl, (i+1)*int(len(N)/n_dat)) for i in xrange(n_dat)]))
 N = N[smplspc]
 O = O[smplspc]
@@ -139,7 +152,9 @@ scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(feature_range=(0,1
 # pca initialization
 npcacomp = properties[property].shape[1]
 pca = PCA(n_components=npcacomp)
-print('scaler and pca reduction initialized')
+kpca = KernelPCA(n_components=npcacomp)
+reducers = {'pca':pca, 'kpca':kpca}
+print('scaler and reduction initialized')
 print('------------------------------------------------------------')
 # indices for partitioning data
 sind = (O < lb)               # solid training indices
@@ -152,21 +167,21 @@ scalers[scaler].fit(data[tind])          # fit scaler to training data
 sdata = scalers[scaler].transform(data)  # transform data with scaler
 print('data scaled')
 print('------------------------------------------------------------')
-# apply pca reduction and extract training/classification data
-if bpca:
-    pca.fit(sdata[tind])                  # pca fit to training data
-    tdata = pca.transform(sdata[tind])    # pca transform training data
-    cdata = pca.transform(sdata[cind])    # pca transform classification data
-    evar = pca.explained_variance_ratio_  # extract explained variance ratios
-    # display pca information
+# apply reduction and extract training/classification data
+if reduc:
+    reducers[reduc].fit(sdata[tind])                  # pca fit to training data
+    tdata = reducers[reduc].transform(sdata[tind])    # pca transform training data
+    cdata = reducers[reduc].transform(sdata[cind])    # pca transform classification data
+    # display reduction information
     print('data reduced')
     print('------------------------------------------------------------')
-    print('pca fit information')
-    print('------------------------------------------------------------')
-    print('principal components: ', len(evar))
-    print('explained variances: ', ', '.join(evar[:3].astype('|S32')), '...')
-    print('total explained variance: ', np.sum(evar))
-    print('------------------------------------------------------------')
+    if reduc == 'pca':
+        print('pca fit information')
+        print('------------------------------------------------------------')
+        print('principal components:     %d' % len(evar))
+        print('explained variances:      %s' % ', '.join(evar[:3].astype('|S32'))+', ...')
+        print('total explained variance: %f' % np.sum(evar))
+        print('------------------------------------------------------------')
 else:
     tdata = sdata[tind]  # extract training data
     cdata = sdata[cind]  # extract classification data
@@ -213,21 +228,23 @@ def build_keras_cnn1d():
                         GlobalAveragePooling1D(),
                         Dropout(rate=0.5),
                         Dense(units=1, activation='sigmoid')])
-    nadam = Nadam(lr=0.00024414062, beta_1=0.9375, beta_2=0.9990234375, epsilon=None, schedule_decay=0.00390625)
+    nadam = Nadam(lr=0.0009765625, beta_1=0.9375, beta_2=0.9990234375, epsilon=None, schedule_decay=0.00390625)
     model.compile(loss='binary_crossentropy', optimizer=nadam, metrics=['accuracy'])
     return model
 keras_dense = KerasClassifier(build_keras_dense, epochs=2, verbose=True)
-keras_cnn1d = KerasClassifier(build_keras_cnn1d, epochs=2, verbose=True)
+keras_cnn1d = KerasClassifier(build_keras_cnn1d, epochs=1, verbose=True)
 networks = {'keras_dense':keras_dense, 'keras_cnn1d':keras_cnn1d}
 print('network initialized')
 print('------------------------------------------------------------')
 # fit neural network to training data
 networks[network].fit(tdata, tclass)
+print('------------------------------------------------------------')
 print('network fit to training data')
 print('------------------------------------------------------------')
 # classification of data
-pred = networks[network].predict(cdata).reshape(-1)  # prediction classifications
 prob = networks[network].predict_proba(cdata)        # prediction probabilities
+pred = prob[:, 1].round()                            # prediction classifications
+print('------------------------------------------------------------')
 print('network predicted classification data')
 print('------------------------------------------------------------')
 # extract indices of classes and mean temps
@@ -280,10 +297,10 @@ else:
     trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)
 print('transition temperature estimated')
 print('------------------------------------------------------------')
-print('transition: ', trans)
-print('transition range: ', ', '.join(tintrvl.astype('|S32')))
-print('fit parameters: ', ', '.join(popt.astype('|S32')))
-print('parameter error: ', ', '.join(perr.astype('|S32')))
+print('transition:       %f, %f' % (trans, cerr))
+print('transition range: %s' % ', '.join(tintrvl.astype('|S32')))
+print('fit parameters:   %s' % ', '.join(popt.astype('|S32')))
+print('parameter error:  %s' % ', '.join(perr.astype('|S32')))
 print('------------------------------------------------------------')
 # plot of phase probability
 fig0 = plt.figure()
@@ -310,7 +327,7 @@ for tick in ax0.get_xticklabels():
     tick.set_rotation(16)
 scitxt = ax0.yaxis.get_offset_text()
 scitxt.set_x(.025)
-ax0.legend(loc='lower right')
+ax0.legend(loc='upper left')
 ax0.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
 ax0.set_xlabel('$\mathrm{Temperature}$')
 ax0.set_ylabel('$\mathrm{Probability}$')
@@ -341,10 +358,10 @@ if property == 'structure_factor':
     ax1.set_ylabel('$\mathrm{Structure Factor}$')
     ax1.set_title('$\mathrm{%s\enspace Phase\enspace SFs}$' % el, y=1.015)
 # prefix for plot files
-if bpca:
-    plt_pref = [prefix, network, property, scaler, 'red', fit_func]
+if reduc:
+    plt_pref = [prefix, network, property, scaler, reduc, fit_func]
 else:
-    plt_pref = [prefix, network, property, scaler, 'nred', fit_func]
+    plt_pref = [prefix, network, property, scaler, 'none', fit_func]
 # network graph
 if 'keras' in network:
     plot_model(networks[network].model, show_shapes=True, show_layer_names=True, to_file='.'.join(plt_pref+['mdl', str(nsmpl), 'png']))
