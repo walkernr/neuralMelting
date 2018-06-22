@@ -14,6 +14,14 @@ from dask import delayed
 verbose = True       # boolean for controlling verbosity
 if verbose:
     from tqdm import tqdm
+    
+distributed = False  # boolean for choosing distributed or local cluster
+processes = True     # boolean for choosing whether to use processes
+
+system = 'mpi'                        # switch for mpirun or aprun
+nworkers = 4                          # number of processors
+nthreads = 1                          # threads per worker
+path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 
 # element choice
 try:
@@ -36,13 +44,6 @@ lat = {'Ti': 'bcc',
 name = 'remcmc'
 # file prefix
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
-
-distributed = False  # boolean for choosing distributed or local cluster
-processes = True     # boolean for choosing whether to use processes
-system = 'mpi'                        # switch for mpirun or aprun
-nworkers = 4                          # number of processors
-nthreads = 1                          # threads per worker
-path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 
 def sched_init(system, nproc, path):
     ''' creates scheduler file using dask-mpi binary, network is initialized with mpi4py '''

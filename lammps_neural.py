@@ -16,8 +16,9 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 
-theano = False
-nthreads = 4
+nthreads = 4    # number of threads
+
+theano = False  # keras backend
 if theano:
     os.environ['KERAS_BACKEND'] = 'theano'
 else:

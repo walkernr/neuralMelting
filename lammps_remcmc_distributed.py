@@ -16,11 +16,17 @@ from dask import delayed
 # run parameters
 # --------------
 
-# element choice
-try:
-    el = sys.argv[1]
-except:
-    el = 'LJ'
+verbose = True        # boolean for controlling verbosity
+
+parallel = True       # boolean for controlling parallel run
+distributed = False   # boolean for choosing distributed or local cluster
+processes = True      # boolean for choosing whether to use processes
+
+system = 'mpi'                        # switch for mpirun or aprun
+nworkers = 4                          # number of processors
+nthreads = 1                          # threads per worker
+path = os.getcwd()+'/scheduler.json'  # path for scheduler file
+
 # number of data sets
 n_press = 8
 n_temp = 64
@@ -37,15 +43,12 @@ phmc = 1-ppos-pvol    # probability of hmc move
 n_stps = 8            # md steps during hmc
 seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
-parallel = True       # boolean for controlling parallel run
-distributed = False   # boolean for choosing distributed or local cluster
-processes = True      # boolean for choosing whether to use processes
-verbose = True        # boolean for controlling verbosity
 
-system = 'mpi'                        # switch for mpirun or aprun
-nworkers = 4                          # number of processors
-nthreads = 1                          # threads per worker
-path = os.getcwd()+'/scheduler.json'  # path for scheduler file
+# element choice
+try:
+    el = sys.argv[1]
+except:
+    el = 'LJ'
 
 # -------------------
 # material properties

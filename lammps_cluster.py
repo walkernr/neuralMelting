@@ -19,7 +19,6 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
-nthreads = 4  # cpu_count()
 # plotting parameters
 plt.rc('text', usetex=True)
 plt.rc('font', family='sans-serif')
@@ -39,6 +38,17 @@ params = {'figure.figsize': (26, 20),
           'font.size': ftsz,
           'text.latex.preamble': r'\usepackage{amsmath}'r'\boldmath'}
 plt.rcParams.update(params)
+
+nthreads = 4  # number of threads
+
+# run details
+property = 'entropic_fingerprint'  # property for classification
+n_dat = 64                         # number of datasets
+nsmpl = 1024                       # number of samples per dataset
+scaler = 'tanh'                    # data scaling method
+reduction = 'tsne'                 # reduction method
+clust = 'spectral'                 # clustering method
+
 # element choice
 try:
     el = sys.argv[1]
@@ -60,13 +70,6 @@ lat = {'Ti': 'bcc',
 name = 'remcmc'
 # file prefix
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
-# run details
-property = 'entropic_fingerprint'  # property for classification
-n_dat = 64                         # number of datasets
-nsmpl = 1024                       # number of samples per dataset
-scaler = 'tanh'                    # data scaling method
-reduction = 'tsne'                 # reduction method
-clust = 'spectral'                 # clustering method
 # summary of input
 print('------------------------------------------------------------')
 print('input summary')
