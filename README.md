@@ -20,13 +20,14 @@ Requirements
 Python
 ------
 
+I recommend using Anaconda since the only additional libraries needed are LAMMPS, Multicore-TSNE, Keras, and tqdm.
+
 - LAMMPS
 - NumPy
 - SciPy
 - Dask
 - Scikit-Learn
-- MulticoreTSNE
-- TensorFlow (or Theano)
+- Multicore-TSNE
 - Keras
 - MatPlotLib
 - tqdm (for verbose output)
