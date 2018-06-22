@@ -26,7 +26,7 @@ else:
 os.environ['MKL_NUM_THREADS'] = str(nthreads)
 os.environ['GOTO_NUM_THREADS'] = str(nthreads)
 os.environ['OMP_NUM_THREADS'] = str(nthreads)
-os.eviron['openmp'] = 'True'
+os.environ['openmp'] = 'True'
 
 from keras.models import Sequential
 from keras.layers import Input, Conv1D, MaxPooling1D, GlobalAveragePooling1D, Dropout, Dense
@@ -179,6 +179,7 @@ if reduc:
     print('data reduced')
     print('------------------------------------------------------------')
     if reduc == 'pca':
+        evar = pca.explained_variance_ratio_  # pca explained variance ratio
         print('pca fit information')
         print('------------------------------------------------------------')
         print('principal components:     %d' % len(evar))
@@ -330,7 +331,7 @@ for tick in ax0.get_xticklabels():
     tick.set_rotation(16)
 scitxt = ax0.yaxis.get_offset_text()
 scitxt.set_x(.025)
-ax0.legend(loc='upper left')
+# ax0.legend(loc='upper left')
 ax0.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
 ax0.set_xlabel('$\mathrm{Temperature}$')
 ax0.set_ylabel('$\mathrm{Probability}$')
