@@ -20,7 +20,7 @@ Requirements
 Python
 ------
 
-I recommend using Anaconda since the only additional libraries needed are LAMMPS, Multicore-TSNE, Keras, and tqdm.
+I recommend using Anaconda since the only additional libraries needed are LAMMPS, MPI4Py, Multicore-TSNE, Keras, and tqdm.
 
 - LAMMPS
 - NumPy
