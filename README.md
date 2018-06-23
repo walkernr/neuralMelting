@@ -26,6 +26,7 @@ I recommend using Anaconda since the only additional libraries needed are LAMMPS
 - NumPy
 - SciPy
 - Dask
+- MPI4Py (for distributed clusters)
 - Scikit-Learn
 - Multicore-TSNE
 - Keras
