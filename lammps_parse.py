@@ -9,30 +9,39 @@ from __future__ import division, print_function
 import sys, os, pickle
 import numpy as np
 
-# element choice
-try:
-    el = sys.argv[1]
-except:
+n_press = 8  # number of pressure data sets
+# simulation name
+name = 'remcmc'
+
+# element and pressure index choice
+if '--element' in sys.argv:
+    i = sys.argv.index('--element')
+    el = sys.argv[i+1]
+else:
     el = 'LJ'
+if '--pressure_index' in sys.argv:
+    i = sys.argv.index('--pressure_index')
+    pressind = int(sys.argv[i+1])
+else:
+    pressind = 1
+
 # pressure
-P = {'Ti': 1.0,
-     'Al': 1.0,
-     'Ni': 1.0,
-     'Cu': 1.0,
-     'LJ': 1.0}
+P = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'Al': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'Ni': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'Cu': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'LJ': np.linspace(1.0, 8.0, n_press, dtype=np.float64)}
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
        'Ni': 'fcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
-# simulation name
-name = 'remcmc'
 # file prefix
-prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
+prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el][pressind]))
 # get full directory
 file = os.getcwd()+'/'+prefix
-print('parsing data for %s' % el.lower())
+print('parsing data for %s at pressure %f' % (el.lower(), P[el][pressind]))
 # parse thermo file
 with open(file+'.thrm', 'r') as fi:
     temp = []

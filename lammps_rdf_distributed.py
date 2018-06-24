@@ -11,7 +11,7 @@ import numpy as np
 from distributed import Client, LocalCluster, progress
 from dask import delayed
 
-verbose = True       # boolean for controlling verbosity
+verbose = False      # boolean for controlling verbosity
 if verbose:
     from tqdm import tqdm
     
@@ -19,31 +19,40 @@ distributed = False  # boolean for choosing distributed or local cluster
 processes = True     # boolean for choosing whether to use processes
 
 system = 'mpi'                        # switch for mpirun or aprun
-nworkers = 4                          # number of processors
+nworkers = 16                         # number of processors
 nthreads = 1                          # threads per worker
 path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 
-# element choice
-try:
-    el = sys.argv[1]
-except:
+n_press = 8  # number of pressure data sets
+# simulation name
+name = 'remcmc'
+
+# element and pressure index choice
+if '--element' in sys.argv:
+    i = sys.argv.index('--element')
+    el = sys.argv[i+1]
+else:
     el = 'LJ'
+if '--pressure_index' in sys.argv:
+    i = sys.argv.index('--pressure_index')
+    pressind = int(sys.argv[i+1])
+else:
+    pressind = 1
+
 # pressure
-P = {'Ti': 1.0,
-     'Al': 1.0,
-     'Ni': 1.0,
-     'Cu': 1.0,
-     'LJ': 1.0}
+P = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'Al': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'Ni': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'Cu': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'LJ': np.linspace(1.0, 8.0, n_press, dtype=np.float64)}
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
        'Ni': 'fcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
-# simulation name
-name = 'remcmc'
 # file prefix
-prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
+prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el][pressind]))
 
 def sched_init(system, nproc, path):
     ''' creates scheduler file using dask-mpi binary, network is initialized with mpi4py '''
@@ -137,6 +146,7 @@ else:
 if verbose:
     # display client information
     print(client)
+    print('calculating data for %s at pressure %f' % (el.lower(), P[el][pressind]))
     futures = client.compute(operations)
     progress(futures)
     print('assigning rdfs')

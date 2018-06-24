@@ -16,7 +16,7 @@ from dask import delayed
 # run parameters
 # --------------
 
-verbose = True        # boolean for controlling verbosity
+verbose = False       # boolean for controlling verbosity
 
 parallel = True       # boolean for controlling parallel run
 distributed = False   # boolean for choosing distributed or local cluster
@@ -45,9 +45,10 @@ seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
 
 # element choice
-try:
-    el = sys.argv[1]
-except:
+if '--element' in sys.argv:
+    i = sys.argv.index('--element')
+    el = sys.argv[i+1]
+else:
     el = 'LJ'
 
 # -------------------

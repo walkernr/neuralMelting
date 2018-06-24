@@ -54,6 +54,8 @@ params = {'figure.figsize': (26, 20),
           'text.latex.preamble': r'\usepackage{amsmath}'r'\boldmath'}
 plt.rcParams.update(params)
 
+# simulation name
+name = 'remcmc'
 # run details
 property = 'entropic_fingerprint'  # property for classification
 n_dat = 64                         # number of datasets
@@ -81,8 +83,6 @@ lat = {'Ti': 'bcc',
        'Ni': 'fcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
-# simulation name
-name = 'remcmc'
 # file prefix
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
 # summary of input
