@@ -29,11 +29,11 @@ try:
 except:
     el = 'LJ'
 # pressure
-P = {'Ti': 2.0,
-     'Al': 2.0,
-     'Ni': 2.0,
-     'Cu': 2.0,
-     'LJ': 2.0}
+P = {'Ti': 1.0,
+     'Al': 1.0,
+     'Ni': 1.0,
+     'Cu': 1.0,
+     'LJ': 1.0}
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',

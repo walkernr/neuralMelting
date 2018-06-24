@@ -23,7 +23,7 @@ distributed = False   # boolean for choosing distributed or local cluster
 processes = True      # boolean for choosing whether to use processes
 
 system = 'mpi'                        # switch for mpirun or aprun
-nworkers = 4                          # number of processors
+nworkers = 16                         # number of processors
 nthreads = 1                          # threads per worker
 path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 

@@ -16,7 +16,7 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 
-nthreads = 4    # number of threads
+nthreads = 16   # number of threads
 
 theano = False  # keras backend
 if theano:

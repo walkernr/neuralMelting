@@ -39,7 +39,7 @@ params = {'figure.figsize': (26, 20),
           'text.latex.preamble': r'\usepackage{amsmath}'r'\boldmath'}
 plt.rcParams.update(params)
 
-nthreads = 4  # number of threads
+nthreads = 16  # number of threads
 
 # run details
 property = 'entropic_fingerprint'  # property for classification
