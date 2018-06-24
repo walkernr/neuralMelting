@@ -31,7 +31,7 @@ path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 n_press = 8
 n_temp = 64
 # simulation name
-name = 'test'
+name = 'remcmc'
 # monte carlo parameters
 cutoff = 1024         # sample cutoff
 n_smpl = cutoff+1024  # number of samples
