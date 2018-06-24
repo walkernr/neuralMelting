@@ -31,7 +31,7 @@ path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 n_press = 8
 n_temp = 64
 # simulation name
-name = 'remcmc'
+name = 'test'
 # monte carlo parameters
 cutoff = 1024         # sample cutoff
 n_smpl = cutoff+1024  # number of samples
@@ -233,13 +233,13 @@ def sample_init(i, j, el, units, lat, sz, mass, P, dpos, dt):
     # generate input file
     lmpsfilein = lammps_input(el, units, lat, sz, mass, P, dt)
     # initialize lammps
-    lmps = lammps(cmdargs=['-log', 'none', '-screen', 'none'])
+    lmps = lammps() # cmdargs=['-log', 'none', '-screen', 'none'])
     lmps.file(lmpsfilein)
     # minimize lattice structure
     lmps.command('unfix 1')
     lmps.command('fix 1 all box/relax iso %f vmax %f' % (P, 0.0009765625))
     lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
-    lmps.command('displace_atoms 1 random %f %f %f %d' % (3*(dpos,)+(np.random.randint(1, 2**16),)))
+    lmps.command('displace_atoms all random %f %f %f %d' % (3*(dpos,)+(np.random.randint(1, 2**16),)))
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # open data storage files
