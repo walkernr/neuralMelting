@@ -239,7 +239,7 @@ def sample_init(i, j, el, units, lat, sz, mass, P, dpos, dt):
     lmps.command('unfix 1')
     lmps.command('fix 1 all box/relax iso %f vmax %f' % (P, 0.0009765625))
     lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
-    lmps.command('displace_atoms random %f %f %f %d' % (3*(dpos,)+(np.random.randint(1, 2**16),)))
+    lmps.command('displace_atoms 1 random %f %f %f %d' % (3*(dpos,)+(np.random.randint(1, 2**16),)))
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # open data storage files
