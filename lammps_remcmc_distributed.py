@@ -33,7 +33,7 @@ n_temp = 48
 # simulation name
 name = 'remcmc'
 # monte carlo parameters
-cutoff = 1024         # sample cutoff
+cutoff = 256          # sample cutoff
 n_smpl = cutoff+1024  # number of samples
 mod = 128             # frequency of data storage
 n_swps = n_smpl*mod   # total mc sweeps
