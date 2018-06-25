@@ -234,7 +234,7 @@ def sample_init(i, j, el, units, lat, sz, mass, P, dpos, dt):
     # generate input file
     lmpsfilein = lammps_input(el, units, lat, sz, mass, P, dt)
     # initialize lammps
-    lmps = lammps() # cmdargs=['-log', 'none', '-screen', 'none'])
+    lmps = lammps(cmdargs=['-log', 'none', '-screen', 'none'])
     lmps.file(lmpsfilein)
     # minimize lattice structure
     lmps.command('unfix 1')
