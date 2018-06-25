@@ -16,7 +16,7 @@ from dask import delayed
 # run parameters
 # --------------
 
-verbose = True       # boolean for controlling verbosity
+verbose = False       # boolean for controlling verbosity
 
 parallel = True       # boolean for controlling parallel run
 distributed = False   # boolean for choosing distributed or local cluster
@@ -28,14 +28,14 @@ nthreads = 1                          # threads per worker
 path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 
 # number of data sets
-n_press = 4
-n_temp = 4
+n_press = 8
+n_temp = 64
 # simulation name
-name = 'test'
+name = 'remcmc'
 # monte carlo parameters
-cutoff = 4         # sample cutoff
-n_smpl = cutoff+4  # number of samples
-mod = 4             # frequency of data storage
+cutoff = 1024         # sample cutoff
+n_smpl = cutoff+1024  # number of samples
+mod = 128             # frequency of data storage
 n_swps = n_smpl*mod   # total mc sweeps
 ppos = 0.25           # probability of pos move
 pvol = 0.25           # probability of vol move
@@ -96,9 +96,9 @@ timestep = {'real': 4.0,
             'metal': 0.00390625,
             'lj': 0.00390625}
 # max box adjustment
-dbox = 0.125*lat[el][1]*np.ones((n_press, n_temp))
+dbox = 0.03125*lat[el][1]*np.ones((n_press, n_temp))
 # max pos adjustment
-dpos = 0.125*lat[el][1]*np.ones((n_press, n_temp))  
+dpos = 0.03125*lat[el][1]*np.ones((n_press, n_temp))  
 # hmc timestep
 dt = timestep[units[el]]*np.ones((n_press, n_temp))
 
@@ -286,6 +286,7 @@ def thermo_header(thermo, n_smpl, cutoff, mod, n_swps, ppos, pvol, phmc, n_stps,
     thermo.write('# ------------------------------------------------------------\n')
     thermo.write('# | temp | pe | ke | virial | vol | accpos | accvol | acchmc |\n')
     thermo.write('# ------------------------------------------------------------\n')
+    thermo.flush()
 
 def write_thermo(thermo, temp, pe, ke, virial, vol, accpos, accvol, acchmc, verbose):
     ''' writes thermodynamic properties to thermo file '''
@@ -295,6 +296,7 @@ def write_thermo(thermo, temp, pe, ke, virial, vol, accpos, accvol, acchmc, verb
         print('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E' % therm_args)
     # write data to file
     thermo.write('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E\n' % therm_args)
+    thermo.flush()
 
 def write_traj(traj, natoms, box, x):
     ''' writes trajectory data to traj file '''
@@ -302,6 +304,7 @@ def write_traj(traj, natoms, box, x):
     traj.write('%d %.4E\n' % (natoms, box))
     for k in xrange(natoms):
         traj.write('%.4E %.4E %.4E\n' % tuple(x[3*k:3*k+3]))
+    traj.flush()
 
 # -----------------
 # monte carlo moves
@@ -700,7 +703,6 @@ for i in xrange(n_smpl):
         dat = get_samples_par(client, x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
                               Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
                               dpos, dbox, T[el], mod, thermo, traj, verbose)
-        client.restart()  # prevent memory leak
     else:
         dat = get_samples(x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
                           Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,

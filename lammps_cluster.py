@@ -51,17 +51,24 @@ scaler = 'tanh'                    # data scaling method
 reduction = 'tsne'                 # reduction method
 clust = 'spectral'                 # clustering method
 
-# element choice
-try:
-    el = sys.argv[1]
-except:
+# element and pressure index choice
+if '--element' in sys.argv:
+    i = sys.argv.index('--element')
+    el = sys.argv[i+1]
+else:
     el = 'LJ'
+if '--pressure_index' in sys.argv:
+    i = sys.argv.index('--pressure_index')
+    pressind = int(sys.argv[i+1])
+else:
+    pressind = 0
+
 # pressure
-P = {'Ti': 2.0,
-     'Al': 2.0,
-     'Ni': 2.0,
-     'Cu': 2.0,
-     'LJ': 2.0}
+P = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'Al': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'Ni': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'Cu': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+     'LJ': np.linspace(1.0, 8.0, n_press, dtype=np.float64)}
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -69,13 +76,13 @@ lat = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # file prefix
-prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el]))
+prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el][pressind]))
 # summary of input
 print('------------------------------------------------------------')
 print('input summary')
 print('------------------------------------------------------------')
 print('potential:         %s' % el.lower())
-print('pressure:          %f' % P[el])
+print('pressure:          %f' % P[el][pressind])
 print('number of sets:    %d' % n_dat)
 print('number of samples: %d' % nsmpl)
 print('property:          %s' % property)

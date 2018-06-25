@@ -23,7 +23,7 @@ if '--pressure_index' in sys.argv:
     i = sys.argv.index('--pressure_index')
     pressind = int(sys.argv[i+1])
 else:
-    pressind = 1
+    pressind = 0
 
 # pressure
 P = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
