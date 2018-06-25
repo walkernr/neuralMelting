@@ -16,13 +16,16 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 
-nthreads = 16   # number of threads
+# number of threads
+nthreads = 16
 
-theano = False  # keras backend
+# keras backend
+theano = False
 if theano:
     os.environ['KERAS_BACKEND'] = 'theano'
 else:
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+# multithreading
 os.environ['MKL_NUM_THREADS'] = str(nthreads)
 os.environ['GOTO_NUM_THREADS'] = str(nthreads)
 os.environ['OMP_NUM_THREADS'] = str(nthreads)
@@ -58,8 +61,8 @@ plt.rcParams.update(params)
 name = 'remcmc'
 # run details
 property = 'entropic_fingerprint'  # property for classification
-n_dat = 64                         # number of datasets
-ntrainsets = 12                    # number of training sets
+n_dat = 48                         # number of datasets
+ntrainsets = 8                     # number of training sets
 nsmpl = 1024                       # number of samples from each set
 scaler = 'tanh'                    # data scaling method
 network = 'keras_cnn1d'            # neural network type
@@ -90,6 +93,7 @@ lat = {'Ti': 'bcc',
        'Ni': 'fcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
+
 # file prefix
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el][pressind]))
 # summary of input
@@ -107,6 +111,7 @@ print('network:                   %s' % network)
 print('fitting function:          %s' % fit_func)
 print('reduction:                 %s' % reduc)
 print('------------------------------------------------------------')
+
 # fitting functions
 # the confidence interval for transition temps is best with logistic
 def logistic(t, b, m):
@@ -127,9 +132,11 @@ fit_funcs = {'logistic':logistic, 'richard':richard, 'gompertz':gompertz}
 fit_guess = {'logistic':log_guess, 'richard':rich_guess, 'gompertz':gomp_guess}
 print('fitting function defined')
 print('------------------------------------------------------------')
+
 # bounds for training data
 lb = 0+ntrainsets
 ub = n_dat-(ntrainsets+1)
+
 # load domains for rdf and sf
 R = pickle.load(open(prefix+'.r.pickle'))[:]
 Q = pickle.load(open(prefix+'.q.pickle'))[:]
@@ -156,9 +163,11 @@ S = S[smplspc]
 I = I[smplspc]
 print('data loaded')
 print('------------------------------------------------------------')
+
 # property dictionary
 propdom = {'radial_distribution':R, 'entropic_fingerprint':R, 'structure_factor':Q}
 properties = {'radial_distribution':G, 'entropic_fingerprint':I, 'structure_factor':S}
+
 # scaler dict
 scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(feature_range=(0,1)), 'robust':RobustScaler(), 'tanh':TanhScaler()}
 # pca initialization
@@ -168,17 +177,20 @@ kpca = KernelPCA(n_components=npcacomp)
 reducers = {'pca':pca, 'kpca':kpca}
 print('scaler and reduction initialized')
 print('------------------------------------------------------------')
+
 # indices for partitioning data
 sind = (O < lb)               # solid training indices
 lind = (O > ub)               # liquid training indices
 tind = (O < lb) | (O > ub)    # training indices
 cind = (O >= lb) & (O <= ub)  # classification indices
+
 # initialize data
 data = properties[property]              # extract data from dictionary
 scalers[scaler].fit(data[tind])          # fit scaler to training data
 sdata = scalers[scaler].transform(data)  # transform data with scaler
 print('data scaled')
 print('------------------------------------------------------------')
+
 # apply reduction and extract training/classification data
 if reduc:
     reducers[reduc].fit(sdata[tind])                  # pca fit to training data
@@ -198,6 +210,7 @@ if reduc:
 else:
     tdata = sdata[tind]  # extract training data
     cdata = sdata[cind]  # extract classification data
+
 tT = T[tind]  # training temperatures
 cT = T[cind]  # classification temperatures
 # reshape data for cnn1d
@@ -211,12 +224,14 @@ if 'cnn1d' in network:
     # cdata = cdata[:np.square(nsqr)]
     # tdata = tdata.reshape(-1, nsqr, nsqr)
     # cdata = cdata.reshape(-1, nsqr, nsqr)
+
 ustdata = data[tind]  # unscaled training data
 uscdata = data[cind]  # unscaled classification data
 tshape = np.shape(tdata)
 cshape = np.shape(cdata)
 # classification indices
 tclass = np.array(np.count_nonzero(sind)*[0]+np.count_nonzero(lind)*[1], dtype=int)
+
 # neural network construction
 # keras - dense
 # not currently working
@@ -249,17 +264,20 @@ keras_cnn1d = KerasClassifier(build_keras_cnn1d, epochs=1, verbose=True)
 networks = {'keras_dense':keras_dense, 'keras_cnn1d':keras_cnn1d}
 print('network initialized')
 print('------------------------------------------------------------')
+
 # fit neural network to training data
 networks[network].fit(tdata, tclass)
 print('------------------------------------------------------------')
 print('network fit to training data')
 print('------------------------------------------------------------')
+
 # classification of data
 prob = networks[network].predict_proba(cdata)        # prediction probabilities
 pred = prob[:, 1].round()                            # prediction classifications
 print('------------------------------------------------------------')
 print('network predicted classification data')
 print('------------------------------------------------------------')
+
 # extract indices of classes and mean temps
 ind = []
 mtemp = np.zeros((2, 2), dtype=float)
@@ -273,6 +291,7 @@ cm = plt.get_cmap('plasma')
 scale = lambda temp: (temp-np.min(T))/np.max(T-np.min(T))
 print('colormap and scale defined')
 print('------------------------------------------------------------')
+
 # curve fitting and transition temp extraction
 temps = np.unique(cT)                      # temperature domain of classification data
 stemps = np.unique(stT[cind])              # standard error of temperature domain
@@ -315,6 +334,7 @@ print('transition range: %s' % ', '.join(tintrvl.astype('|S32')))
 print('fit parameters:   %s' % ', '.join(popt.astype('|S32')))
 print('parameter error:  %s' % ', '.join(perr.astype('|S32')))
 print('------------------------------------------------------------')
+
 # plot of phase probability
 fig0 = plt.figure()
 ax0 = fig0.add_subplot(111)
@@ -345,6 +365,7 @@ ax0.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
 ax0.set_xlabel('$\mathrm{Temperature}$')
 ax0.set_ylabel('$\mathrm{Probability}$')
 ax0.set_title('$\mathrm{%s\enspace Phase\enspace Probabilities}$' % el, y=1.015)
+
 # plot of trained and classified rdfs
 labels = ['Solid', 'Liquid']
 fig1 = plt.figure()
@@ -370,14 +391,17 @@ if property == 'structure_factor':
     ax1.set_xlabel('$\mathrm{Wavenumber}$')
     ax1.set_ylabel('$\mathrm{Structure Factor}$')
     ax1.set_title('$\mathrm{%s\enspace Phase\enspace SFs}$' % el, y=1.015)
+
 # prefix for plot files
 if reduc:
     plt_pref = [prefix, network, property, scaler, reduc, fit_func]
 else:
     plt_pref = [prefix, network, property, scaler, 'none', fit_func]
+
 # network graph
 if 'keras' in network:
     plot_model(networks[network].model, show_shapes=True, show_layer_names=True, to_file='.'.join(plt_pref+['mdl', str(nsmpl), 'png']))
+
 # save figures
 fig0.savefig('.'.join(plt_pref+['prob', str(nsmpl), 'png']))
 fig1.savefig('.'.join(plt_pref+['strf', str(nsmpl), 'png']))

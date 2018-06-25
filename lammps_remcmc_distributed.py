@@ -29,7 +29,7 @@ path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 
 # number of data sets
 n_press = 8
-n_temp = 64
+n_temp = 48
 # simulation name
 name = 'remcmc'
 # monte carlo parameters

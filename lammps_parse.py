@@ -9,7 +9,10 @@ from __future__ import division, print_function
 import sys, os, pickle
 import numpy as np
 
-n_press = 8  # number of pressure data sets
+verbose = False
+
+# number of pressure data sets
+n_press = 8
 # simulation name
 name = 'remcmc'
 
@@ -41,7 +44,9 @@ lat = {'Ti': 'bcc',
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el][pressind]))
 # get full directory
 file = os.getcwd()+'/'+prefix
-print('parsing data for %s at pressure %f' % (el.lower(), P[el][pressind]))
+
+if verbose:
+    print('parsing data for %s at pressure %f' % (el.lower(), P[el][pressind]))
 # parse thermo file
 with open(file+'.thrm', 'r') as fi:
     temp = []
@@ -67,7 +72,8 @@ with open(file+'.thrm', 'r') as fi:
             acchmc.append(float(dat[7]))
     # close file
     fi.close()
-print('%d thermodynamic property steps parsed' % len(temp))
+if verbose:
+    print('%d thermodynamic property steps parsed' % len(temp))
 # parse trajectory file
 with open(file+'.traj', 'r') as fi:
     iters = iter(fi)
@@ -86,7 +92,9 @@ with open(file+'.traj', 'r') as fi:
             pos.append(x.reshape(x.size))
     # close file
     fi.close()
-print('%d trajectory steps parsed' % len(natoms))
+if verbose:
+    print('%d trajectory steps parsed' % len(natoms))
+
 # pickle data
 pickle.dump(np.array(temp, dtype=float), open(prefix+'.temp.pickle', 'wb'))
 pickle.dump(np.array(pe, dtype=float), open(prefix+'.pe.pickle', 'wb'))
@@ -99,4 +107,5 @@ pickle.dump(np.array(acchmc, dtype=float), open(prefix+'.acchmc.pickle', 'wb'))
 pickle.dump(np.array(natoms, dtype=int), open(prefix+'.natoms.pickle', 'wb'))
 pickle.dump(np.array(box, dtype=float), open(prefix+'.box.pickle', 'wb'))
 pickle.dump(np.array(pos, dtype=float), open(prefix+'.pos.pickle', 'wb'))
-print('all properties pickled')
+if verbose:
+    print('all properties pickled')

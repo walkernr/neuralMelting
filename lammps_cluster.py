@@ -39,7 +39,8 @@ params = {'figure.figsize': (26, 20),
           'text.latex.preamble': r'\usepackage{amsmath}'r'\boldmath'}
 plt.rcParams.update(params)
 
-nthreads = 16  # number of threads
+# number of threads
+nthreads = 16
 
 # simulation name
 name = 'remcmc'
@@ -77,6 +78,7 @@ lat = {'Ti': 'bcc',
        'LJ': 'fcc'}
 # file prefix
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el][pressind]))
+
 # summary of input
 print('------------------------------------------------------------')
 print('input summary')
@@ -90,6 +92,7 @@ print('scaler:            %s' % scaler)
 print('reduction:         %s' % reduction)
 print('clustering:        %s' % clust)
 print('------------------------------------------------------------')
+
 # load domains for rdf and sf
 R = pickle.load(open(prefix+'.r.pickle'))[:]
 Q = pickle.load(open(prefix+'.q.pickle'))[:]
@@ -112,9 +115,11 @@ S = S[smplspc]
 I = I[smplspc]
 print('data loaded')
 print('------------------------------------------------------------')
+
 # property dictionary
 propdom = {'radial_distribution':R, 'entropic_fingerprint':R, 'structure_factor':Q}
 properties = {'radial_distribution':G, 'entropic_fingerprint':I, 'structure_factor':S}
+
 # scaler dict
 scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(), 'robust':RobustScaler(), 'tanh':TanhScaler()}
 # reduction dimension
@@ -132,6 +137,7 @@ pca = PCA(n_components=npcacomp)
 tsne = TSNE(n_jobs=nthreads, n_components=ntsnecomp, perplexity=plxty, init='random', verbose=True)
 print('scaler and reduction initialized')
 print('------------------------------------------------------------')
+
 # clustering initialization
 agglom = AgglomerativeClustering(n_clusters=2)
 kmeans = KMeans(n_jobs=nthreads, n_clusters=2, init='k-means++')
@@ -139,6 +145,7 @@ spectral = SpectralClustering(n_jobs=nthreads, n_clusters=2)
 clustering = {'agglomerative':agglom, 'kmeans':kmeans, 'spectral':spectral}
 print('clustering initialized')
 print('------------------------------------------------------------')
+
 # data scaling and reduction
 sdata = scalers[scaler].fit_transform(properties[property])
 pdata = pca.fit_transform(sdata)
@@ -161,6 +168,7 @@ if reduction == 'tsne':
     print('------------------------------------------------------------')
     print('kullback-leibler divergence: ', error)
     print('------------------------------------------------------------')
+
 # clustering prediction
 rdata = rdata[:, np.argsort(np.max(rdata, 0)-np.min(rdata, 0))]
 pred = clustering[clust].fit_predict(rdata)
@@ -169,6 +177,7 @@ if clust == 'kmeans':
     print('------------------------------------------------------------')
     print('intertia: ', clustering[clust].inertia_)
     print('------------------------------------------------------------')
+
 # construct phase temperature distributions
 cind = []
 ctdist = []
@@ -220,11 +229,13 @@ print('liquid geo mean:        %f, %f' % (lgmtemp, (lgstemp-1)*lgmtemp))
 print('gemoetric mean:         %f, %f' % (gmt, (gst-1)*gmt))
 print('geometric interval:     %f, %f' % (gmt-(gst-1)*gmt, gmt+(gst-1)*gmt))
 print('------------------------------------------------------------')
+
 # color scale
 cm = plt.get_cmap('plasma')
 scale = lambda temp: (temp-np.min(T))/np.max(T-np.min(T))
 print('colormap and scale defined')
 print('------------------------------------------------------------')
+
 # reduction plot
 fig0 = plt.figure()
 grid0 = ImageGrid(fig0, 111,
@@ -254,6 +265,7 @@ grid0[1].set_title('$\mathrm{(b)\enspace Cluster\enspace Temperature}$', y=1.02)
 cbar = grid0[0].cax.colorbar(cbd)
 cbar.solids.set(alpha=1)
 grid0[0].cax.toggle_label(True)
+
 # distribution plot
 fig1 = plt.figure()
 ax10 = fig1.add_subplot(211)
@@ -276,6 +288,7 @@ else:
     # ax11.text(1.25*(amt+ast), 1.5, '$T_{\mathrm{arith}} = %4.0f \pm %4.0f$' % (gmt, gst))
 ax11.set_xlabel('$T$')
 ax11.set_ylabel('$p(T)$')
+
 # property plot
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(111)
@@ -294,6 +307,7 @@ if el == 'LJ':
     ax2.legend(['$\mathrm{'+'{:2.2f}'.format(cmtemp[pind[i]])+'K}$' for i in xrange(2)])
 else:
     ax2.legend(['$\mathrm{'+'{:4.0f}'.format(cmtemp[pind[i]])+'K}$' for i in xrange(2)])
+
 # save figures
 plt_pref = [prefix, property, scaler, reduction, clust]
 fig0.savefig('.'.join(plt_pref+['red', str(nsmpl), 'png']))

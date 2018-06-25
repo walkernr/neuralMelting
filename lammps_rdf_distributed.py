@@ -23,7 +23,8 @@ nworkers = 16                         # number of processors
 nthreads = 1                          # threads per worker
 path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 
-n_press = 8  # number of pressure data sets
+# number of pressure data sets
+n_press = 8
 # simulation name
 name = 'remcmc'
 
@@ -167,6 +168,7 @@ ftg = -np.imag(dr*np.exp(-complex(0, 1)*q*r[0])*np.fft.fft(r[np.newaxis, :]*(g-1
 # structure factor
 s = 1+4*np.pi*nrho[:, np.newaxis]*np.divide(ftg, q)
 i = np.multiply(np.nan_to_num(np.multiply(g, np.log(g)))-g+1, np.square(r[:]))
+
 # pickle data
 pickle.dump(nrho, open(prefix+'.nrho.pickle', 'wb'))
 pickle.dump(dni, open(prefix+'.dni.pickle', 'wb'))
