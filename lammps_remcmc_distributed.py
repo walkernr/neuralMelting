@@ -28,14 +28,14 @@ nthreads = 1                          # threads per worker
 path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 
 # number of data sets
-n_press = 8
-n_temp = 64
+n_press = 4
+n_temp = 4
 # simulation name
-name = 'remcmc'
+name = 'test'
 # monte carlo parameters
-cutoff = 1024         # sample cutoff
-n_smpl = cutoff+1024  # number of samples
-mod = 128             # frequency of data storage
+cutoff = 4         # sample cutoff
+n_smpl = cutoff+4  # number of samples
+mod = 4             # frequency of data storage
 n_swps = n_smpl*mod   # total mc sweeps
 ppos = 0.25           # probability of pos move
 pvol = 0.25           # probability of vol move
@@ -658,7 +658,7 @@ naccvol = np.zeros((n_press, n_temp), dtype=float)
 ntryhmc = np.zeros((n_press, n_temp), dtype=float)
 nacchmc = np.zeros((n_press, n_temp), dtype=float)
 # loop through pressures
-for i in xrange(len(P[el])):
+for i in xrange(n_press):
     # loop through temperatures
     for j in xrange(n_temp):
         # set thermo constants
