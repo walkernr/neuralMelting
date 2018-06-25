@@ -16,7 +16,7 @@ from dask import delayed
 # run parameters
 # --------------
 
-verbose = False       # boolean for controlling verbosity
+verbose = True       # boolean for controlling verbosity
 
 parallel = True       # boolean for controlling parallel run
 distributed = False   # boolean for choosing distributed or local cluster
