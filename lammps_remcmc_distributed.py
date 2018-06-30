@@ -20,7 +20,7 @@ verbose = False       # boolean for controlling verbosity
 
 parallel = True       # boolean for controlling parallel run
 distributed = False   # boolean for choosing distributed or local cluster
-processes = False     # boolean for choosing whether to use processes
+processes = True      # boolean for choosing whether to use processes
 
 system = 'mpi'                        # switch for mpirun or aprun
 nworkers = 16                         # number of processors
@@ -703,6 +703,7 @@ for i in xrange(n_smpl):
         dat = get_samples_par(client, x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
                               Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
                               dpos, dbox, T[el], mod, thermo, traj, verbose)
+        client.restart()  # prevent memory leak
     else:
         dat = get_samples(x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
                           Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
