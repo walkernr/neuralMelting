@@ -20,7 +20,7 @@ verbose = False       # boolean for controlling verbosity
 
 parallel = True       # boolean for controlling parallel run
 distributed = False   # boolean for choosing distributed or local cluster
-processes = True      # boolean for choosing whether to use processes
+processes = False     # boolean for choosing whether to use processes
 
 system = 'mpi'                        # switch for mpirun or aprun
 nworkers = 16                         # number of processors
