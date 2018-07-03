@@ -8,6 +8,7 @@ Created on Tue Jun 12 20:11:57 2018
 from __future__ import division, print_function
 import os, sys, pickle
 import numpy as np
+import numba as nb
 from distributed import Client, LocalCluster, progress
 from dask import delayed
 
@@ -109,31 +110,28 @@ def calculate_spatial():
                 R.append(np.array([base[i], base[j], base[k]], dtype=float))
     # create vector for rdf
     gs = np.zeros((len(natoms), bins), dtype=float)
-    # vectors for counting atoms between distances ra and rb
-    rb = np.roll(r, -1)[np.newaxis, np.newaxis, :-1]
-    ra = r[np.newaxis, np.newaxis, :-1]
     # reshape position vector
     pos = pos.reshape((len(natoms), natoms[0], -1))
     # return properties
-    return natoms, box, pos, R, bins, r, dr, nrho, dni, gs, rb, ra
+    return natoms, box, pos, R, r, dr, nrho, dni, gs
     
-def calculate_rdf(box, pos, R, bins, rb, ra):
+@nb.njit
+def calculate_rdf(box, pos, R, r, gs):
     ''' calculate rdf for sample j '''
     # loop through lattice vectors
-    gs = np.zeros(bins, dtype=float)
-    for k in xrange(len(R)):
+    for k in xrange(R.shape[0]):
         # displacement vector matrix for sample j
-        dvm = pos-(pos+box*R[k][np.newaxis, :])[:, np.newaxis]
+        dvm = pos-(pos+box*R[k].reshape((1, -1))).reshape((-1, 1, 3))
         # vector of displacements between atoms
-        d = np.sqrt(np.sum(np.square(dvm), -1))[:, :, np.newaxis]
+        d = np.sqrt(np.sum(np.square(dvm), -1))
         # calculate rdf for sample j
-        gs[1:] += np.sum((d < rb) & (d > ra), (0, 1))
+        gs[1:] += np.histogram(d, r)[0]
     return gs
 
 # get spatial properties
-natoms, box, pos, R, bins, r, dr, nrho, dni, gs, rb, ra = calculate_spatial()
+natoms, box, pos, R, r, dr, nrho, dni, gs = calculate_spatial()
 # calculate radial distribution for each sample in parallel
-operations = [delayed(calculate_rdf)(box[j], pos[j, :], R, bins, rb, ra) for j in xrange(len(natoms))]
+operations = [delayed(calculate_rdf)(box[j], pos[j, :], R, r, gs[j, :]) for j in xrange(len(natoms))]
 if distributed:
     # construct scheduler with mpi
     sched_init(system, nworkers, path)
