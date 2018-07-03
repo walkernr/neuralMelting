@@ -552,12 +552,10 @@ def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
     futures = client.compute(operations)
     if verbose:
         progress(futures)
-    results = client.gather(futures)
-    del futures
     k = 0
     for i in xrange(n_press):
         for j in xrange(n_temp):
-            dat = results[k]
+            dat = futures[k].result()
             k += 1
             natoms[i, j], x[i, j], v[i, j] = dat[:3]
             temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
@@ -573,6 +571,8 @@ def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
             acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
             write_thermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
             write_traj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
+    # remove all computations
+    client.cancel(futures)
     # return lammps object, tries/acceptation counts, and mc params
     return natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
     
