@@ -20,7 +20,7 @@ verbose = False       # boolean for controlling verbosity
 
 parallel = True       # boolean for controlling parallel run
 distributed = False   # boolean for choosing distributed or local cluster
-processes = False     # boolean for choosing whether to use processes
+processes = True      # boolean for choosing whether to use processes
 
 system = 'mpi'                        # switch for mpirun or aprun
 nworkers = 16                         # number of processors
@@ -31,7 +31,7 @@ path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 n_press = 8
 n_temp = 48
 # simulation name
-name = 'remcmc'
+name = 'test'
 # monte carlo parameters
 cutoff = 256          # sample cutoff
 n_smpl = cutoff+1024  # number of samples
@@ -552,10 +552,12 @@ def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
     futures = client.compute(operations)
     if verbose:
         progress(futures)
+    results = client.gather(futures)
+    del futures
     k = 0
     for i in xrange(n_press):
         for j in xrange(n_temp):
-            dat = futures[k].result()
+            dat = results[k]
             k += 1
             natoms[i, j], x[i, j], v[i, j] = dat[:3]
             temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
@@ -703,8 +705,6 @@ for i in xrange(n_smpl):
         dat = get_samples_par(client, x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
                               Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
                               dpos, dbox, T[el], mod, thermo, traj, verbose)
-        if processes:
-            client.restart()  # prevent memory leak
     else:
         dat = get_samples(x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
                           Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
