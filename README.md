@@ -27,6 +27,7 @@ I recommend using Anaconda since the only additional libraries needed are LAMMPS
 - SciPy
 - Dask
 - MPI4Py (for distributed clusters)
+- Numba
 - Scikit-Learn
 - Multicore-TSNE
 - Keras
@@ -68,7 +69,7 @@ This program parses the output from Monte Carlo simulations and pickles the data
 lammps_rdf_distributed.py
 -------------------------
 
-This program calculates the radial distributions, structure factors, and entropic fingerprints, and densities alongside the domains for each structural function for each sample using the pickled trajectory information from the parsing script. The calculations can be run in parallel using a multiprocessing or multithreading approach on local or distributed clusters. The parallelism is implemented with the Dask Distributed library. Since Dask uses Bokeh, multiprocessing runs may be monitored at localhost:8787/status assuming the default Bokeh TCP port is used.
+This program calculates the radial distributions, structure factors, and entropic fingerprints, and densities alongside the domains for each structural function for each sample using the pickled trajectory information from the parsing script. The calculations can be run in parallel using a multiprocessing or multithreading approach on local or distributed clusters. The parallelism is implemented with the Dask Distributed library. Since Dask uses Bokeh, multiprocessing runs may be monitored at localhost:8787/status assuming the default Bokeh TCP port is used. The rdf calculations are also optimized using a combination of vectorized code by way of NumPy alongside a JIT compiler by way of Numba.
 
 NOTE: not confirmed to work on a distributed cluster environment yet.
 
