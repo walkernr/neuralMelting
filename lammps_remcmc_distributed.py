@@ -566,7 +566,6 @@ def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
     if verbose:
         progress(futures)
     results = client.gather(futures)
-    del futures
     k = 0
     for i in xrange(n_press):
         for j in xrange(n_temp):
