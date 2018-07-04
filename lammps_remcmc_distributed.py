@@ -16,7 +16,11 @@ from dask import delayed
 # run parameters
 # --------------
 
-verbose = False       # boolean for controlling verbosity
+# boolean for controlling verbosity
+if '--verbose' in sys.argv:
+    verbose = True
+else:
+    verbose = False       
 
 parallel = True       # boolean for controlling parallel run
 distributed = False   # boolean for choosing distributed or local cluster
@@ -30,8 +34,14 @@ path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 # number of data sets
 n_press = 8
 n_temp = 48
+
 # simulation name
-name = 'remcmc'
+if '--name' in sys.argv:
+    i = sys.argv.index('--name')
+    name = sys.argv[i+1]
+else:
+    name = 'remcmc'
+
 # monte carlo parameters
 cutoff = 256          # sample cutoff
 n_smpl = cutoff+1024  # number of samples
@@ -95,6 +105,7 @@ mass = {'Ti': 47.867,
 timestep = {'real': 4.0,
             'metal': 0.00390625,
             'lj': 0.00390625}
+
 # max box adjustment
 dbox = 0.03125*lat[el][1]*np.ones((n_press, n_temp))
 # max pos adjustment
@@ -499,9 +510,10 @@ def get_sample(x, v, box, el, units, lat, sz, mass, P, dt,
     # close lammps and remove input file
     lmps.close()
     # acceptation ratios
-    accpos = np.nan_to_num(np.float64(naccpos)/np.float64(ntrypos))
-    accvol = np.nan_to_num(np.float64(naccvol)/np.float64(ntryvol))
-    acchmc = np.nan_to_num(np.float64(nacchmc)/np.float64(ntryhmc))
+    with np.errstate(invalid='ignore'):
+        accpos = np.nan_to_num(np.float64(naccpos)/np.float64(ntrypos))
+        accvol = np.nan_to_num(np.float64(naccvol)/np.float64(ntryvol))
+        acchmc = np.nan_to_num(np.float64(nacchmc)/np.float64(ntryhmc))
     # update mc params
     dpos, dbox, dt = update_mc_param(dpos, dbox, dt, accpos, accvol, acchmc)
     # return lammps object, tries/acceptation counts, and mc params
@@ -532,9 +544,10 @@ def get_samples(x, v, box, el, units, lat, sz, mass, P, dt,
         print('\n')
     for i in xrange(n_press):
         for j in xrange(n_temp):
-            accpos = np.nan_to_num(np.float64(naccpos[i, j])/np.float64(ntrypos[i, j]))
-            accvol = np.nan_to_num(np.float64(naccvol[i, j])/np.float64(ntryvol[i, j]))
-            acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
+            with np.errstate(invalid='ignore'):
+                accpos = np.nan_to_num(np.float64(naccpos[i, j])/np.float64(ntrypos[i, j]))
+                accvol = np.nan_to_num(np.float64(naccvol[i, j])/np.float64(ntryvol[i, j]))
+                acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
             write_thermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
             write_traj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
     # return lammps object, tries/acceptation counts, and mc params
@@ -552,10 +565,12 @@ def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
     futures = client.compute(operations)
     if verbose:
         progress(futures)
+    results = client.gather(futures)
+    del futures
     k = 0
     for i in xrange(n_press):
         for j in xrange(n_temp):
-            dat = futures[k].result()
+            dat = results[k]
             k += 1
             natoms[i, j], x[i, j], v[i, j] = dat[:3]
             temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
@@ -566,9 +581,10 @@ def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
     # write to data storage files
     for i in xrange(n_press):
         for j in xrange(n_temp):
-            accpos = np.nan_to_num(np.float64(naccpos[i, j])/np.float64(ntrypos[i, j]))
-            accvol = np.nan_to_num(np.float64(naccvol[i, j])/np.float64(ntryvol[i, j]))
-            acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
+            with np.errstate(invalid='ignore'):
+                accpos = np.nan_to_num(np.float64(naccpos[i, j])/np.float64(ntrypos[i, j]))
+                accvol = np.nan_to_num(np.float64(naccvol[i, j])/np.float64(ntryvol[i, j]))
+                acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
             write_thermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
             write_traj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
     # remove all computations

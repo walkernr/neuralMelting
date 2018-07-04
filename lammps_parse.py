@@ -9,7 +9,11 @@ from __future__ import division, print_function
 import sys, os, pickle
 import numpy as np
 
-verbose = False
+# boolean for controlling verbosity
+if '--verbose' in sys.argv:
+    verbose = True
+else:
+    verbose = False
 
 # number of pressure data sets
 n_press = 8

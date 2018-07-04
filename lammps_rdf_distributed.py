@@ -148,17 +148,13 @@ if verbose:
     print('calculating data for %s at pressure %f' % (el.lower(), P[el][pressind]))
     futures = client.compute(operations)
     progress(futures)
-    results = client.gather(futures)
-    del futures
     print('assigning rdfs')
     for j in tqdm(xrange(len(natoms))):
-        gs[j, :] = results[j]
+        gs[j, :] = futures[j].result()
 else:
     futures = client.compute(operations)
-    results = client.gather(futures)
-    del futures
     for j in xrange(len(natoms)):
-        gs[j, :] = results[j]
+        gs[j, :] = futures[j].result()
 client.close()
 
 # adjust rdf by atom count and atoms contained by shells
