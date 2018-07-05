@@ -151,7 +151,7 @@ if verbose:
     results = client.gather(futures)
     print('assigning rdfs')
     for j in tqdm(xrange(len(natoms))):
-        gs[j, :] = resultss[j]
+        gs[j, :] = results[j]
 else:
     futures = client.compute(operations)
     results = client.gather(futures)
