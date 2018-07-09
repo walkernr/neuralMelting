@@ -359,7 +359,7 @@ else:
     out_pref = [prefix, network, property, scaler, 'none', fit_func]
 
 # save data to file
-with open(out_pref+'.out', 'w') as fo:
+with open('.'.join(out_pref+[str(nsmpl), 'out']), 'w') as fo:
     fo.write('%s\n' % ''.join(np.unique(U).astype('|S32')))
     fo.write('%s\n' % ''.join(np.unique(stU).astype('|S32')))
     fo.write('%s\n' % ''.join(np.unique(P).astype('|S32')))
