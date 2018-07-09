@@ -38,6 +38,7 @@ from keras.wrappers.scikit_learn import KerasClassifier
 from keras.utils import plot_model
 
 # plotting parameters
+# plt.rc('text', usetex=True)
 plt.rc('font', family='sans-serif')
 ftsz = 48
 params = {'figure.figsize': (26, 20),
@@ -53,6 +54,7 @@ params = {'figure.figsize': (26, 20),
           'ytick.major.size': 20,
           'ytick.major.width': 2.0,
           'font.size': ftsz}
+          # 'text.latex.preamble': r'\usepackage{amsmath}'r'\boldmath'}
 plt.rcParams.update(params)
 
 # simulation name

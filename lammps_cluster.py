@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 # plotting parameters
-plt.rc('text', usetex=True)
+# plt.rc('text', usetex=True)
 plt.rc('font', family='sans-serif')
 ftsz = 48
 params = {'figure.figsize': (26, 20),
@@ -35,8 +35,8 @@ params = {'figure.figsize': (26, 20),
           'ytick.labelsize': ftsz,
           'ytick.major.size': 20,
           'ytick.major.width': 2.0,
-          'font.size': ftsz,
-          'text.latex.preamble': r'\usepackage{amsmath}'r'\boldmath'}
+          'font.size': ftsz}
+          # 'text.latex.preamble': r'\usepackage{amsmath}'r'\boldmath'}
 plt.rcParams.update(params)
 
 # number of threads
@@ -254,15 +254,15 @@ for i in xrange(len(grid0)):
     grid0[i].yaxis.set_ticks_position('left')
 cbd = grid0[0].scatter(rdata[:, 0], rdata[:, 1], c=T, cmap=cm, s=120, alpha=0.05, edgecolors='none')
 grid0[0].set_aspect('equal', 'datalim')
-grid0[0].set_xlabel('$x_0$')
-grid0[0].set_ylabel('$x_1$')
-grid0[0].set_title('$\mathrm{(a)\enspace Sample\enspace Temperature}$', y=1.02)
+grid0[0].set_xlabel(r'$x_0$')
+grid0[0].set_ylabel(r'$x_1$')
+grid0[0].set_title(r'$\mathrm{(a)\enspace Sample\enspace Temperature}$', y=1.02)
 for i in xrange(2):
     grid0[1].scatter(rdata[pred == pind[i], 0], rdata[pred == pind[i], 1], c=cm(scale(cmtemp[pind[i]])), s=120, alpha=0.05, edgecolors='none')
 grid0[1].set_aspect('equal', 'datalim')
-grid0[1].set_xlabel('$x_0$')
-grid0[1].set_ylabel('$x_1$')
-grid0[1].set_title('$\mathrm{(b)\enspace Cluster\enspace Temperature}$', y=1.02)
+grid0[1].set_xlabel(r'$x_0$')
+grid0[1].set_ylabel(r'$x_1$')
+grid0[1].set_title(r'$\mathrm{(b)\enspace Cluster\enspace Temperature}$', y=1.02)
 cbar = grid0[0].cax.colorbar(cbd)
 cbar.solids.set(alpha=1)
 grid0[0].cax.toggle_label(True)
@@ -272,8 +272,8 @@ fig1 = plt.figure()
 ax10 = fig1.add_subplot(211)
 ax11 = fig1.add_subplot(212)
 ax10.fill_between(tdist[1][1:], 0, tdist[0], color=cm(scale(np.mean(T))), alpha=0.25)
-ax10.set_xlabel('$T$')
-ax10.set_ylabel('$p(T)$')
+ax10.set_xlabel(r'$T$')
+ax10.set_ylabel(r'$p(T)$')
 for i in xrange(2):
     ax11.fill_between(ctdist[pind[i]][1][1:], 0, ctdist[pind[i]][0], color=cm(scale(cmtemp[pind[i]])), alpha=0.25)
 ax11.axvline(amt, color=cm(scale(amt)))
@@ -282,32 +282,32 @@ for i in xrange(2):
     ax11.axvline(amt+(-1)**i*ast, color=cm(scale(amt+(-1)**i*ast)), linestyle='--')
     # ax11.axvline(gmt+(-1)**i*(gst-1)*gmt, color=cm(scale(gmt+(-1)**i*(gst-1)*gmt)), linestyle='--')
 if el == 'LJ':
-    ax11.text(1.25*(amt+ast), 1.25*np.min([np.max(ctdist[pind[i]][0]) for i in xrange(2)]), '$T_{\mathrm{arith}} = %.4f \pm %.4f$' % (amt, ast))
+    ax11.text(1.25*(amt+ast), 1.25*np.min([np.max(ctdist[pind[i]][0]) for i in xrange(2)]), r'$T_{\mathrm{arith}} = %.4f \pm %.4f$' % (amt, ast))
     # ax11.text(1.25*(amt+ast), 1.5, '$T_{\mathrm{geo}} = %2.2f \pm %2.2f$' % (gmt, gst))
 else:
-    ax11.text(1.25*(amt+ast), 1.25*np.min([np.max(ctdist[pind[i]][0]) for i in xrange(2)]), '$T_{\mathrm{arith}} = %4.0f \pm %4.0f$' % (amt, ast))
+    ax11.text(1.25*(amt+ast), 1.25*np.min([np.max(ctdist[pind[i]][0]) for i in xrange(2)]), r'$T_{\mathrm{arith}} = %4.0f \pm %4.0f$' % (amt, ast))
     # ax11.text(1.25*(amt+ast), 1.5, '$T_{\mathrm{arith}} = %4.0f \pm %4.0f$' % (gmt, gst))
-ax11.set_xlabel('$T$')
-ax11.set_ylabel('$p(T)$')
+ax11.set_xlabel(r'$T$')
+ax11.set_ylabel(r'$p(T)$')
 
 # property plot
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(111)
 if property == 'radial_distribution':
-    ax2.set_xlabel('$\mathrm{Radius}$')
-    ax2.set_ylabel('$g(r)$')
+    ax2.set_xlabel(r'$\mathrm{Radius}$')
+    ax2.set_ylabel(r'$g(r)$')
 if property == 'entropic_fingerprint':
-    ax2.set_xlabel('$\mathrm{Radius}$')
-    ax2.set_ylabel('$I(r)$')
+    ax2.set_xlabel(r'$\mathrm{Radius}$')
+    ax2.set_ylabel(r'$I(r)$')
 if property == 'structure_factor':
-    ax2.set_xlabel('$\mathrm{Wavenumber}$')
-    ax2.set_ylabel('$S(q)$')
+    ax2.set_xlabel(r'$\mathrm{Wavenumber}$')
+    ax2.set_ylabel(r'$S(q)$')
 for i in xrange(2):
     ax2.plot(propdom[property], np.mean(properties[property][pred == pind[i], :], 0), color=cm(scale(cmtemp[pind[i]])))
 if el == 'LJ':
-    ax2.legend(['$\mathrm{'+'{:2.2f}'.format(cmtemp[pind[i]])+'K}$' for i in xrange(2)])
+    ax2.legend([r'$\mathrm{'+'{:2.2f}'.format(cmtemp[pind[i]])+'K}$' for i in xrange(2)])
 else:
-    ax2.legend(['$\mathrm{'+'{:4.0f}'.format(cmtemp[pind[i]])+'K}$' for i in xrange(2)])
+    ax2.legend([r'$\mathrm{'+'{:4.0f}'.format(cmtemp[pind[i]])+'K}$' for i in xrange(2)])
 
 # save figures
 plt_pref = [prefix, property, scaler, reduction, clust]
