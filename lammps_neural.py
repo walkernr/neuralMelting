@@ -61,7 +61,8 @@ plt.rcParams.update(params)
 name = 'remcmc'
 # run details
 property = 'entropic_fingerprint'  # property for classification
-n_dat = 48                         # number of datasets
+n_press = 8                        # number of pressure datasets
+n_dat = 48                         # number of temperature datasets
 ntrainsets = 8                     # number of training sets
 nsmpl = 1024                       # number of samples from each set
 scaler = 'tanh'                    # data scaling method
