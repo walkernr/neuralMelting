@@ -31,11 +31,15 @@ os.environ['GOTO_NUM_THREADS'] = str(nthreads)
 os.environ['OMP_NUM_THREADS'] = str(nthreads)
 os.environ['openmp'] = 'True'
 
+from tensorflow import set_random_seed
 from keras.models import Sequential
 from keras.layers import Input, Conv1D, MaxPooling1D, GlobalAveragePooling1D, Dropout, Dense
 from keras.optimizers import SGD, Nadam
 from keras.wrappers.scikit_learn import KerasClassifier
 from keras.utils import plot_model
+
+seed = 256
+set_random_seed(seed)
 
 # plotting parameters
 # plt.rc('text', usetex=True)
@@ -367,6 +371,9 @@ with open('.'.join(out_pref+[str(nsmpl), 'out']), 'w') as fo:
     fo.write('%s\n' % ' '.join(np.unique(T).astype('|S32')))
     fo.write('%s\n' % ' '.join(np.unique(stT).astype('|S32')))
     fo.write('%f %f\n' % (trans, cerr))
+    
+print('data saved')
+print('------------------------------------------------------------')
 
 # plot of phase probability
 fig0 = plt.figure()
