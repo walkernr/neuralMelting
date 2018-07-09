@@ -138,16 +138,25 @@ print('------------------------------------------------------------')
 lb = 0+ntrainsets
 ub = n_dat-(ntrainsets+1)
 
-# load domains for rdf and sf
-R = pickle.load(open(prefix+'.r.pickle'))[:]
-Q = pickle.load(open(prefix+'.q.pickle'))[:]
 # load simulation data
 N = pickle.load(open(prefix+'.natoms.pickle'))
 O = np.concatenate(tuple([i*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
-P = pickle.load(open(prefix+'.virial.pickle'))
+# load potential data
+trU = pickle.load(open(prefix+'.pe.pickle'))
+U = np.concatenate(tuple([np.mean(trU[O == i])*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
+stU = np.concatenate(tuple([np.std(trU[O == i])*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
+# load pressure data
+trP = pickle.load(open(prefix+'.virial.pickle'))
+P = np.concatenate(tuple([np.mean(trP[O == i])*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
+stP = np.concatenate(tuple([np.std(trP[O == i])*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
+# load temperature data
 trT = pickle.load(open(prefix+'.temp.pickle'))
 T = np.concatenate(tuple([np.mean(trT[O == i])*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
 stT = np.concatenate(tuple([np.std(trT[O == i])*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
+# load structure domains
+R = pickle.load(open(prefix+'.r.pickle'))[:]
+Q = pickle.load(open(prefix+'.q.pickle'))[:]
+# load structure data
 G = pickle.load(open(prefix+'.rdf.pickle'))
 S = pickle.load(open(prefix+'.sf.pickle'))
 I = pickle.load(open(prefix+'.ef.pickle'))
@@ -336,6 +345,22 @@ print('fit parameters:   %s' % ', '.join(popt.astype('|S32')))
 print('parameter error:  %s' % ', '.join(perr.astype('|S32')))
 print('------------------------------------------------------------')
 
+# prefix for output files
+if reduc:
+    out_pref = [prefix, network, property, scaler, reduc, fit_func]
+else:
+    out_pref = [prefix, network, property, scaler, 'none', fit_func]
+
+# save data to file
+with open(out_pref+'.out', 'w') as fo:
+    fo.write('%s\n' % ''.join(np.unique(U).astype('|S32')))
+    fo.write('%s\n' % ''.join(np.unique(stU).astype('|S32')))
+    fo.write('%s\n' % ''.join(np.unique(P).astype('|S32')))
+    fo.write('%s\n' % ''.join(np.unique(stP).astype('|S32')))
+    fo.write('%s\n' % ''.join(np.unique(T).astype('|S32')))
+    fo.write('%s\n' % ''.join(np.unique(stT).astype('|S32')))
+    fo.write('%f %f\n' % (trans, cerr))
+
 # plot of phase probability
 fig0 = plt.figure()
 ax0 = fig0.add_subplot(111)
@@ -393,19 +418,13 @@ if property == 'structure_factor':
     ax1.set_ylabel(r'$\mathrm{Structure Factor}$')
     ax1.set_title(r'$\mathrm{%s\enspace Phase\enspace SFs}$' % el, y=1.015)
 
-# prefix for plot files
-if reduc:
-    plt_pref = [prefix, network, property, scaler, reduc, fit_func]
-else:
-    plt_pref = [prefix, network, property, scaler, 'none', fit_func]
-
 # network graph
 if 'keras' in network:
-    plot_model(networks[network].model, show_shapes=True, show_layer_names=True, to_file='.'.join(plt_pref+['mdl', str(nsmpl), 'png']))
+    plot_model(networks[network].model, show_shapes=True, show_layer_names=True, to_file='.'.join(out_pref+['mdl', str(nsmpl), 'png']))
 
 # save figures
-fig0.savefig('.'.join(plt_pref+['prob', str(nsmpl), 'png']))
-fig1.savefig('.'.join(plt_pref+['strf', str(nsmpl), 'png']))
+fig0.savefig('.'.join(out_pref+['prob', str(nsmpl), 'png']))
+fig1.savefig('.'.join(out_pref+['strf', str(nsmpl), 'png']))
 # close plots
 plt.close('all')
 print('plots saved')
