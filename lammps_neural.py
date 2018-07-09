@@ -38,7 +38,6 @@ from keras.wrappers.scikit_learn import KerasClassifier
 from keras.utils import plot_model
 
 # plotting parameters
-plt.rc('text', usetex=True)
 plt.rc('font', family='sans-serif')
 ftsz = 48
 params = {'figure.figsize': (26, 20),
@@ -53,8 +52,7 @@ params = {'figure.figsize': (26, 20),
           'ytick.labelsize': ftsz,
           'ytick.major.size': 20,
           'ytick.major.width': 2.0,
-          'font.size': ftsz,
-          'text.latex.preamble': r'\usepackage{amsmath}'r'\boldmath'}
+          'font.size': ftsz}
 plt.rcParams.update(params)
 
 # simulation name
@@ -343,7 +341,7 @@ ax0.spines['right'].set_visible(False)
 ax0.spines['top'].set_visible(False)
 ax0.xaxis.set_ticks_position('bottom')
 ax0.yaxis.set_ticks_position('left')
-ax0.plot(fitdom, fitrng, color=cm(scale(trans)), label='$\mathrm{Phase\enspace Probability\enspace Curve}$')
+ax0.plot(fitdom, fitrng, color=cm(scale(trans)), label=r'$\mathrm{Phase\enspace Probability\enspace Curve}$')
 ax0.axvline(trans, color=cm(scale(trans)), alpha=0.50)
 if fit_func == 'gompertz' or fit_func == 'logistic':
     for i in xrange(2):
@@ -353,9 +351,9 @@ for i in xrange(2):
     ax0.scatter(cT[pred == i], prob[pred == i, 1], c=cm(scale(mtemp[1, i])), s=120, alpha=0.05, edgecolors='none')
 ax0.scatter(temps, mprob, color=cm(scale(temps)), s=240, edgecolors='none', marker='*')
 if el == 'LJ':
-    ax0.text(trans+2*np.diff(temps)[0], .5, '$T_{\mathrm{trans}} = %.4f \pm %.4f$' % (trans, cerr))
+    ax0.text(trans+2*np.diff(temps)[0], .5, r'$T_{\mathrm{trans}} = %.4f \pm %.4f$' % (trans, cerr))
 else:
-    ax0.text(trans+2*np.diff(temps)[0], .5, '$T_{\mathrm{trans}} = %4.0f \pm %4.0fK$' % (trans, cerr))
+    ax0.text(trans+2*np.diff(temps)[0], .5, r'$T_{\mathrm{trans}} = %4.0f \pm %4.0fK$' % (trans, cerr))
 ax0.set_ylim(0.0, 1.0)
 for tick in ax0.get_xticklabels():
     tick.set_rotation(16)
@@ -363,9 +361,9 @@ scitxt = ax0.yaxis.get_offset_text()
 scitxt.set_x(.025)
 # ax0.legend(loc='upper left')
 ax0.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
-ax0.set_xlabel('$\mathrm{Temperature}$')
-ax0.set_ylabel('$\mathrm{Probability}$')
-ax0.set_title('$\mathrm{%s\enspace Phase\enspace Probabilities}$' % el, y=1.015)
+ax0.set_xlabel(r'$\mathrm{Temperature}$')
+ax0.set_ylabel(r'$\mathrm{Probability}$')
+ax0.set_title(r'$\mathrm{%s\enspace Phase\enspace Probabilities}$' % el, y=1.015)
 
 # plot of trained and classified rdfs
 labels = ['Solid', 'Liquid']
@@ -376,22 +374,22 @@ ax1.spines['top'].set_visible(False)
 ax1.xaxis.set_ticks_position('bottom')
 ax1.yaxis.set_ticks_position('left')
 for i in xrange(2):
-    plabels = ['$\mathrm{Trained\enspace %s\enspace Phase}$' % labels[i], '$\mathrm{Classified\enspace %s\enspace Phase}$' % labels[i]]
+    plabels = [r'$\mathrm{Trained\enspace %s\enspace Phase}$' % labels[i], r'$\mathrm{Classified\enspace %s\enspace Phase}$' % labels[i]]
     ax1.plot(propdom[property], np.mean(ustdata[tclass == i], axis=0), color=cm(scale(mtemp[0, i])), alpha=1.00, label=plabels[0])
     ax1.plot(propdom[property], np.mean(uscdata[pred == i], axis=0), color=cm(scale(mtemp[1, i])), alpha=1.00, linestyle='--', label=plabels[1])
 ax1.legend()
 if property == 'radial_distribution':
-    ax1.set_xlabel('$\mathrm{Distance}$')
-    ax1.set_ylabel('$\mathrm{Radial Distribution}$')
-    ax1.set_title('$\mathrm{%s\enspace Phase\enspace RDFs}$' % el, y=1.015)
+    ax1.set_xlabel(r'$\mathrm{Distance}$')
+    ax1.set_ylabel(r'$\mathrm{Radial Distribution}$')
+    ax1.set_title(r'$\mathrm{%s\enspace Phase\enspace RDFs}$' % el, y=1.015)
 if property == 'entropic_fingerprint':
-    ax1.set_xlabel('$\mathrm{Distance}$')
-    ax1.set_ylabel('$\mathrm{Entropic Fingerprint}$')
-    ax1.set_title('$\mathrm{%s\enspace Phase\enspace EFs}$' % el, y=1.015)
+    ax1.set_xlabel(r'$\mathrm{Distance}$')
+    ax1.set_ylabel(r'$\mathrm{Entropic Fingerprint}$')
+    ax1.set_title(r'$\mathrm{%s\enspace Phase\enspace EFs}$' % el, y=1.015)
 if property == 'structure_factor':
-    ax1.set_xlabel('$\mathrm{Wavenumber}$')
-    ax1.set_ylabel('$\mathrm{Structure Factor}$')
-    ax1.set_title('$\mathrm{%s\enspace Phase\enspace SFs}$' % el, y=1.015)
+    ax1.set_xlabel(r'$\mathrm{Wavenumber}$')
+    ax1.set_ylabel(r'$\mathrm{Structure Factor}$')
+    ax1.set_title(r'$\mathrm{%s\enspace Phase\enspace SFs}$' % el, y=1.015)
 
 # prefix for plot files
 if reduc:

@@ -16,7 +16,6 @@ from dask import delayed
 if '--verbose' in sys.argv:
     from tqdm import tqdm
     verbose = True
-    
 else:
     verbose = False
     
@@ -172,7 +171,8 @@ q = 2*np.pi/dr*np.fft.fftfreq(r.size)[1:int(r.size/2)]
 ftg = -np.imag(dr*np.exp(-complex(0, 1)*q*r[0])*np.fft.fft(r[np.newaxis, :]*(g-1))[:, 1:int(r.size/2)])
 # structure factor
 s = 1+4*np.pi*nrho[:, np.newaxis]*np.divide(ftg, q)
-i = np.multiply(np.nan_to_num(np.multiply(g, np.log(g)))-g+1, np.square(r[:]))
+with np.errstate(divide='ignore', invalid='ignore'):
+    i = np.multiply(np.nan_to_num(np.multiply(g, np.log(g)))-g+1, np.square(r[:]))
 
 # pickle data
 pickle.dump(nrho, open(prefix+'.nrho.pickle', 'wb'))
