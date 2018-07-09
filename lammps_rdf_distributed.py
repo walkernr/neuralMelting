@@ -12,9 +12,13 @@ import numba as nb
 from distributed import Client, LocalCluster, progress
 from dask import delayed
 
-verbose = False      # boolean for controlling verbosity
-if verbose:
+# boolean for controlling verbosity
+if '--verbose' in sys.argv:
     from tqdm import tqdm
+    verbose = True
+    
+else:
+    verbose = False
     
 distributed = False  # boolean for choosing distributed or local cluster
 processes = True     # boolean for choosing whether to use processes
