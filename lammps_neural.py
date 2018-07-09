@@ -12,6 +12,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA, KernelPCA
 from scipy.optimize import curve_fit
+from scipy.odr import ODR, Model, Data, RealData
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -119,10 +120,14 @@ print('------------------------------------------------------------')
 
 # fitting functions
 # the confidence interval for transition temps is best with logistic
-def logistic(t, b, m):
+# def logistic(t, b, m):
+    # a = 0.0
+    # k = 1.0
+    # return a+np.divide(k, 1+np.exp(-b*(t-m)))
+def logistic(b, t):
     a = 0.0
     k = 1.0
-    return a+np.divide(k, 1+np.exp(-b*(t-m)))
+    return a+np.divide(k, 1+np.exp(-b[0]*(t-b[1])))
 def gompertz(t, b, c):
     a = 1.0
     return a*np.exp(-b*np.exp(-c*t))
@@ -321,34 +326,47 @@ for i in xrange(len(temps)):
     mprob[i] = np.mean(prob[cT == temps[i], 1])  # mean probability of samples at temp i being liquid
     sprob[i] = np.std(prob[cT == temps[i], 1])   # standard error of samples at temp i being liquid
 # curve fitting
-qnchtemps = temps-np.min(temps)                                                                                     # quench temps to start at 0
-adjtemps = qnchtemps/np.max(qnchtemps)                                                                              # domain for curve fitting
-n_dom = 4096                                                                                                        # expanded number of curve samples
-adjdom = np.linspace(0, 1, n_dom)                                                                                   # expanded domain for curve fitting
-fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)                                                           # expanded domain for curve plotting
-popt, pcov = curve_fit(fit_funcs[fit_func], adjtemps, mprob, sigma=sprob, p0=fit_guess[fit_func], method='dogbox')  # fitting parameters
-perr = np.sqrt(np.diag(pcov))                                                                                       # fit standard error
-fitrng = fit_funcs[fit_func](adjdom, *popt)                                                                         # fit values
-# extract transition
-if fit_func == 'gompertz':
-    trans = -np.log(np.log(2)/popt[0])/popt[1]                                        # midpoint formula
-    trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)                         # transformation to temperature
-    cerr = np.array([[-perr[0], perr[1]], [perr[0], -perr[1]]], dtype=float)          # critical error
-    tintrvl = np.divide(-np.log(np.log(2)/(popt[0]+cerr[:, 0])), popt[1]+cerr[:, 1])  # error range
-    tintrvl = tintrvl*(np.max(temps)-np.min(temps))+np.min(temps)                     # transformation to temperature interval
-    cfitrng = [fit_funcs[fit_func](adjdom, *(popt+cerr[i, :])) for i in xrange(2)]    # critical fit values
-if fit_func == 'logistic':
-    trans = popt[1]*(np.max(temps)-np.min(temps))+np.min(temps)                        # midpoint temperature
-    ferr = perr[1]*(np.max(temps)-np.min(temps))                                       # temperature fit error
-    werr = 1/np.abs(temps-trans)                                                       # temperature error weight
-    terr = np.sum(np.multiply(werr, stemps))/np.sum(werr)                              # temperature simulation error
-    cerr = ferr+terr                                                                   # total critical error
-    tintrvl = trans+cerr*np.array([-1, 1])                                             # temperature interval
-    adjintrvl = (tintrvl-np.min(temps))/(np.max(temps)-np.min(temps))                  # adjusted interval
-    cfitrng = [fit_funcs[fit_func](adjdom, popt[0], adjintrvl[i]) for i in xrange(2)]  # critical fit values
-else:
-    trans = adjdom[np.argmin(np.abs(fitrng-0.5))]
-    trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)
+# def rescale_domain(t):
+    # t = t-np.min(t)
+    # t = x/np.max(t)
+    # return t
+# adjtemps = rescale_domain(temps)                                                                                    # domain for curve fitting
+# n_dom = 4096                                                                                                        # expanded number of curve samples
+# adjdom = np.linspace(0, 1, n_dom)                                                                                   # expanded domain for curve fitting
+# fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)                                                           # expanded domain for curve plotting
+# popt, pcov = curve_fit(fit_funcs[fit_func], adjtemps, mprob, sigma=sprob, p0=fit_guess[fit_func], method='dogbox')  # fitting parameters
+# perr = np.sqrt(np.diag(pcov))                                                                                       # fit standard error
+# fitrng = fit_funcs[fit_func](adjdom, *popt)                                                                         # fit values
+# # extract transition
+# if fit_func == 'gompertz':
+    # trans = -np.log(np.log(2)/popt[0])/popt[1]                                        # midpoint formula
+    # trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)                         # transformation to temperature
+    # cerr = np.array([[-perr[0], perr[1]], [perr[0], -perr[1]]], dtype=float)          # critical error
+    # tintrvl = np.divide(-np.log(np.log(2)/(popt[0]+cerr[:, 0])), popt[1]+cerr[:, 1])  # error range
+    # tintrvl = tintrvl*(np.max(temps)-np.min(temps))+np.min(temps)                     # transformation to temperature interval
+    # cfitrng = [fit_funcs[fit_func](adjdom, *(popt+cerr[i, :])) for i in xrange(2)]    # critical fit values
+# if fit_func == 'logistic':
+    # trans = popt[1]*(np.max(temps)-np.min(temps))+np.min(temps)                        # midpoint temperature
+    # ferr = perr[1]*(np.max(temps)-np.min(temps))                                       # temperature fit error
+    # werr = 1/np.abs(temps-trans)                                                       # temperature error weight
+    # terr = np.sum(np.multiply(werr, stemps))/np.sum(werr)                              # temperature simulation error
+    # cerr = ferr+terr                                                                   # total critical error
+    # tintrvl = trans+cerr*np.array([-1, 1])                                             # temperature interval
+    # adjintrvl = (tintrvl-np.min(temps))/(np.max(temps)-np.min(temps))                  # adjusted interval
+    # cfitrng = [fit_funcs[fit_func](adjdom, popt[0], adjintrvl[i]) for i in xrange(2)]  # critical fit values
+# else:
+    # trans = adjdom[np.argmin(np.abs(fitrng-0.5))]
+    # trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)
+odr_data = RealData(temps, mprob, stemps, sprob)
+odr_model = Model(logistic)
+odr = ODR(odr_data, odr_model, log_guess)
+odr.set_job(fit_type=0)
+fit_out = odr.run()
+popt = output.beta
+perr = output.sd_beta
+trans = popt[1]
+cerr = perr[1]
+tintrvl = trans+cerr*np.array([-1, 1])
 print('transition temperature estimated')
 print('------------------------------------------------------------')
 print('transition:       %f, %f' % (trans, cerr))
