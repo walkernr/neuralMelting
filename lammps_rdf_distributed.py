@@ -108,6 +108,7 @@ def calculate_spatial():
         for j in xrange(len(base)):
             for k in xrange(len(base)):
                 R.append(np.array([base[i], base[j], base[k]], dtype=float))
+    R = np.array(R)
     # create vector for rdf
     gs = np.zeros((len(natoms), bins), dtype=float)
     # reshape position vector
@@ -144,7 +145,7 @@ else:
     client = Client(cluster)
 if verbose:
     # display client information
-    print(client)
+    print(client.scheduler_info)
     print('calculating data for %s at pressure %f' % (el.lower(), P[el][pressind]))
     futures = client.compute(operations)
     progress(futures)

@@ -710,7 +710,7 @@ if parallel:
         client = Client(cluster)
     # display client information
     if verbose:
-        print(client)
+        print(client.scheduler_info)
 # loop through to number of samples that need to be collected
 for i in xrange(n_smpl):
     if verbose:
