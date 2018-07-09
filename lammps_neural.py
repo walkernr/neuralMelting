@@ -321,7 +321,8 @@ for i in xrange(len(temps)):
     mprob[i] = np.mean(prob[cT == temps[i], 1])  # mean probability of samples at temp i being liquid
     sprob[i] = np.std(prob[cT == temps[i], 1])   # standard error of samples at temp i being liquid
 # curve fitting
-adjtemps = np.linspace(0, 1, len(temps))                                                                            # domain for curve fitting
+qnchtemps = temps-np.min(temps)                                                                                     # quench temps to start at 0
+adjtemps = qnchtemps/np.max(qnchtemps)                                                                              # domain for curve fitting
 n_dom = 4096                                                                                                        # expanded number of curve samples
 adjdom = np.linspace(0, 1, n_dom)                                                                                   # expanded domain for curve fitting
 fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)                                                           # expanded domain for curve plotting
