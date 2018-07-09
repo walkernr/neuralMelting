@@ -134,10 +134,6 @@ fit_guess = {'logistic':log_guess, 'richard':rich_guess, 'gompertz':gomp_guess}
 print('fitting function defined')
 print('------------------------------------------------------------')
 
-# bounds for training data
-lb = 0+ntrainsets
-ub = n_dat-(ntrainsets+1)
-
 # load simulation data
 N = pickle.load(open(prefix+'.natoms.pickle'))
 O = np.concatenate(tuple([i*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
@@ -164,7 +160,12 @@ I = pickle.load(open(prefix+'.ef.pickle'))
 smplspc = np.concatenate(tuple([np.arange((i+1)*int(len(N)/n_dat)-nsmpl, (i+1)*int(len(N)/n_dat)) for i in xrange(n_dat)]))
 N = N[smplspc]
 O = O[smplspc]
+trU = trU[smplspc]
+U = U[smplspc]
+stU = stU[smplspc]
+trP = trP[smplspc]
 P = P[smplspc]
+stP = stP[smplspc]
 trT = trT[smplspc]
 T = T[smplspc]
 stT = stT[smplspc]
@@ -187,6 +188,10 @@ kpca = KernelPCA(n_components=npcacomp)
 reducers = {'pca':pca, 'kpca':kpca}
 print('scaler and reduction initialized')
 print('------------------------------------------------------------')
+
+# bounds for training data
+lb = 0+ntrainsets
+ub = n_dat-(ntrainsets+1)
 
 # indices for partitioning data
 sind = (O < lb)               # solid training indices
@@ -306,17 +311,19 @@ print('------------------------------------------------------------')
 temps = np.unique(cT)                      # temperature domain of classification data
 stemps = np.unique(stT[cind])              # standard error of temperature domain
 mprob = np.zeros(len(temps), dtype=float)  # mean probability array
+sprob = np.zeros(len(temps), dtype=float)  # standard error porbability array
 # loop through temperature domain
 for i in xrange(len(temps)):
     mprob[i] = np.mean(prob[cT == temps[i], 1])  # mean probability of samples at temp i being liquid
+    sprob[i] = np.std(prob[cT == temps[i], 1])   # standard error of samples at temp i being liquid
 # curve fitting
-adjtemps = np.linspace(0, 1, len(temps))                                                               # domain for curve fitting
-n_dom = 4096                                                                                           # expanded number of curve samples
-adjdom = np.linspace(0, 1, n_dom)                                                                      # expanded domain for curve fitting
-fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)                                              # expanded domain for curve plotting
-popt, pcov = curve_fit(fit_funcs[fit_func], adjtemps, mprob, p0=fit_guess[fit_func], method='dogbox')  # fitting parameters
-perr = np.sqrt(np.diag(pcov))                                                                          # fit standard error
-fitrng = fit_funcs[fit_func](adjdom, *popt)                                                            # fit values
+adjtemps = np.linspace(0, 1, len(temps))                                                                            # domain for curve fitting
+n_dom = 4096                                                                                                        # expanded number of curve samples
+adjdom = np.linspace(0, 1, n_dom)                                                                                   # expanded domain for curve fitting
+fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)                                                           # expanded domain for curve plotting
+popt, pcov = curve_fit(fit_funcs[fit_func], adjtemps, mprob, sigma=sprob, p0=fit_guess[fit_func], method='dogbox')  # fitting parameters
+perr = np.sqrt(np.diag(pcov))                                                                                       # fit standard error
+fitrng = fit_funcs[fit_func](adjdom, *popt)                                                                         # fit values
 # extract transition
 if fit_func == 'gompertz':
     trans = -np.log(np.log(2)/popt[0])/popt[1]                                        # midpoint formula
