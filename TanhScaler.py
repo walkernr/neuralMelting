@@ -12,6 +12,8 @@ from sklearn.preprocessing import StandardScaler
 
 # tanh function with range (0, 1)
 tanhScaler = lambda x: 0.5*(np.tanh(x)+1)
+
+# tanh scaler class
 class TanhScaler:
     ''' this scaler feeds the z-scre from the standard scaler into a tanh function
     
