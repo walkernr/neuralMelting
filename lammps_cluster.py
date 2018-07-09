@@ -46,7 +46,7 @@ nthreads = 16
 name = 'remcmc'
 # run details
 property = 'entropic_fingerprint'  # property for classification
-n_dat = 64                         # number of datasets
+n_dat = 48                         # number of datasets
 nsmpl = 1024                       # number of samples per dataset
 scaler = 'tanh'                    # data scaling method
 reduction = 'tsne'                 # reduction method
