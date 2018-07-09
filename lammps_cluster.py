@@ -51,7 +51,7 @@ n_dat = 48                         # number of temperature datasets
 nsmpl = 1024                       # number of samples per dataset
 scaler = 'tanh'                    # data scaling method
 reduction = 'tsne'                 # reduction method
-clust = 'kmeans'                   # clustering method
+clust = 'spectral'                 # clustering method
 
 # element and pressure index choice
 if '--element' in sys.argv:
