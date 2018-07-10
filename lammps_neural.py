@@ -358,8 +358,8 @@ for i in xrange(len(temps)):
     # trans = adjdom[np.argmin(np.abs(fitrng-0.5))]
     # trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)
 odr_data = RealData(temps, mprob, stemps, sprob)
-odr_model = Model(logistic)
-odr = ODR(odr_data, odr_model, log_guess)
+odr_model = Model(fit_funcs[fit_func])
+odr = ODR(odr_data, odr_model, fit_guess[fit_func])
 odr.set_job(fit_type=0)
 fit_out = odr.run()
 popt = fit_out.beta
@@ -367,6 +367,10 @@ perr = fit_out.sd_beta
 trans = popt[1]
 cerr = perr[1]
 tintrvl = trans+cerr*np.array([-1, 1])
+n_dom = 4096
+fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)
+fitrng = fit_funcs[fit_func](popt, fitdom)
+
 print('transition temperature estimated')
 print('------------------------------------------------------------')
 print('transition:       %f, %f' % (trans, cerr))
