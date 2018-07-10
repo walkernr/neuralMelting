@@ -240,13 +240,6 @@ cT = T[cind]  # classification temperatures
 if 'cnn1d' in network:
     tdata = tdata[:, :, np.newaxis]
     cdata = cdata[:, :, np.newaxis]
-# 2d convolution expects square input
-# if 'cnn2d' in network:
-    # nsqr = int(np.sqrt(np.shape(properties[property])[1]))
-    # tdata = tdata[:np.square(nsqr)]
-    # cdata = cdata[:np.square(nsqr)]
-    # tdata = tdata.reshape(-1, nsqr, nsqr)
-    # cdata = cdata.reshape(-1, nsqr, nsqr)
 
 ustdata = data[tind]  # unscaled training data
 uscdata = data[cind]  # unscaled classification data
@@ -257,7 +250,6 @@ tclass = np.array(np.count_nonzero(sind)*[0]+np.count_nonzero(lind)*[1], dtype=i
 
 # neural network construction
 # keras - dense
-# not currently working
 def build_keras_dense():
     model = Sequential([Dense(units=64, activation='relu', input_dim=tshape[1]),
                         Dropout(rate=0.5),
@@ -269,6 +261,7 @@ def build_keras_dense():
     nadam = Nadam(lr=0.00024414062, beta_1=0.9375, beta_2=0.9990234375, epsilon=None, schedule_decay=0.00390625)
     model.compile(loss='binary_crossentropy', optimizer=nadam, metrics=['accuracy'])
     return model
+    
 # keras - 1d cnn
 def build_keras_cnn1d():    
     model = Sequential([Conv1D(filters=64, kernel_size=4, activation='relu', padding='causal', strides=1, input_shape=tshape[1:]),
@@ -282,6 +275,7 @@ def build_keras_cnn1d():
     nadam = Nadam(lr=0.0009765625, beta_1=0.9375, beta_2=0.9990234375, epsilon=None, schedule_decay=0.00390625)
     model.compile(loss='binary_crossentropy', optimizer=nadam, metrics=['accuracy'])
     return model
+    
 keras_dense = KerasClassifier(build_keras_dense, epochs=2, verbose=True)
 keras_cnn1d = KerasClassifier(build_keras_cnn1d, epochs=1, verbose=True)
 networks = {'keras_dense':keras_dense, 'keras_cnn1d':keras_cnn1d}
@@ -412,7 +406,7 @@ scitxt.set_x(.025)
 ax0.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
 ax0.set_xlabel(r'$\mathrm{Temperature}$')
 ax0.set_ylabel(r'$\mathrm{Probability}$')
-ax0.set_title(r'$\mathrm{%s\enspace Phase\enspace Probabilities}$' % el, y=1.015)
+# ax0.set_title(r'$\mathrm{%s\enspace Phase\enspace Probabilities}$' % el, y=1.015)
 
 # plot of trained and classified rdfs
 labels = ['Solid', 'Liquid']
@@ -430,15 +424,15 @@ ax1.legend()
 if property == 'radial_distribution':
     ax1.set_xlabel(r'$\mathrm{Distance}$')
     ax1.set_ylabel(r'$\mathrm{Radial Distribution}$')
-    ax1.set_title(r'$\mathrm{%s\enspace Phase\enspace RDFs}$' % el, y=1.015)
+    # ax1.set_title(r'$\mathrm{%s\enspace Phase\enspace RDFs}$' % el, y=1.015)
 if property == 'entropic_fingerprint':
     ax1.set_xlabel(r'$\mathrm{Distance}$')
     ax1.set_ylabel(r'$\mathrm{Entropic Fingerprint}$')
-    ax1.set_title(r'$\mathrm{%s\enspace Phase\enspace EFs}$' % el, y=1.015)
+    # ax1.set_title(r'$\mathrm{%s\enspace Phase\enspace EFs}$' % el, y=1.015)
 if property == 'structure_factor':
     ax1.set_xlabel(r'$\mathrm{Wavenumber}$')
     ax1.set_ylabel(r'$\mathrm{Structure Factor}$')
-    ax1.set_title(r'$\mathrm{%s\enspace Phase\enspace SFs}$' % el, y=1.015)
+    # ax1.set_title(r'$\mathrm{%s\enspace Phase\enspace SFs}$' % el, y=1.015)
 
 # network graph
 if 'keras' in network:

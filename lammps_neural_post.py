@@ -93,49 +93,62 @@ mP = np.zeros((n_press, d_dat), dtype=float)
 sP = np.zeros((n_press, d_dat), dtype=float)
 mT = np.zeros((n_press, d_dat), dtype=float)
 sT = np.zeros((n_press, d_dat), dtype=float)
+msP = np.zeros((n_press, 2), dtype=float)
 trans = np.zeros((n_press, 2), dtype=float)
 for i in xrange(len(P[el])):
     prefix = prefixes[i]
-	outfile = '.'.join([prefix]+network_pref+['out'])
+    outfile = '.'.join([prefix]+network_pref+['out'])
     # load simulation data
-	N = pickle.load(open(prefix+'.natoms.pickle'))
-	O = np.concatenate(tuple([i*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
-	# load potential data
-	U = pickle.load(open(prefix+'.pe.pickle'))
-	mU[i, :] = np.array([np.mean(U[O == j]) for j in xrange(n_dat)])
-	sU[i, :] = np.array([np.std(U[O == j]) for j in xrange(n_dat)])
-	# load pressure data
-	P = pickle.load(open(prefix+'.virial.pickle'))
-	mP = np.array([np.mean(P[O == j]) for j in xrange(n_dat)])
-	sP = np.array([np.std(P[O == j]) for j in xrange(n_dat)])
-	# load temperature data
-	T = pickle.load(open(prefix+'.temp.pickle'))
-	mT = np.array([np.mean(T[O == j]) for j in xrange(n_dat)])
-	sT = np.array([np.std(T[O == j]) for j in xrange(n_dat)])
+    N = pickle.load(open(prefix+'.natoms.pickle'))
+    O = np.concatenate(tuple([i*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
+    # load potential data
+    U = pickle.load(open(prefix+'.pe.pickle'))
+    mU[i, :] = np.array([np.mean(U[O == j]) for j in xrange(n_dat)])
+    sU[i, :] = np.array([np.std(U[O == j]) for j in xrange(n_dat)])
+    # load pressure data
+    P = pickle.load(open(prefix+'.virial.pickle'))
+    mP[i, :] = np.array([np.mean(P[O == j]) for j in xrange(n_dat)])
+    sP[i, :] = np.array([np.std(P[O == j]) for j in xrange(n_dat)])
+    msP[i, :] = np.array([np.mean(P), np.std(P)], dtype=float)
+    # load temperature data
+    T = pickle.load(open(prefix+'.temp.pickle'))
+    mT[i, :] = np.array([np.mean(T[O == j]) for j in xrange(n_dat)])
+    sT[i, :] = np.array([np.std(T[O == j]) for j in xrange(n_dat)])
     with open(outfile, 'w') as fi:
         iters = iter(fi)
-		for lina in iters:
-			if 'transition | critical error' in lina:
-				linb = iters.next()
-				trans[i, :] = np.array(linb.strip().split()).astype(float)
+        for lina in iters:
+            if 'transition | critical error' in lina:
+                linb = iters.next()
+                trans[i, :] = np.array(linb.strip().split()).astype(float)
     
 base_pref = ['%s.%s.%s.lammps' % (name, el.lower(), lat[el])]+network_pref
 
+cm = plt.get_cmap('plasma')
+cscale = lambda i: (msP[i, 0]-np.min(mP))/np.max(mP)
+
 fig0 = plt.figure()
 ax0 = fig0.add_subplot(111)
-for i in xrange(len(prefixes)):
-    ax0.errorbar(mT[i], mP[i], xerr=sT[i], yerr=sP[i], color=cm(0.1*i), label='P = %.1f' % P[el][i])
+for i in xrange(n_press):
+    ax0.errorbar(mT[i], mP[i], xerr=sT[i], yerr=sP[i], color=cm(cscale(i)), label='P = %.1f' % P[el][i])
 ax0.set_xlabel('T')
 ax0.set_ylabel('P')
 ax0.legend(loc='center right')
 
 fig1 = plt.figure()
 ax1 = fig1.add_subplot(111)
-for i in xrange(len(prefixes)):
-    ax1.errorbar(mT[i], mU[i], xerr=sT[i], yerr=sU[i], color=cm(0.1*i), label='P = %.1f' % P[el][i])
+for i in xrange(n_press):
+    ax1.errorbar(mT[i], mU[i], xerr=sT[i], yerr=sU[i], color=cm(cscale(i)), label='P = %.1f' % P[el][i])
 ax1.set_xlabel('T')
 ax1.set_ylabel('U')
 ax1.legend(loc='upper left')
 
-fig0.savefig('.'.join(base_pref+['press', 'png']))
-fig1.savefig('.'.join(base_pref+['pot', 'png']))
+fig2 = plt.figure()
+ax2 = fig2.add_subplot(111)
+ax2.errorbar(trans[:, 0], msP[:, 1], xerr=trans[:, 1], yerr=msP[:, 1], color=cm(0.5))
+ax2.set_xlabel('T')
+ax2.set_ylabel('P')
+ax2.legend(loc='lower right')
+
+fig0.savefig('.'.join(base_pref+['pressure', 'png']))
+fig1.savefig('.'.join(base_pref+['potential', 'png']))
+fig2.savefig('.'.join(base_pref+['melting_curve', 'png'])

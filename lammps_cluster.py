@@ -241,7 +241,7 @@ print('------------------------------------------------------------')
 fig0 = plt.figure()
 grid0 = ImageGrid(fig0, 111,
                   nrows_ncols=(1, 2),
-                  axes_pad=1.8,
+                  axes_pad=2.0,
                   share_all=True,
                   cbar_location="right",
                   cbar_mode="single",
