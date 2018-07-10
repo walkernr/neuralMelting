@@ -115,7 +115,7 @@ for i in xrange(n_press):
     T = pickle.load(open(prefix+'.temp.pickle'))
     mT[i, :] = np.array([np.mean(T[O == j]) for j in xrange(n_dat)])
     sT[i, :] = np.array([np.std(T[O == j]) for j in xrange(n_dat)])
-    with open(outfile, 'w') as fi:
+    with open(outfile, 'r') as fi:
         iters = iter(fi)
         for lina in iters:
             if 'transition | critical error' in lina:
