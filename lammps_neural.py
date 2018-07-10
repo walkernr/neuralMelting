@@ -65,7 +65,7 @@ plt.rcParams.update(params)
 # simulation name
 name = 'remcmc'
 # run details
-property = 'entropic_fingerprint'  # property for classification
+property = 'radial_distribution'   # property for classification
 n_press = 8                        # number of pressure datasets
 n_dat = 48                         # number of temperature datasets
 ntrainsets = 8                     # number of training sets
