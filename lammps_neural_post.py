@@ -40,7 +40,7 @@ n_press = 8                        # number of pressure datasets
 n_dat = 48                         # number of temperature datasets
 ntrainsets = 8                     # number of training sets
 nsmpl = 1024                       # number of samples from each set
-scaler = 'standard'                # data scaling method
+scaler = 'tanh'                    # data scaling method
 network = 'keras_cnn1d'            # neural network type
 reduc = False                      # reduction type
 fit_func = 'logistic'              # fitting function
@@ -121,6 +121,7 @@ for i in xrange(n_press):
             if 'transition | critical error' in lina:
                 linb = iters.next()
                 trans[i, :] = np.array(linb.strip().split()).astype(float)
+    print(msP[i, 0], trans[i, 0])
     
 base_pref = ['%s.%s.%s.lammps' % (name, el.lower(), lat[el])]+network_pref
 
