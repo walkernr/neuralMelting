@@ -88,7 +88,7 @@ else:
     pressind = 0
 
 # pressure
-P = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+press = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
      'Al': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
      'Ni': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
      'Cu': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
@@ -101,13 +101,13 @@ lat = {'Ti': 'bcc',
        'LJ': 'fcc'}
 
 # file prefix
-prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el][pressind]))
+prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(press[el][pressind]))
 # summary of input
 print('------------------------------------------------------------')
 print('input summary')
 print('------------------------------------------------------------')
 print('potential:                 %s' % el.lower())
-print('pressure:                  %f' % P[el][pressind])  
+print('pressure:                  %f' % press[el][pressind])  
 print('number of sets:            %d' % n_dat)
 print('number of samples:         %d' % nsmpl)
 print('property:                  %s' % property)
@@ -364,7 +364,7 @@ with open('.'.join(out_pref+[str(nsmpl), 'out']), 'w') as fo:
     fo.write('# parameters\n')
     fo.write('# ---------------------------------------------------------------\n')
     fo.write('# potential:                 %s\n' % el.lower())
-    fo.write('# pressure:                  %f\n' % P[el][pressind])  
+    fo.write('# pressure:                  %f\n' % press[el][pressind])  
     fo.write('# number of sets:            %d\n' % n_dat)
     fo.write('# number of samples:         %d\n' % nsmpl)
     fo.write('# property:                  %s\n' % property)
