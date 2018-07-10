@@ -84,9 +84,9 @@ print('------------------------------------------------------------')
 # file prefix
 prefixes = ['%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el][i])) for i in xrange(n_press)]
 if reduc:
-    network_pref = [network, property, scaler, reduc, fit_func, str(smpl)]
+    network_pref = [network, property, scaler, reduc, fit_func, str(nsmpl)]
 else:
-    network_pref = [network, property, scaler, 'none', fit_func, str(smpl)]
+    network_pref = [network, property, scaler, 'none', fit_func, str(nsmpl)]
 
 mU = np.zeros((n_press, d_dat), dtype=float)
 sU = np.zeros((n_press, d_dat), dtype=float)
