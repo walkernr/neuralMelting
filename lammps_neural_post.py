@@ -53,7 +53,7 @@ else:
     el = 'LJ'
 
 # pressure
-P = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
+press = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
      'Al': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
      'Ni': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
      'Cu': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
@@ -82,7 +82,7 @@ print('reduction:                 %s' % reduc)
 print('------------------------------------------------------------')
 
 # file prefix
-prefixes = ['%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el][i])) for i in xrange(n_press)]
+prefixes = ['%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(press[el][i])) for i in xrange(n_press)]
 if reduc:
     network_pref = [network, property, scaler, reduc, fit_func, str(nsmpl)]
 else:
@@ -130,7 +130,7 @@ cscale = lambda i: (msP[i, 0]-np.min(mP))/np.max(mP)
 fig0 = plt.figure()
 ax0 = fig0.add_subplot(111)
 for i in xrange(n_press):
-    ax0.errorbar(mT[i], mP[i], xerr=sT[i], yerr=sP[i], color=cm(cscale(i)), label='P = %.1f' % P[el][i])
+    ax0.errorbar(mT[i], mP[i], xerr=sT[i], yerr=sP[i], color=cm(cscale(i)), label='P = %.1f' % press[el][i])
 ax0.set_xlabel('T')
 ax0.set_ylabel('P')
 ax0.legend(loc='center right')
@@ -138,7 +138,7 @@ ax0.legend(loc='center right')
 fig1 = plt.figure()
 ax1 = fig1.add_subplot(111)
 for i in xrange(n_press):
-    ax1.errorbar(mT[i], mU[i], xerr=sT[i], yerr=sU[i], color=cm(cscale(i)), label='P = %.1f' % P[el][i])
+    ax1.errorbar(mT[i], mU[i], xerr=sT[i], yerr=sU[i], color=cm(cscale(i)), label='P = %.1f' % press[el][i])
 ax1.set_xlabel('T')
 ax1.set_ylabel('U')
 ax1.legend(loc='upper left')
