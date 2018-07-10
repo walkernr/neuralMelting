@@ -123,14 +123,14 @@ print('------------------------------------------------------------')
 def logistic(beta, t):
     a = 0.0
     k = 1.0
-	b, m = beta
+    b, m = beta
     return a+np.divide(k, 1+np.exp(-b*(t-m)))
 def gompertz(beta, t):
     a = 1.0
-	b, c = beta
+    b, c = beta
     return a*np.exp(-b*np.exp(-c*t))
 def richard(beta, t):
-	a, k, b, nu, q, m, c = beta
+    a, k, b, nu, q, m, c = beta
     return a+np.divide(k-a, np.power(c+q*np.exp(-b*(t-m)), 1./nu))
 # initial fitting parameters
 log_guess = [128.0, 0.5]
@@ -361,26 +361,26 @@ else:
 # save data to file
 with open('.'.join(out_pref+[str(nsmpl), 'out']), 'w') as fo:
     fo.write('# -------------------------------------------------------------\n')
-	fo.write('# parameters\n')
-	fo.write('# ---------------------------------------------------------------\n')
+    fo.write('# parameters\n')
+    fo.write('# ---------------------------------------------------------------\n')
     fo.write('# potential:                 %s\n' % el.lower())
-	fo.write('# pressure:                  %f\n' % P[el][pressind])  
-	fo.write('# number of sets:            %d\n' % n_dat)
-	fo.write('# number of samples:         %d\n' % nsmpl)
-	fo.write('# property:                  %s\n' % property)
-	fo.write('# training sets (per phase): %d\n' % ntrainsets)
-	fo.write('# scaler:                    %s\n' % scaler)
-	fo.write('# network:                   %s\n' % network)
-	fo.write('# fitting function:          %s\n' % fit_func)
-	fo.write('# reduction:                 %s\n' % reduc)
-	fo.write('# ------------------------------------------------------------\n')
-	fo.write('# transition | critical error\n')
+    fo.write('# pressure:                  %f\n' % P[el][pressind])  
+    fo.write('# number of sets:            %d\n' % n_dat)
+    fo.write('# number of samples:         %d\n' % nsmpl)
+    fo.write('# property:                  %s\n' % property)
+    fo.write('# training sets (per phase): %d\n' % ntrainsets)
+    fo.write('# scaler:                    %s\n' % scaler)
+    fo.write('# network:                   %s\n' % network)
+    fo.write('# fitting function:          %s\n' % fit_func)
+    fo.write('# reduction:                 %s\n' % reduc)
+    fo.write('# ------------------------------------------------------------\n')
+    fo.write('# transition | critical error\n')
     fo.write('%f %f\n' % (trans, cerr))
-	fo.write('# transition interval\n')
+    fo.write('# transition interval\n')
     fo.write('%s\n' % ' '.join(tintrvl.astype('|S32')))
-	fo.write('# optimal fit parameters\n')
+    fo.write('# optimal fit parameters\n')
     fo.write('%s\n' % ' '.join(popt.astype('|S32')))
-	fo.write('# fit parameter error\n')
+    fo.write('# fit parameter error\n')
     fo.write('%s\n' % ' '.join(perr.astype('|S32')))
 
 # plot of phase probability
