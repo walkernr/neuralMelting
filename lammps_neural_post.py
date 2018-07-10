@@ -151,4 +151,4 @@ ax2.legend(loc='lower right')
 
 fig0.savefig('.'.join(base_pref+['pressure', 'png']))
 fig1.savefig('.'.join(base_pref+['potential', 'png']))
-fig2.savefig('.'.join(base_pref+['melting_curve', 'png'])
+fig2.savefig('.'.join(base_pref+['melting_curve', 'png']))
