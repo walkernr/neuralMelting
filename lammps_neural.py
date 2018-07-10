@@ -133,7 +133,7 @@ def richard(beta, t):
     a, k, b, nu, q, m, c = beta
     return a+np.divide(k-a, np.power(c+q*np.exp(-b*(t-m)), 1./nu))
 # initial fitting parameters
-log_guess = [128.0, 0.5]
+log_guess = [1.0, 0.5]
 gomp_guess = [1.0, 1.0]
 rich_guess = [0.0, 1.0, 3.0, 0.5, 0.5, 0.0, 1.0]
 # fitting dictionaries
