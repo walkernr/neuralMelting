@@ -88,12 +88,12 @@ if reduc:
 else:
     network_pref = [network, property, scaler, 'none', fit_func, str(nsmpl)]
 
-mU = np.zeros((n_press, d_dat), dtype=float)
-sU = np.zeros((n_press, d_dat), dtype=float)
-mP = np.zeros((n_press, d_dat), dtype=float)
-sP = np.zeros((n_press, d_dat), dtype=float)
-mT = np.zeros((n_press, d_dat), dtype=float)
-sT = np.zeros((n_press, d_dat), dtype=float)
+mU = np.zeros((n_press, n_dat), dtype=float)
+sU = np.zeros((n_press, n_dat), dtype=float)
+mP = np.zeros((n_press, n_dat), dtype=float)
+sP = np.zeros((n_press, n_dat), dtype=float)
+mT = np.zeros((n_press, n_dat), dtype=float)
+sT = np.zeros((n_press, n_dat), dtype=float)
 msP = np.zeros((n_press, 2), dtype=float)
 trans = np.zeros((n_press, 2), dtype=float)
 for i in xrange(len(P[el])):
