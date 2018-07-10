@@ -96,6 +96,8 @@ mT = np.zeros((n_press, n_dat), dtype=float)
 sT = np.zeros((n_press, n_dat), dtype=float)
 msP = np.zeros((n_press, 2), dtype=float)
 trans = np.zeros((n_press, 2), dtype=float)
+print('pressure', 'temperature')
+print('------------------------------------------------------------')
 for i in xrange(n_press):
     prefix = prefixes[i]
     outfile = '.'.join([prefix]+network_pref+['out'])
@@ -121,7 +123,8 @@ for i in xrange(n_press):
             if 'transition | critical error' in lina:
                 linb = iters.next()
                 trans[i, :] = np.array(linb.strip().split()).astype(float)
-    print(msP[i, 0], trans[i, 0])
+    print('%.2f %.2f' % (msP[i, 0], trans[i, 0]))
+print('------------------------------------------------------------')
     
 base_pref = ['%s.%s.%s.lammps' % (name, el.lower(), lat[el])]+network_pref
 
