@@ -96,12 +96,12 @@ mT = np.zeros((n_press, n_dat), dtype=float)
 sT = np.zeros((n_press, n_dat), dtype=float)
 msP = np.zeros((n_press, 2), dtype=float)
 trans = np.zeros((n_press, 2), dtype=float)
-for i in xrange(len(P[el])):
+for i in xrange(n_press):
     prefix = prefixes[i]
     outfile = '.'.join([prefix]+network_pref+['out'])
     # load simulation data
     N = pickle.load(open(prefix+'.natoms.pickle'))
-    O = np.concatenate(tuple([i*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
+    O = np.concatenate(tuple([j*np.ones(int(len(N)/n_dat), dtype=int) for j in xrange(n_dat)]), 0)
     # load potential data
     U = pickle.load(open(prefix+'.pe.pickle'))
     mU[i, :] = np.array([np.mean(U[O == j]) for j in xrange(n_dat)])
