@@ -111,5 +111,6 @@ pickle.dump(np.array(acchmc, dtype=float), open(prefix+'.acchmc.pickle', 'wb'))
 pickle.dump(np.array(natoms, dtype=int), open(prefix+'.natoms.pickle', 'wb'))
 pickle.dump(np.array(box, dtype=float), open(prefix+'.box.pickle', 'wb'))
 pickle.dump(np.array(pos, dtype=float), open(prefix+'.pos.pickle', 'wb'))
+
 if verbose:
     print('all properties pickled')

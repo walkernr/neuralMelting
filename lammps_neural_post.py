@@ -83,9 +83,9 @@ print('------------------------------------------------------------')
 # file prefix
 prefixes = ['%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el][i])) for i in xrange(n_press)]
 if reduc:
-    network_pref = [network, property, scaler, reduc, fit_func]
+    network_pref = [network, property, scaler, reduc, fit_func, str(smpl)]
 else:
-    network_pref = [network, property, scaler, 'none', fit_func]
+    network_pref = [network, property, scaler, 'none', fit_func, str(smpl)]
 
 mU = np.zeros((n_press, d_dat), dtype=float)
 sU = np.zeros((n_press, d_dat), dtype=float)
@@ -95,17 +95,29 @@ mT = np.zeros((n_press, d_dat), dtype=float)
 sT = np.zeros((n_press, d_dat), dtype=float)
 trans = np.zeros((n_press, 2), dtype=float)
 for i in xrange(len(P[el])):
-    # prefix for output files
-    in_pref = [prefixes[i]]+network_pref
-    with open('.'.join(in_pref+[str(nsmpl), 'out']), 'w') as fi:
-        lines = fi.readlines()
-    mU[i, :] = np.array(lines[0].strip().split()).astype(float)
-    sU[i, :] = np.array(lines[1].strip().split()).astype(float)
-    mP[i, :] = np.array(lines[2].strip().split()).astype(float)
-    sP[i, :] = np.array(lines[3].strip().split()).astype(float)
-    mT[i, :] = np.array(lines[4].strip().split()).astype(float)
-    sT[i, :] = np.array(lines[5].strip().split()).astype(float)
-    trans[i, :] = np.array(lines[6].strip().split()).astype(float)
+    prefix = prefixes[i]
+	outfile = '.'.join([prefix]+network_pref+['out'])
+    # load simulation data
+	N = pickle.load(open(prefix+'.natoms.pickle'))
+	O = np.concatenate(tuple([i*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
+	# load potential data
+	U = pickle.load(open(prefix+'.pe.pickle'))
+	mU[i, :] = np.array([np.mean(U[O == j]) for j in xrange(n_dat)])
+	sU[i, :] = np.array([np.std(U[O == j]) for j in xrange(n_dat)])
+	# load pressure data
+	P = pickle.load(open(prefix+'.virial.pickle'))
+	mP = np.array([np.mean(P[O == j]) for j in xrange(n_dat)])
+	sP = np.array([np.std(P[O == j]) for j in xrange(n_dat)])
+	# load temperature data
+	T = pickle.load(open(prefix+'.temp.pickle'))
+	mT = np.array([np.mean(T[O == j]) for j in xrange(n_dat)])
+	sT = np.array([np.std(T[O == j]) for j in xrange(n_dat)])
+    with open(outfile, 'w') as fi:
+        iters = iter(fi)
+		for lina in iters:
+			if 'transition | critical error' in lina:
+				linb = iters.next()
+				trans[i, :] = np.array(linb.strip().split()).astype(float)
     
 base_pref = ['%s.%s.%s.lammps' % (name, el.lower(), lat[el])]+network_pref
 

@@ -120,26 +120,25 @@ print('------------------------------------------------------------')
 
 # fitting functions
 # the confidence interval for transition temps is best with logistic
-# def logistic(t, b, m):
-    # a = 0.0
-    # k = 1.0
-    # return a+np.divide(k, 1+np.exp(-b*(t-m)))
-def logistic(b, t):
+def logistic(beta, t):
     a = 0.0
     k = 1.0
-    return a+np.divide(k, 1+np.exp(-b[0]*(t-b[1])))
-def gompertz(t, b, c):
+	b, m = beta
+    return a+np.divide(k, 1+np.exp(-b*(t-m)))
+def gompertz(beta, t):
     a = 1.0
+	b, c = beta
     return a*np.exp(-b*np.exp(-c*t))
-def richard(t, a, k, b, nu, q, m, c):
+def richard(beta, t):
+	a, k, b, nu, q, m, c = beta
     return a+np.divide(k-a, np.power(c+q*np.exp(-b*(t-m)), 1./nu))
 # initial fitting parameters
-log_guess = [1.0, 0.5]
+log_guess = [128.0, 0.5]
 gomp_guess = [1.0, 1.0]
 rich_guess = [0.0, 1.0, 3.0, 0.5, 0.5, 0.0, 1.0]
 # fitting dictionaries
-fit_funcs = {'logistic':logistic, 'richard':richard, 'gompertz':gompertz}
-fit_guess = {'logistic':log_guess, 'richard':rich_guess, 'gompertz':gomp_guess}
+fit_funcs = {'logistic':logistic, 'gompertz':gompertz, 'richard':richard}
+fit_guess = {'logistic':log_guess, 'gompertz':gomp_guess, 'richard':rich_guess}
 print('fitting function defined')
 print('------------------------------------------------------------')
 
@@ -326,37 +325,6 @@ for i in xrange(len(temps)):
     mprob[i] = np.mean(prob[cT == temps[i], 1])  # mean probability of samples at temp i being liquid
     sprob[i] = np.std(prob[cT == temps[i], 1])   # standard error of samples at temp i being liquid
 # curve fitting
-# def rescale_domain(t):
-    # t = t-np.min(t)
-    # t = x/np.max(t)
-    # return t
-# adjtemps = rescale_domain(temps)                                                                                    # domain for curve fitting
-# n_dom = 4096                                                                                                        # expanded number of curve samples
-# adjdom = np.linspace(0, 1, n_dom)                                                                                   # expanded domain for curve fitting
-# fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)                                                           # expanded domain for curve plotting
-# popt, pcov = curve_fit(fit_funcs[fit_func], adjtemps, mprob, sigma=sprob, p0=fit_guess[fit_func], method='dogbox')  # fitting parameters
-# perr = np.sqrt(np.diag(pcov))                                                                                       # fit standard error
-# fitrng = fit_funcs[fit_func](adjdom, *popt)                                                                         # fit values
-# # extract transition
-# if fit_func == 'gompertz':
-    # trans = -np.log(np.log(2)/popt[0])/popt[1]                                        # midpoint formula
-    # trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)                         # transformation to temperature
-    # cerr = np.array([[-perr[0], perr[1]], [perr[0], -perr[1]]], dtype=float)          # critical error
-    # tintrvl = np.divide(-np.log(np.log(2)/(popt[0]+cerr[:, 0])), popt[1]+cerr[:, 1])  # error range
-    # tintrvl = tintrvl*(np.max(temps)-np.min(temps))+np.min(temps)                     # transformation to temperature interval
-    # cfitrng = [fit_funcs[fit_func](adjdom, *(popt+cerr[i, :])) for i in xrange(2)]    # critical fit values
-# if fit_func == 'logistic':
-    # trans = popt[1]*(np.max(temps)-np.min(temps))+np.min(temps)                        # midpoint temperature
-    # ferr = perr[1]*(np.max(temps)-np.min(temps))                                       # temperature fit error
-    # werr = 1/np.abs(temps-trans)                                                       # temperature error weight
-    # terr = np.sum(np.multiply(werr, stemps))/np.sum(werr)                              # temperature simulation error
-    # cerr = ferr+terr                                                                   # total critical error
-    # tintrvl = trans+cerr*np.array([-1, 1])                                             # temperature interval
-    # adjintrvl = (tintrvl-np.min(temps))/(np.max(temps)-np.min(temps))                  # adjusted interval
-    # cfitrng = [fit_funcs[fit_func](adjdom, popt[0], adjintrvl[i]) for i in xrange(2)]  # critical fit values
-# else:
-    # trans = adjdom[np.argmin(np.abs(fitrng-0.5))]
-    # trans = trans*(np.max(temps)-np.min(temps))+np.min(temps)
 odr_data = RealData(temps, mprob, stemps, sprob)
 odr_model = Model(fit_funcs[fit_func])
 odr = ODR(odr_data, odr_model, fit_guess[fit_func])
@@ -364,9 +332,14 @@ odr.set_job(fit_type=0)
 fit_out = odr.run()
 popt = fit_out.beta
 perr = fit_out.sd_beta
-trans = popt[1]
-cerr = perr[1]
-tintrvl = trans+cerr*np.array([-1, 1])
+if fit_func == 'logistic':
+	trans = popt[1]
+	cerr = perr[1]
+	tintrvl = trans+cerr*np.array([-1, 1])
+if fit_func == 'gompertz':
+	trans = -np.log(np.log(2)/popt[0])/popt[1]
+	cerr = np.array([[-perr[0], perr[1]], [perr[0], -perr[1]]], dtype=float)
+	tintrvl = np.divide(-np.log(np.log(2)/(popt[0]+cerr[:, 0])), popt[1]+cerr[:, 1])
 n_dom = 4096
 fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)
 fitrng = fit_funcs[fit_func](popt, fitdom)
@@ -387,16 +360,28 @@ else:
 
 # save data to file
 with open('.'.join(out_pref+[str(nsmpl), 'out']), 'w') as fo:
-    fo.write('%s\n' % ' '.join(np.unique(U).astype('|S32')))
-    fo.write('%s\n' % ' '.join(np.unique(stU).astype('|S32')))
-    fo.write('%s\n' % ' '.join(np.unique(P).astype('|S32')))
-    fo.write('%s\n' % ' '.join(np.unique(stP).astype('|S32')))
-    fo.write('%s\n' % ' '.join(np.unique(T).astype('|S32')))
-    fo.write('%s\n' % ' '.join(np.unique(stT).astype('|S32')))
+    fo.write('# -------------------------------------------------------------\n')
+	fo.write('# parameters\n')
+	fo.write('# ---------------------------------------------------------------\n')
+    fo.write('# potential:                 %s\n' % el.lower())
+	fo.write('# pressure:                  %f\n' % P[el][pressind])  
+	fo.write('# number of sets:            %d\n' % n_dat)
+	fo.write('# number of samples:         %d\n' % nsmpl)
+	fo.write('# property:                  %s\n' % property)
+	fo.write('# training sets (per phase): %d\n' % ntrainsets)
+	fo.write('# scaler:                    %s\n' % scaler)
+	fo.write('# network:                   %s\n' % network)
+	fo.write('# fitting function:          %s\n' % fit_func)
+	fo.write('# reduction:                 %s\n' % reduc)
+	fo.write('# ------------------------------------------------------------\n')
+	fo.write('# transition | critical error\n')
     fo.write('%f %f\n' % (trans, cerr))
-    
-print('data saved')
-print('------------------------------------------------------------')
+	fo.write('# transition interval\n')
+    fo.write('%s\n' % ' '.join(tintrvl.astype('|S32')))
+	fo.write('# optimal fit parameters\n')
+    fo.write('%s\n' % ' '.join(popt.astype('|S32')))
+	fo.write('# fit parameter error\n')
+    fo.write('%s\n' % ' '.join(perr.astype('|S32')))
 
 # plot of phase probability
 fig0 = plt.figure()
