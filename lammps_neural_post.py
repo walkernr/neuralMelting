@@ -35,14 +35,14 @@ plt.rcParams.update(params)
 # simulation name
 name = 'remcmc'
 # run details
-property = 'radial_distribution'   # property for classification
+property = 'entropic_fingerprint'  # property for classification
 n_press = 8                        # number of pressure datasets
 n_dat = 48                         # number of temperature datasets
 ntrainsets = 8                     # number of training sets
 nsmpl = 1024                       # number of samples from each set
 scaler = 'tanh'                    # data scaling method
 network = 'keras_cnn1d'            # neural network type
-reduc = False                      # reduction type
+reduc = 'pca'                      # reduction type
 fit_func = 'logistic'              # fitting function
 
 # element and pressure index choice
