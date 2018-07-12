@@ -193,7 +193,7 @@ for i in xrange(npress):
 print('------------------------------------------------------------')
 
 if tsne:
-    tsnepref = [tsneproperty, tsnescaler, tsnereduc, tsneclust]
+    tsnepref = [tsneproperty, tsnescaler, tsnereduc, str(tsnensmpl), tsneclust]
     tsnetrans = np.zeros((npress, 2), dtype=float)
     print('t-sne')
     print('pressure', 'temperature')
