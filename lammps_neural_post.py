@@ -120,7 +120,7 @@ lat = {'Ti': 'bcc',
 
 # summary of input
 print('------------------------------------------------------------')
-print('input summary')
+print('neural network summary')
 print('------------------------------------------------------------')
 print('potential:                 %s' % el.lower())
 print('number of pressures:       %d' % npress)  
@@ -134,12 +134,19 @@ print('network:                   %s' % network)
 print('fitting function:          %s' % fitfunc)
 print('------------------------------------------------------------')
 
+include_tsne = True
+tsneproperty = 'entropic_fingerprint'  # property for classification
+tsnensmpl = 512                        # number of samples per dataset
+tsnescaler = 'tanh'                    # data scaling method
+tsnereduc = 'tsne'                     # reduction method
+tsneclust = 'spectral'                 # clustering method
+
 # file prefix
 prefixes = ['%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(press[i])) for i in xrange(npress)]
 if reduc:
-    network_pref = [network, property, scaler, reduc, fitfunc, str(nsmpl)]
+    neurpref = [network, property, scaler, reduc, fitfunc, str(nsmpl)]
 else:
-    network_pref = [network, property, scaler, 'none', fitfunc, str(nsmpl)]
+    neurpref = [network, property, scaler, 'none', fitfunc, str(nsmpl)]
 
 mU = np.zeros((npress, ntemp), dtype=float)
 sU = np.zeros((npress, ntemp), dtype=float)
@@ -148,12 +155,13 @@ sP = np.zeros((npress, ntemp), dtype=float)
 mT = np.zeros((npress, ntemp), dtype=float)
 sT = np.zeros((npress, ntemp), dtype=float)
 msP = np.zeros((npress, 2), dtype=float)
-trans = np.zeros((npress, 2), dtype=float)
+neurtrans = np.zeros((npress, 2), dtype=float)
+print('neural network')
 print('pressure', 'temperature')
 print('------------------------------------------------------------')
 for i in xrange(npress):
     prefix = prefixes[i]
-    outfile = '.'.join([prefix]+network_pref+['out'])
+    neurfile = '.'.join([prefix]+neurpref+['out'])
     # load simulation data
     N = pickle.load(open(prefix+'.natoms.pickle'))
     O = np.concatenate(tuple([j*np.ones(int(len(N)/ntemp), dtype=int) for j in xrange(ntemp)]), 0)
@@ -170,14 +178,32 @@ for i in xrange(npress):
     T = pickle.load(open(prefix+'.temp.pickle'))
     mT[i, :] = np.array([np.mean(T[O == j]) for j in xrange(ntemp)])
     sT[i, :] = np.array([np.std(T[O == j]) for j in xrange(ntemp)])
-    with open(outfile, 'r') as fi:
+    with open(neurfile, 'r') as fi:
         iters = iter(fi)
         for lina in iters:
             if 'transition | critical error' in lina:
                 linb = iters.next()
-                trans[i, :] = np.array(linb.strip().split()).astype(float)
-    print('%.2f %.2f' % (msP[i, 0], trans[i, 0]))
+                neurtrans[i, :] = np.array(linb.strip().split()).astype(float)
+    print('%.2f %.2f' % (msP[i, 0], neurtrans[i, 0]))
 print('------------------------------------------------------------')
+
+if include_tsne:
+    tsnepref = [tsneproperty, tsnescaler, tsnereduc, tsneclust]
+    tsnetrans = np.zeros((npress, 2), dtype=float)
+    print('t-sne')
+    print('pressure', 'temperature')
+    print('------------------------------------------------------------')
+    for i in xrange(npress):
+        prefix = prefixes[i]
+        tsnefile = '.'.join([prefix]+tsnepref+['out'])
+        with open(tsnefile, 'r') as fi:
+            iters = iter(fi)
+            for lina in iters:
+                if 'transition | critical error' in lina:
+                    linb = iters.next()
+                    tsnetrans[i, :] = np.array(linb.strip().split()).astype(float)
+        print('%.2f %.2f' % (msP[i, 0], tsnetrans[i, 0]))
+    print('------------------------------------------------------------')
     
 base_pref = ['%s.%s.%s.lammps' % (name, el.lower(), lat[el])]+network_pref
 
@@ -188,7 +214,7 @@ fig0 = plt.figure()
 ax0 = fig0.add_subplot(111)
 for i in xrange(npress):
     ax0.errorbar(mT[i], mP[i], xerr=sT[i], yerr=sP[i], color=cm(cscale(i)), alpha=0.5, label='P = %.1f' % press[i])
-    ax0.axvline(trans[i, 0], color=cm(cscale(i)))
+    ax0.axvline(neurtrans[i, 0], color=cm(cscale(i)))
 ax0.set_xlabel('T')
 ax0.set_ylabel('P')
 ax0.legend(loc='center right')
@@ -197,7 +223,7 @@ fig1 = plt.figure()
 ax1 = fig1.add_subplot(111)
 for i in xrange(npress):
     ax1.errorbar(mT[i], mU[i], xerr=sT[i], yerr=sU[i], color=cm(cscale(i)), alpha=0.5, label='P = %.1f' % press[i])
-    ax1.axvline(trans[i, 0], color=cm(cscale(i)))
+    ax1.axvline(neurtrans[i, 0], color=cm(cscale(i)))
 ax1.set_xlabel('T')
 ax1.set_ylabel('U')
 ax1.legend(loc='upper left')
@@ -207,8 +233,10 @@ ax2 = fig2.add_subplot(111)
 if el == 'LJ':
     litpress = [1, 5, 10]
     littemp = [0.77, 1.061, 1.379]
-    ax2.plot(littemp, litpress, color=cm(0.25))
-ax2.errorbar(trans[:, 0], msP[:, 0], xerr=trans[:, 1], yerr=msP[:, 1], color=cm(0.75))
+    ax2.plot(littemp, litpress, color=cm(0.25), label='Literature')
+ax2.errorbar(neurtrans[:, 0], msP[:, 0], xerr=neurtrans[:, 1], yerr=msP[:, 1], color=cm(0.5), label='Keras CNN-1D')
+if include_tsne:
+    ax2.errorbar(tsnetrans[:, 0], msP[:, 0], xerr=tsnetrans[:, 1], yerr=msP[:, 1], color=cm(0.75), label='t-SNE Spectral')
 ax2.set_xlabel('T')
 ax2.set_ylabel('P')
 ax2.legend(loc='lower right')

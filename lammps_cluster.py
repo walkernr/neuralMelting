@@ -40,15 +40,19 @@ params = {'figure.figsize': (26, 20),
 plt.rcParams.update(params)
 
 # number of threads
-nthreads = 16
+if '--nthreads' in sys.argv:
+    i = sys.argv.index('--nthreads')
+    nthreads = int(sys.argv[i+1])
+else:
+    nthreads = 16
 
 # simulation name
 name = 'remcmc'
 # run details
 property = 'entropic_fingerprint'  # property for classification
-n_press = 8                        # number of pressure datasets
-n_dat = 48                         # number of temperature datasets
-nsmpl = 1024                       # number of samples per dataset
+npress = 8                         # number of pressure datasets
+ntemp = 48                         # number of temperature datasets
+nsmpl = 512                        # number of samples per dataset
 scaler = 'tanh'                    # data scaling method
 reduction = 'tsne'                 # reduction method
 clust = 'spectral'                 # clustering method
@@ -59,18 +63,18 @@ if '--element' in sys.argv:
     el = sys.argv[i+1]
 else:
     el = 'LJ'
-if '--pressure_index' in sys.argv:
-    i = sys.argv.index('--pressure_index')
+if '--pressindex' in sys.argv:
+    i = sys.argv.index('--pressindex')
     pressind = int(sys.argv[i+1])
 else:
     pressind = 0
 
 # pressure
-P = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Al': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Ni': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Cu': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'LJ': np.linspace(1.0, 8.0, n_press, dtype=np.float64)}
+P = {'Ti': np.linspace(1.0, 8.0, npress, dtype=np.float64),
+     'Al': np.linspace(1.0, 8.0, npress, dtype=np.float64),
+     'Ni': np.linspace(1.0, 8.0, npress, dtype=np.float64),
+     'Cu': np.linspace(1.0, 8.0, npress, dtype=np.float64),
+     'LJ': np.linspace(1.0, 8.0, npress, dtype=np.float64)}
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -86,7 +90,7 @@ print('input summary')
 print('------------------------------------------------------------')
 print('potential:         %s' % el.lower())
 print('pressure:          %f' % P[el][pressind])
-print('number of sets:    %d' % n_dat)
+print('number of sets:    %d' % ntemp)
 print('number of samples: %d' % nsmpl)
 print('property:          %s' % property)
 print('scaler:            %s' % scaler)
@@ -99,14 +103,14 @@ R = pickle.load(open(prefix+'.r.pickle'))[:]
 Q = pickle.load(open(prefix+'.q.pickle'))[:]
 # load simulation data
 N = pickle.load(open(prefix+'.natoms.pickle'))
-O = np.concatenate(tuple([i*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
+O = np.concatenate(tuple([i*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
 P = pickle.load(open(prefix+'.virial.pickle'))
 T = pickle.load(open(prefix+'.temp.pickle'))
 G = pickle.load(open(prefix+'.rdf.pickle'))
 S = pickle.load(open(prefix+'.sf.pickle'))
 I = pickle.load(open(prefix+'.ef.pickle'))
 # sample space reduction for improving performance
-smplspc = np.concatenate(tuple([np.arange((i+1)*int(len(N)/n_dat)-nsmpl, (i+1)*int(len(N)/n_dat)) for i in xrange(n_dat)]))
+smplspc = np.concatenate(tuple([np.arange((i+1)*int(len(N)/ntemp)-nsmpl, (i+1)*int(len(N)/ntemp)) for i in xrange(ntemp)]))
 N = N[smplspc]
 O = O[smplspc]
 P = P[smplspc]
@@ -130,9 +134,9 @@ if reduction == 'tsne':
     npcacomp = 64
 ntsnecomp = 2
 # temperature distribution
-tdist = np.histogram(T, n_dat, range=(np.min(T), np.max(T)), density=False)
+tdist = np.histogram(T, ntemp, range=(np.min(T), np.max(T)), density=False)
 plxty = int(np.mean(tdist[0]))
-tdist = np.histogram(T, n_dat, range=(np.min(T), np.max(T)), density=True)
+tdist = np.histogram(T, ntemp, range=(np.min(T), np.max(T)), density=True)
 # reduction initialization
 pca = PCA(n_components=npcacomp)
 tsne = TSNE(n_jobs=nthreads, n_components=ntsnecomp, perplexity=plxty, init='random', verbose=True)
@@ -185,7 +189,7 @@ ctdist = []
 cmtemp = np.zeros(2, dtype=float)
 for i in xrange(2):
     cind.append(np.where(pred == i))
-    ctdist.append(np.histogram(T[cind[i]], n_dat, range=(np.min(T), np.max(T)), density=True))
+    ctdist.append(np.histogram(T[cind[i]], ntemp, range=(np.min(T), np.max(T)), density=True))
     cmtemp[i] = np.mean(T[cind[i]])
 pind = np.argsort(cmtemp)
 # max solid phase temp and min liquid phase temp 
@@ -230,6 +234,12 @@ print('liquid geo mean:        %f, %f' % (lgmtemp, (lgstemp-1)*lgmtemp))
 print('gemoetric mean:         %f, %f' % (gmt, (gst-1)*gmt))
 print('geometric interval:     %f, %f' % (gmt-(gst-1)*gmt, gmt+(gst-1)*gmt))
 print('------------------------------------------------------------')
+
+out_pref = [prefix, property, scaler, reduction, clust]
+# save data to file
+with open('.'.join(out_pref+[str(nsmpl), 'out']), 'w') as fo:
+    fo.write('# transition | critical error\n')
+    fo.write('%f %f\n' % (amt, ast))
 
 # color scale
 cm = plt.get_cmap('plasma')
@@ -310,10 +320,9 @@ else:
     ax2.legend([r'$\mathrm{'+'{:4.0f}'.format(cmtemp[pind[i]])+'K}$' for i in xrange(2)])
 
 # save figures
-plt_pref = [prefix, property, scaler, reduction, clust]
-fig0.savefig('.'.join(plt_pref+['red', str(nsmpl), 'png']))
-fig1.savefig('.'.join(plt_pref+['dist', str(nsmpl), 'png']))
-fig2.savefig('.'.join(plt_pref+['strf', str(nsmpl), 'png']))
+fig0.savefig('.'.join(out_pref+['red', str(nsmpl), 'png']))
+fig1.savefig('.'.join(out_pref+['dist', str(nsmpl), 'png']))
+fig2.savefig('.'.join(out_pref+['strf', str(nsmpl), 'png']))
 # close plots
 plt.close('all')
 print('plots saved')
