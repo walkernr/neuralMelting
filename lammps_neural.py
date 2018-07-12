@@ -11,7 +11,6 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA, KernelPCA
-from scipy.optimize import curve_fit
 from scipy.odr import ODR, Model, Data, RealData
 import matplotlib as mpl
 mpl.use('Agg')
@@ -21,8 +20,7 @@ import matplotlib.pyplot as plt
 nthreads = 16
 
 # keras backend
-theano = False
-if theano:
+if '--theano' in sys.argv:
     os.environ['KERAS_BACKEND'] = 'theano'
 else:
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -65,15 +63,68 @@ plt.rcParams.update(params)
 # simulation name
 name = 'remcmc'
 # run details
-property = 'entropic_fingerprint'  # property for classification
-n_press = 8                        # number of pressure datasets
-n_dat = 48                         # number of temperature datasets
-ntrainsets = 8                     # number of training sets
-nsmpl = 1024                       # number of samples from each set
-scaler = 'tanh'                    # data scaling method
-network = 'keras_cnn1d'            # neural network type
-reduc = 'pca'                      # reduction type
-fit_func = 'logistic'              # fitting function
+# property for classification
+if '--property' in sys.argv:
+    i = sys.argv.index('--property')
+    property = sys.argv[i+1]
+else:
+    property = 'entropic_fingerprint'
+# number of pressure datasets
+if '--npress' in sys.argv:
+    i = sys.argv.index('--npress')
+    npress = int(sys.argv[i+1])
+else:
+    npress = 8
+# pressure range
+if '--rpress' in sys.argv:
+    i = sys.argv.index('--rpress')
+    lpress = float(sys.argv[i+1])
+    hpress = float(sys.argv[i+2])
+else:
+    lpress = 1.0
+    hpress = 8.0
+# number of temperature datasets
+if '--ntemp' in sys.argv:
+    i = sys.argv.index('--ntemp')
+    ntemp  = int(sys.argv[i+1])
+else:
+    ntemp = 48
+# number of training sets
+if '--ntrain' in sys.argv:
+    i = sys.argv.index('--ntrain')
+    ntrain = int(sys.argv[i+1])
+else:
+    ntrain = 8
+# number of samples from each set
+if '--nsmpl' in sys.argv:
+    i = sys.argv.index('--nsmpl')
+    nsmpl = int(sys.argv[i+1])
+else:
+    nsmpl = 1024
+# data scaling method
+if '--scaler' in sys.argv:
+    i = sys.argv.index('--scaler')
+    scaler = sys.argv[i+1]
+else:
+    scaler = 'tanh'
+# neural network type
+if '--network' in sys.argv:
+    i = sys.argv.index('--network')
+    network = sys.argv[i+1]
+else:
+    network = 'keras_cnn1d'
+# reduction type
+if '--reduction' in sys.argv:
+    i = sys.argv.index('--reduction')
+    reduc = sys.argv[i+1]
+else:
+    reduc = 'pca'
+# fitting function
+if '--fitfunc' in sys.argv:
+    i = sys.argv.index('--fitfunc')
+    fitfunc = sys.argv[i+1]
+else:
+    fitfunc = 'logistic'
 
 # element and pressure index choice
 if '--element' in sys.argv:
@@ -81,18 +132,14 @@ if '--element' in sys.argv:
     el = sys.argv[i+1]
 else:
     el = 'LJ'
-if '--pressure_index' in sys.argv:
-    i = sys.argv.index('--pressure_index')
+if '--pressindex' in sys.argv:
+    i = sys.argv.index('--pressindex')
     pressind = int(sys.argv[i+1])
 else:
     pressind = 0
 
 # pressure
-press = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Al': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Ni': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Cu': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'LJ': np.linspace(1.0, 8.0, n_press, dtype=np.float64)}
+press = np.linspace(lpress, hpress, npress, dtype=np.float64)
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -101,20 +148,20 @@ lat = {'Ti': 'bcc',
        'LJ': 'fcc'}
 
 # file prefix
-prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(press[el][pressind]))
+prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(press[pressind]))
 # summary of input
 print('------------------------------------------------------------')
 print('input summary')
 print('------------------------------------------------------------')
 print('potential:                 %s' % el.lower())
-print('pressure:                  %f' % press[el][pressind])  
-print('number of sets:            %d' % n_dat)
+print('pressure:                  %f' % press[pressind])  
+print('number of sets:            %d' % ntemp)
 print('number of samples:         %d' % nsmpl)
 print('property:                  %s' % property)
-print('training sets (per phase): %d' % ntrainsets)
+print('training sets (per phase): %d' % ntrain)
 print('scaler:                    %s' % scaler)
 print('network:                   %s' % network)
-print('fitting function:          %s' % fit_func)
+print('fitting function:          %s' % fitfunc)
 print('reduction:                 %s' % reduc)
 print('------------------------------------------------------------')
 
@@ -137,26 +184,26 @@ log_guess = [1.0, 0.5]
 gomp_guess = [1.0, 1.0]
 rich_guess = [0.0, 1.0, 3.0, 0.5, 0.5, 0.0, 1.0]
 # fitting dictionaries
-fit_funcs = {'logistic':logistic, 'gompertz':gompertz, 'richard':richard}
+fitfuncs = {'logistic':logistic, 'gompertz':gompertz, 'richard':richard}
 fit_guess = {'logistic':log_guess, 'gompertz':gomp_guess, 'richard':rich_guess}
 print('fitting function defined')
 print('------------------------------------------------------------')
 
 # load simulation data
 N = pickle.load(open(prefix+'.natoms.pickle'))
-O = np.concatenate(tuple([i*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
+O = np.concatenate(tuple([i*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
 # load potential data
 trU = pickle.load(open(prefix+'.pe.pickle'))
-U = np.concatenate(tuple([np.mean(trU[O == i])*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
-stU = np.concatenate(tuple([np.std(trU[O == i])*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
+U = np.concatenate(tuple([np.mean(trU[O == i])*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
+stU = np.concatenate(tuple([np.std(trU[O == i])*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
 # load pressure data
 trP = pickle.load(open(prefix+'.virial.pickle'))
-P = np.concatenate(tuple([np.mean(trP[O == i])*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
-stP = np.concatenate(tuple([np.std(trP[O == i])*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
+P = np.concatenate(tuple([np.mean(trP[O == i])*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
+stP = np.concatenate(tuple([np.std(trP[O == i])*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
 # load temperature data
 trT = pickle.load(open(prefix+'.temp.pickle'))
-T = np.concatenate(tuple([np.mean(trT[O == i])*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
-stT = np.concatenate(tuple([np.std(trT[O == i])*np.ones(int(len(N)/n_dat), dtype=int) for i in xrange(n_dat)]), 0)
+T = np.concatenate(tuple([np.mean(trT[O == i])*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
+stT = np.concatenate(tuple([np.std(trT[O == i])*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
 # load structure domains
 R = pickle.load(open(prefix+'.r.pickle'))[:]
 Q = pickle.load(open(prefix+'.q.pickle'))[:]
@@ -165,7 +212,7 @@ G = pickle.load(open(prefix+'.rdf.pickle'))
 S = pickle.load(open(prefix+'.sf.pickle'))
 I = pickle.load(open(prefix+'.ef.pickle'))
 # sample space reduction for improving performance
-smplspc = np.concatenate(tuple([np.arange((i+1)*int(len(N)/n_dat)-nsmpl, (i+1)*int(len(N)/n_dat)) for i in xrange(n_dat)]))
+smplspc = np.concatenate(tuple([np.arange((i+1)*int(len(N)/ntemp)-nsmpl, (i+1)*int(len(N)/ntemp)) for i in xrange(ntemp)]))
 N = N[smplspc]
 O = O[smplspc]
 trU = trU[smplspc]
@@ -198,8 +245,8 @@ print('scaler and reduction initialized')
 print('------------------------------------------------------------')
 
 # bounds for training data
-lb = 0+ntrainsets
-ub = n_dat-(ntrainsets+1)
+lb = 0+ntrain
+ub = ntemp-(ntrain+1)
 
 # indices for partitioning data
 sind = (O < lb)               # solid training indices
@@ -320,23 +367,23 @@ for i in xrange(len(temps)):
     sprob[i] = np.std(prob[cT == temps[i], 1])   # standard error of samples at temp i being liquid
 # curve fitting
 odr_data = RealData(temps, mprob, stemps, sprob)
-odr_model = Model(fit_funcs[fit_func])
-odr = ODR(odr_data, odr_model, fit_guess[fit_func])
+odr_model = Model(fitfuncs[fitfunc])
+odr = ODR(odr_data, odr_model, fit_guess[fitfunc])
 odr.set_job(fit_type=0)
 fit_out = odr.run()
 popt = fit_out.beta
 perr = fit_out.sd_beta
-if fit_func == 'logistic':
+if fitfunc == 'logistic':
 	trans = popt[1]
 	cerr = perr[1]
 	tintrvl = trans+cerr*np.array([-1, 1])
-if fit_func == 'gompertz':
+if fitfunc == 'gompertz':
 	trans = -np.log(np.log(2)/popt[0])/popt[1]
 	cerr = np.array([[-perr[0], perr[1]], [perr[0], -perr[1]]], dtype=float)
 	tintrvl = np.divide(-np.log(np.log(2)/(popt[0]+cerr[:, 0])), popt[1]+cerr[:, 1])
 n_dom = 4096
 fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)
-fitrng = fit_funcs[fit_func](popt, fitdom)
+fitrng = fitfuncs[fitfunc](popt, fitdom)
 
 print('transition temperature estimated')
 print('------------------------------------------------------------')
@@ -348,9 +395,9 @@ print('------------------------------------------------------------')
 
 # prefix for output files
 if reduc:
-    out_pref = [prefix, network, property, scaler, reduc, fit_func]
+    out_pref = [prefix, network, property, scaler, reduc, fitfunc]
 else:
-    out_pref = [prefix, network, property, scaler, 'none', fit_func]
+    out_pref = [prefix, network, property, scaler, 'none', fitfunc]
 
 # save data to file
 with open('.'.join(out_pref+[str(nsmpl), 'out']), 'w') as fo:
@@ -358,14 +405,14 @@ with open('.'.join(out_pref+[str(nsmpl), 'out']), 'w') as fo:
     fo.write('# parameters\n')
     fo.write('# ---------------------------------------------------------------\n')
     fo.write('# potential:                 %s\n' % el.lower())
-    fo.write('# pressure:                  %f\n' % press[el][pressind])  
-    fo.write('# number of sets:            %d\n' % n_dat)
+    fo.write('# pressure:                  %f\n' % press[pressind])  
+    fo.write('# number of sets:            %d\n' % ntemp)
     fo.write('# number of samples:         %d\n' % nsmpl)
     fo.write('# property:                  %s\n' % property)
-    fo.write('# training sets (per phase): %d\n' % ntrainsets)
+    fo.write('# training sets (per phase): %d\n' % ntrain)
     fo.write('# scaler:                    %s\n' % scaler)
     fo.write('# network:                   %s\n' % network)
-    fo.write('# fitting function:          %s\n' % fit_func)
+    fo.write('# fitting function:          %s\n' % fitfunc)
     fo.write('# reduction:                 %s\n' % reduc)
     fo.write('# ------------------------------------------------------------\n')
     fo.write('# transition | critical error\n')
@@ -386,7 +433,7 @@ ax0.xaxis.set_ticks_position('bottom')
 ax0.yaxis.set_ticks_position('left')
 ax0.plot(fitdom, fitrng, color=cm(scale(trans)), label=r'$\mathrm{Phase\enspace Probability\enspace Curve}$')
 ax0.axvline(trans, color=cm(scale(trans)), alpha=0.50)
-if fit_func == 'gompertz' or fit_func == 'logistic':
+if fitfunc == 'gompertz' or fitfunc == 'logistic':
     for i in xrange(2):
         # ax0.plot(fitdom, cfitrng[i], color=cm(scale(tintrvl[i])), alpha=0.50, linestyle='--')
         ax0.axvline(tintrvl[i], color=cm(scale(tintrvl[i])), alpha=0.50, linestyle='--')
