@@ -252,7 +252,7 @@ scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(feature_range=(0,1
 npcacomp = properties[property].shape[1]
 pca = PCA(n_components=npcacomp)
 kpca = KernelPCA(n_components=npcacomp, n_jobs=nthreads)
-isomap = Isomap(n_components=npcacomp, n_jobs=nthreads)
+isomap = Isomap(n_neighbors=nsmpl, n_components=npcacomp, n_jobs=nthreads)
 reducers = {'pca':pca, 'kpca':kpca, 'isomap':isomap}
 print('scaler and reduction initialized')
 print('------------------------------------------------------------')
