@@ -26,7 +26,8 @@ else:
 # keras backend
 if '--theano' in sys.argv:
     os.environ['KERAS_BACKEND'] = 'theano'
-else:
+if '--tensorflow' in sys.argv:
+    os.environ['KERAS_BACKEND'] = 'tensorflow'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # multithreading
 os.environ['MKL_NUM_THREADS'] = str(nthreads)
@@ -67,12 +68,12 @@ plt.rcParams.update(params)
 # simulation name
 name = 'remcmc'
 # run details
-# property for classification
-if '--property' in sys.argv:
-    i = sys.argv.index('--property')
-    property = sys.argv[i+1]
+# element
+if '--element' in sys.argv:
+    i = sys.argv.index('--element')
+    el = sys.argv[i+1]
 else:
-    property = 'entropic_fingerprint'
+    el = 'LJ'
 # number of pressure datasets
 if '--npress' in sys.argv:
     i = sys.argv.index('--npress')
@@ -87,24 +88,36 @@ if '--rpress' in sys.argv:
 else:
     lpress = 1.0
     hpress = 8.0
+# pressure index
+if '--pressindex' in sys.argv:
+    i = sys.argv.index('--pressindex')
+    pressind = int(sys.argv[i+1])
+else:
+    pressind = 0
 # number of temperature datasets
 if '--ntemp' in sys.argv:
     i = sys.argv.index('--ntemp')
     ntemp  = int(sys.argv[i+1])
 else:
     ntemp = 48
-# number of training sets
-if '--ntrain' in sys.argv:
-    i = sys.argv.index('--ntrain')
-    ntrain = int(sys.argv[i+1])
+# property for classification
+if '--property' in sys.argv:
+    i = sys.argv.index('--property')
+    property = sys.argv[i+1]
 else:
-    ntrain = 8
+    property = 'entropic_fingerprint'
 # number of samples from each set
 if '--nsmpl' in sys.argv:
     i = sys.argv.index('--nsmpl')
     nsmpl = int(sys.argv[i+1])
 else:
     nsmpl = 1024
+# number of training sets
+if '--ntrain' in sys.argv:
+    i = sys.argv.index('--ntrain')
+    ntrain = int(sys.argv[i+1])
+else:
+    ntrain = 8
 # data scaling method
 if '--scaler' in sys.argv:
     i = sys.argv.index('--scaler')
@@ -130,17 +143,6 @@ if '--fitfunc' in sys.argv:
 else:
     fitfunc = 'logistic'
 
-# element and pressure index choice
-if '--element' in sys.argv:
-    i = sys.argv.index('--element')
-    el = sys.argv[i+1]
-else:
-    el = 'LJ'
-if '--pressindex' in sys.argv:
-    i = sys.argv.index('--pressindex')
-    pressind = int(sys.argv[i+1])
-else:
-    pressind = 0
 
 # pressure
 press = np.linspace(lpress, hpress, npress, dtype=np.float64)
