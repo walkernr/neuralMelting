@@ -11,6 +11,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA, KernelPCA
+from sklearn.manifold import SpectralEmbedding
 from scipy.odr import ODR, Model, Data, RealData
 import matplotlib as mpl
 mpl.use('Agg')
