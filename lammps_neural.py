@@ -43,6 +43,7 @@ from keras.wrappers.scikit_learn import KerasClassifier
 from keras.utils import plot_model
 
 seed = 256
+np.random.seed(seed)
 set_random_seed(seed)
 
 # plotting parameters
@@ -66,7 +67,11 @@ params = {'figure.figsize': (26, 20),
 plt.rcParams.update(params)
 
 # simulation name
-name = 'remcmc'
+if '--name' in sys.argv:
+    i = sys.argv.index('--name')
+    name = sys.argv[i+1]
+else:
+    name = 'remcmc'
 # run details
 # element
 if '--element' in sys.argv:

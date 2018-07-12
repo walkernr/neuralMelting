@@ -33,7 +33,11 @@ params = {'figure.figsize': (26, 20),
 plt.rcParams.update(params)
 
 # simulation name
-name = 'remcmc'
+if '--name' in sys.argv:
+    i = sys.argv.index('--name')
+    name = sys.argv[i+1]
+else:
+    name = 'remcmc'
 # run details
 # element
 if '--element' in sys.argv:
@@ -133,9 +137,9 @@ print('------------------------------------------------------------')
 # file prefix
 prefixes = ['%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(press[i])) for i in xrange(npress)]
 if reduc:
-    network_pref = [network, property, scaler, reduc, fit_func, str(nsmpl)]
+    network_pref = [network, property, scaler, reduc, fitfunc, str(nsmpl)]
 else:
-    network_pref = [network, property, scaler, 'none', fit_func, str(nsmpl)]
+    network_pref = [network, property, scaler, 'none', fitfunc, str(nsmpl)]
 
 mU = np.zeros((npress, ntemp), dtype=float)
 sU = np.zeros((npress, ntemp), dtype=float)
