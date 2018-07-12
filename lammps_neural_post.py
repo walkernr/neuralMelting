@@ -204,7 +204,11 @@ ax1.legend(loc='upper left')
 
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(111)
-ax2.errorbar(trans[:, 0], msP[:, 0], xerr=trans[:, 1], yerr=msP[:, 1], color=cm(0.5))
+if el == 'LJ':
+    litpress = [1, 5, 10]
+    littemp = [0.77, 1.061, 1.379]
+    ax2.plot(littemp, litpress, color=cm(0.25))
+ax2.errorbar(trans[:, 0], msP[:, 0], xerr=trans[:, 1], yerr=msP[:, 1], color=cm(0.75))
 ax2.set_xlabel('T')
 ax2.set_ylabel('P')
 ax2.legend(loc='lower right')

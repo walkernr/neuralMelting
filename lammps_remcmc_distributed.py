@@ -43,14 +43,14 @@ else:
     name = 'remcmc'
 
 # monte carlo parameters
-cutoff = 256          # sample cutoff
-nsmpl = cutoff+1024  # number of samples
+cutoff = 1024         # sample cutoff
+nsmpl = cutoff+1024   # number of samples
 mod = 128             # frequency of data storage
-nswps = nsmpl*mod   # total mc sweeps
+nswps = nsmpl*mod     # total mc sweeps
 ppos = 0.015625       # probability of pos move
 pvol = 0.25           # probability of vol move
 phmc = 1-ppos-pvol    # probability of hmc move
-nstps = 8            # md steps during hmc
+nstps = 16            # md steps during hmc
 seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
 
@@ -382,7 +382,7 @@ def volumeMC(lmps, Et, Pf, ntryvol, naccvol, dbox):
     lmps.command('run 0')
     penew = lmps.extract_compute('thermo_pe', None, 0)/Et
     # calculate enthalpy criterion
-    dH = (penew-pe)+Pf*(volnew-vol)-natoms*np.log(volnew/vol)
+    dH = (penew-pe)+Pf*(volnew-vol)-(natoms+1)*np.log(volnew/vol)
     if np.random.rand() <= np.min([1, np.exp(-dH)]):
         # update volume acceptations
         naccvol += 1
@@ -496,11 +496,11 @@ def getSample(x, v, box, el, units, lat, sz, mass, P, dt,
     # loop through monte carlo moves
     for i in xrange(mod):
         dat =  moveMC(lmps, Et, Pf,
-                       ppos, pvol, phmc,
-                       ntrypos, naccpos,
-                       ntryvol, naccvol,
-                       ntryhmc, nacchmc,
-                       dpos, dbox, T, dt)
+                      ppos, pvol, phmc,
+                      ntrypos, naccpos,
+                      ntryvol, naccvol,
+                      ntryhmc, nacchmc,
+                      dpos, dbox, T, dt)
         lmps = dat[0]
         ntrypos, naccpos = dat[1:3]
         ntryvol, naccvol = dat[3:5]
