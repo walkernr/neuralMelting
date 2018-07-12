@@ -11,7 +11,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA, KernelPCA
-from sklearn.manifold import SpectralEmbedding
+from sklearn.manifold import Isomap
 from scipy.odr import ODR, Model, Data, RealData
 import matplotlib as mpl
 mpl.use('Agg')
@@ -252,8 +252,8 @@ scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(feature_range=(0,1
 npcacomp = properties[property].shape[1]
 pca = PCA(n_components=npcacomp)
 kpca = KernelPCA(n_components=npcacomp, n_jobs=nthreads)
-spectral = SpectralEmbedding(n_components=npcacomp, n_jobs=nthreads)
-reducers = {'pca':pca, 'kpca':kpca, 'spectral':spectral}
+isomap = Isomap(n_components=npcacomp, n_jobs=nthreads)
+reducers = {'pca':pca, 'kpca':kpca, 'isomap':isomap}
 print('scaler and reduction initialized')
 print('------------------------------------------------------------')
 
