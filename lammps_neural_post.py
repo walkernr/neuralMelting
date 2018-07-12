@@ -210,7 +210,7 @@ if tsne:
         print('%.2f %.2f' % (msP[i, 0], tsnetrans[i, 0]))
     print('------------------------------------------------------------')
     
-base_pref = ['%s.%s.%s.lammps' % (name, el.lower(), lat[el])]+nuerpref
+base_pref = ['%s.%s.%s.lammps' % (name, el.lower(), lat[el])]+neurpref
 
 cm = plt.get_cmap('plasma')
 cscale = lambda i: (msP[i, 0]-np.min(mP))/np.max(mP)
