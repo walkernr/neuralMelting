@@ -251,7 +251,8 @@ scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(feature_range=(0,1
 npcacomp = properties[property].shape[1]
 pca = PCA(n_components=npcacomp)
 kpca = KernelPCA(n_components=npcacomp, n_jobs=nthreads)
-reducers = {'pca':pca, 'kpca':kpca}
+spectral = SpectralEmbedding(n_components=npcacomp, n_jobs=nthreads)
+reducers = {'pca':pca, 'kpca':kpca, 'spectral':spectral}
 print('scaler and reduction initialized')
 print('------------------------------------------------------------')
 
