@@ -35,29 +35,78 @@ plt.rcParams.update(params)
 # simulation name
 name = 'remcmc'
 # run details
-property = 'entropic_fingerprint'  # property for classification
-n_press = 8                        # number of pressure datasets
-n_dat = 48                         # number of temperature datasets
-ntrainsets = 8                     # number of training sets
-nsmpl = 1024                       # number of samples from each set
-scaler = 'tanh'                    # data scaling method
-network = 'keras_cnn1d'            # neural network type
-reduc = 'pca'                      # reduction type
-fit_func = 'logistic'              # fitting function
-
-# element and pressure index choice
+# element
 if '--element' in sys.argv:
     i = sys.argv.index('--element')
     el = sys.argv[i+1]
 else:
     el = 'LJ'
+# number of pressure datasets
+if '--npress' in sys.argv:
+    i = sys.argv.index('--npress')
+    npress = int(sys.argv[i+1])
+else:
+    npress = 8
+# pressure range
+if '--rpress' in sys.argv:
+    i = sys.argv.index('--rpress')
+    lpress = float(sys.argv[i+1])
+    hpress = float(sys.argv[i+2])
+else:
+    lpress = 1.0
+    hpress = 8.0
+# number of temperature datasets
+if '--ntemp' in sys.argv:
+    i = sys.argv.index('--ntemp')
+    ntemp  = int(sys.argv[i+1])
+else:
+    ntemp = 48
+# property for classification
+if '--property' in sys.argv:
+    i = sys.argv.index('--property')
+    property = sys.argv[i+1]
+else:
+    property = 'entropic_fingerprint'
+# number of samples from each set
+if '--nsmpl' in sys.argv:
+    i = sys.argv.index('--nsmpl')
+    nsmpl = int(sys.argv[i+1])
+else:
+    nsmpl = 1024
+# number of training sets
+if '--ntrain' in sys.argv:
+    i = sys.argv.index('--ntrain')
+    ntrain = int(sys.argv[i+1])
+else:
+    ntrain = 8
+# data scaling method
+if '--scaler' in sys.argv:
+    i = sys.argv.index('--scaler')
+    scaler = sys.argv[i+1]
+else:
+    scaler = 'tanh'
+# reduction type
+if '--reduction' in sys.argv:
+    i = sys.argv.index('--reduction')
+    reduc = sys.argv[i+1]
+else:
+    reduc = 'pca'
+# neural network type
+if '--network' in sys.argv:
+    i = sys.argv.index('--network')
+    network = sys.argv[i+1]
+else:
+    network = 'keras_cnn1d'
+# fitting function
+if '--fitfunc' in sys.argv:
+    i = sys.argv.index('--fitfunc')
+    fitfunc = sys.argv[i+1]
+else:
+    fitfunc = 'logistic'
+
 
 # pressure
-press = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Al': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Ni': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Cu': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'LJ': np.linspace(1.0, 8.0, n_press, dtype=np.float64)}
+press = np.linspace(lpress, hpress, npress, dtype=np.float64)
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -69,54 +118,54 @@ lat = {'Ti': 'bcc',
 print('------------------------------------------------------------')
 print('input summary')
 print('------------------------------------------------------------')
-print('potential:                 %s' % el.lower()) 
-print('number of pressures:       %d' % n_press)
-print('number of temperatures:    %d' % n_dat)
-print('number of samples:         %d' % nsmpl)
+print('potential:                 %s' % el.lower())
+print('number of pressures:       %d' % npress)  
+print('number of temps:           %d' % ntemp)
 print('property:                  %s' % property)
-print('training sets (per phase): %d' % ntrainsets)
+print('number of samples:         %d' % nsmpl)
+print('training sets (per phase): %d' % ntrain)
 print('scaler:                    %s' % scaler)
-print('network:                   %s' % network)
-print('fitting function:          %s' % fit_func)
 print('reduction:                 %s' % reduc)
+print('network:                   %s' % network)
+print('fitting function:          %s' % fitfunc)
 print('------------------------------------------------------------')
 
 # file prefix
-prefixes = ['%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(press[el][i])) for i in xrange(n_press)]
+prefixes = ['%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(press[i])) for i in xrange(npress)]
 if reduc:
     network_pref = [network, property, scaler, reduc, fit_func, str(nsmpl)]
 else:
     network_pref = [network, property, scaler, 'none', fit_func, str(nsmpl)]
 
-mU = np.zeros((n_press, n_dat), dtype=float)
-sU = np.zeros((n_press, n_dat), dtype=float)
-mP = np.zeros((n_press, n_dat), dtype=float)
-sP = np.zeros((n_press, n_dat), dtype=float)
-mT = np.zeros((n_press, n_dat), dtype=float)
-sT = np.zeros((n_press, n_dat), dtype=float)
-msP = np.zeros((n_press, 2), dtype=float)
-trans = np.zeros((n_press, 2), dtype=float)
+mU = np.zeros((npress, ntemp), dtype=float)
+sU = np.zeros((npress, ntemp), dtype=float)
+mP = np.zeros((npress, ntemp), dtype=float)
+sP = np.zeros((npress, ntemp), dtype=float)
+mT = np.zeros((npress, ntemp), dtype=float)
+sT = np.zeros((npress, ntemp), dtype=float)
+msP = np.zeros((npress, 2), dtype=float)
+trans = np.zeros((npress, 2), dtype=float)
 print('pressure', 'temperature')
 print('------------------------------------------------------------')
-for i in xrange(n_press):
+for i in xrange(npress):
     prefix = prefixes[i]
     outfile = '.'.join([prefix]+network_pref+['out'])
     # load simulation data
     N = pickle.load(open(prefix+'.natoms.pickle'))
-    O = np.concatenate(tuple([j*np.ones(int(len(N)/n_dat), dtype=int) for j in xrange(n_dat)]), 0)
+    O = np.concatenate(tuple([j*np.ones(int(len(N)/ntemp), dtype=int) for j in xrange(ntemp)]), 0)
     # load potential data
     U = pickle.load(open(prefix+'.pe.pickle'))
-    mU[i, :] = np.array([np.mean(U[O == j]) for j in xrange(n_dat)])
-    sU[i, :] = np.array([np.std(U[O == j]) for j in xrange(n_dat)])
+    mU[i, :] = np.array([np.mean(U[O == j]) for j in xrange(ntemp)])
+    sU[i, :] = np.array([np.std(U[O == j]) for j in xrange(ntemp)])
     # load pressure data
     P = pickle.load(open(prefix+'.virial.pickle'))
-    mP[i, :] = np.array([np.mean(P[O == j]) for j in xrange(n_dat)])
-    sP[i, :] = np.array([np.std(P[O == j]) for j in xrange(n_dat)])
+    mP[i, :] = np.array([np.mean(P[O == j]) for j in xrange(ntemp)])
+    sP[i, :] = np.array([np.std(P[O == j]) for j in xrange(ntemp)])
     msP[i, :] = np.array([np.mean(P), np.std(P)], dtype=float)
     # load temperature data
     T = pickle.load(open(prefix+'.temp.pickle'))
-    mT[i, :] = np.array([np.mean(T[O == j]) for j in xrange(n_dat)])
-    sT[i, :] = np.array([np.std(T[O == j]) for j in xrange(n_dat)])
+    mT[i, :] = np.array([np.mean(T[O == j]) for j in xrange(ntemp)])
+    sT[i, :] = np.array([np.std(T[O == j]) for j in xrange(ntemp)])
     with open(outfile, 'r') as fi:
         iters = iter(fi)
         for lina in iters:
@@ -133,7 +182,7 @@ cscale = lambda i: (msP[i, 0]-np.min(mP))/np.max(mP)
 
 fig0 = plt.figure()
 ax0 = fig0.add_subplot(111)
-for i in xrange(n_press):
+for i in xrange(npress):
     ax0.errorbar(mT[i], mP[i], xerr=sT[i], yerr=sP[i], color=cm(cscale(i)), label='P = %.1f' % press[el][i])
     ax0.axvline(trans[i, 0], color=cm(cscale(i)))
 ax0.set_xlabel('T')
@@ -142,7 +191,7 @@ ax0.legend(loc='center right')
 
 fig1 = plt.figure()
 ax1 = fig1.add_subplot(111)
-for i in xrange(n_press):
+for i in xrange(npress):
     ax1.errorbar(mT[i], mU[i], xerr=sT[i], yerr=sU[i], color=cm(cscale(i)), label='P = %.1f' % press[el][i])
     ax1.axvline(trans[i, 0], color=cm(cscale(i)))
 ax1.set_xlabel('T')
