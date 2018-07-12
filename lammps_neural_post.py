@@ -107,6 +107,11 @@ if '--fitfunc' in sys.argv:
     fitfunc = sys.argv[i+1]
 else:
     fitfunc = 'logistic'
+# include tsne results
+if '--tsne' in sys.argv:
+    tsne = True
+else:
+    tsne = False
 
 
 # pressure
@@ -134,12 +139,12 @@ print('network:                   %s' % network)
 print('fitting function:          %s' % fitfunc)
 print('------------------------------------------------------------')
 
-include_tsne = True
-tsneproperty = 'entropic_fingerprint'  # property for classification
-tsnensmpl = 512                        # number of samples per dataset
-tsnescaler = 'tanh'                    # data scaling method
-tsnereduc = 'tsne'                     # reduction method
-tsneclust = 'spectral'                 # clustering method
+if tsne:
+    tsneproperty = 'entropic_fingerprint'  # property for classification
+    tsnensmpl = 512                        # number of samples per dataset
+    tsnescaler = 'tanh'                    # data scaling method
+    tsnereduc = 'tsne'                     # reduction method
+    tsneclust = 'spectral'                 # clustering method
 
 # file prefix
 prefixes = ['%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(press[i])) for i in xrange(npress)]
@@ -187,7 +192,7 @@ for i in xrange(npress):
     print('%.2f %.2f' % (msP[i, 0], neurtrans[i, 0]))
 print('------------------------------------------------------------')
 
-if include_tsne:
+if tsne:
     tsnepref = [tsneproperty, tsnescaler, tsnereduc, tsneclust]
     tsnetrans = np.zeros((npress, 2), dtype=float)
     print('t-sne')
@@ -235,7 +240,7 @@ if el == 'LJ':
     littemp = [0.77, 1.061, 1.379]
     ax2.plot(littemp, litpress, color=cm(0.25), label='Literature')
 ax2.errorbar(neurtrans[:, 0], msP[:, 0], xerr=neurtrans[:, 1], yerr=msP[:, 1], color=cm(0.5), label='Keras CNN-1D')
-if include_tsne:
+if tsne:
     ax2.errorbar(tsnetrans[:, 0], msP[:, 0], xerr=tsnetrans[:, 1], yerr=msP[:, 1], color=cm(0.75), label='t-SNE Spectral')
 ax2.set_xlabel('T')
 ax2.set_ylabel('P')
