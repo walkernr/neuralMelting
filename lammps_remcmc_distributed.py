@@ -32,8 +32,8 @@ nthreads = 1                          # threads per worker
 path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 
 # number of data sets
-n_press = 8
-n_temp = 48
+npress = 8
+ntemp = 48
 
 # simulation name
 if '--name' in sys.argv:
@@ -44,13 +44,13 @@ else:
 
 # monte carlo parameters
 cutoff = 256          # sample cutoff
-n_smpl = cutoff+1024  # number of samples
+nsmpl = cutoff+1024  # number of samples
 mod = 128             # frequency of data storage
-n_swps = n_smpl*mod   # total mc sweeps
+nswps = nsmpl*mod   # total mc sweeps
 ppos = 0.015625       # probability of pos move
 pvol = 0.25           # probability of vol move
 phmc = 1-ppos-pvol    # probability of hmc move
-n_stps = 8            # md steps during hmc
+nstps = 8            # md steps during hmc
 seed = 256            # random seed
 np.random.seed(seed)  # initialize rng
 
@@ -72,17 +72,17 @@ units = {'Ti': 'metal',
          'Cu': 'metal',
          'LJ': 'lj'}
 # pressure
-P = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Al': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Ni': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Cu': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'LJ': np.linspace(1.0, 8.0, n_press, dtype=np.float64)}
+P = {'Ti': np.linspace(1.0, 8.0, npress, dtype=np.float64),
+     'Al': np.linspace(1.0, 8.0, npress, dtype=np.float64),
+     'Ni': np.linspace(1.0, 8.0, npress, dtype=np.float64),
+     'Cu': np.linspace(1.0, 8.0, npress, dtype=np.float64),
+     'LJ': np.linspace(1.0, 8.0, npress, dtype=np.float64)}
 # temperature
-T = {'Ti': np.linspace(256, 2560, n_temp, dtype=np.float64),
-     'Al': np.linspace(256, 2560, n_temp, dtype=np.float64),
-     'Ni': np.linspace(256, 2560, n_temp, dtype=np.float64),
-     'Cu': np.linspace(256, 2560, n_temp, dtype=np.float64),
-     'LJ': np.linspace(0.25, 2.5, n_temp, dtype=np.float64)}
+T = {'Ti': np.linspace(256, 2560, ntemp, dtype=np.float64),
+     'Al': np.linspace(256, 2560, ntemp, dtype=np.float64),
+     'Ni': np.linspace(256, 2560, ntemp, dtype=np.float64),
+     'Cu': np.linspace(256, 2560, ntemp, dtype=np.float64),
+     'LJ': np.linspace(0.25, 2.5, ntemp, dtype=np.float64)}
 # lattice type and parameter
 lat = {'Ti': ('bcc', 2.951),
        'Al': ('fcc', 4.046),
@@ -107,11 +107,11 @@ timestep = {'real': 4.0,
             'lj': 0.00390625}
 
 # max box adjustment
-dbox = 0.03125*lat[el][1]*np.ones((n_press, n_temp))
+dbox = 0.03125*lat[el][1]*np.ones((npress, ntemp))
 # max pos adjustment
-dpos = 0.03125*lat[el][1]*np.ones((n_press, n_temp))  
+dpos = 0.03125*lat[el][1]*np.ones((npress, ntemp))  
 # hmc timestep
-dt = timestep[units[el]]*np.ones((n_press, n_temp))
+dt = timestep[units[el]]*np.ones((npress, ntemp))
 
 # ---------------------
 # client initialization
@@ -131,7 +131,7 @@ def sched_init(system, nproc, path):
 # unit definitions
 # ----------------
 
-def define_constants(units, P, T):
+def defineConstants(units, P, T):
     ''' sets thermodynamic constants according to chosen unit system '''
     if units == 'real':
         N_A = 6.0221409e23                       # avagadro number [num/mol]
@@ -158,7 +158,7 @@ def fpref(name, el, lat, P):
     prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[0], int(P))
     return prefix
 
-def lammps_input(el, units, lat, sz, mass, P, dt):
+def lammpsInput(el, units, lat, sz, mass, P, dt):
     ''' constructs input file for lammps
         takes element name, lattice definitions, size, and simulation name
         returns input file name '''
@@ -211,10 +211,10 @@ def lammps_input(el, units, lat, sz, mass, P, dt):
     lmpsfile.close()
     return lmpsfilein
     
-def lammps_init(x, v, box, el, units, lat, sz, mass, P, dt):
+def lammpsInit(x, v, box, el, units, lat, sz, mass, P, dt):
     ''' initializes system info and data storage files '''
     # generate input file
-    lmpsfilein = lammps_input(el, units, lat, sz, mass, P, dt)
+    lmpsfilein = lammpsInput(el, units, lat, sz, mass, P, dt)
     # initialize lammps
     lmps = lammps(cmdargs=['-log', 'none', '-screen', 'none'])
     lmps.file(lmpsfilein)
@@ -225,7 +225,7 @@ def lammps_init(x, v, box, el, units, lat, sz, mass, P, dt):
     lmps.command('run 0')
     return lmps
     
-def lammps_extract(lmps):
+def lammpsExtract(lmps):
     # extract all system info
     natoms = lmps.extract_global('natoms', 0)
     x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
@@ -240,10 +240,10 @@ def lammps_extract(lmps):
     vol = np.power(box, 3)
     return natoms, x, v, temp, pe, ke, virial, box, vol
     
-def sample_init(i, j, el, units, lat, sz, mass, P, dpos, dt):
+def sampleInit(i, j, el, units, lat, sz, mass, P, dpos, dt):
     ''' initializes system info and data storage files '''
     # generate input file
-    lmpsfilein = lammps_input(el, units, lat, sz, mass, P, dt)
+    lmpsfilein = lammpsInput(el, units, lat, sz, mass, P, dt)
     # initialize lammps
     lmps = lammps(cmdargs=['-log', 'none', '-screen', 'none'])
     lmps.file(lmpsfilein)
@@ -253,7 +253,7 @@ def sample_init(i, j, el, units, lat, sz, mass, P, dpos, dt):
     lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
     lmps.command('displace_atoms all random %f %f %f %d' % (3*(dpos,)+(np.random.randint(1, 2**16),)))
     # extract all system info
-    natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
+    natoms, x, v, temp, pe, ke, virial, box, vol = lammpsExtract(lmps)
     # open data storage files
     thermo = open(lmpsfilein.replace('.in', '%02d%02d.thrm' % (i, j)), 'w')
     traj = open(lmpsfilein.replace('.in', '%02d%02d.traj' % (i, j)), 'w')
@@ -265,20 +265,20 @@ def sample_init(i, j, el, units, lat, sz, mass, P, dpos, dt):
 # output file utility functions
 # -----------------------------
     
-def thermo_header(thermo, n_smpl, cutoff, mod, n_swps, ppos, pvol, phmc, n_stps, 
-                  seed, el, units, lat, sz, mass, P, T, dt, dpos, dbox):
+def thermoHeader(thermo, nsmpl, cutoff, mod, nswps, ppos, pvol, phmc, nstps, 
+                 seed, el, units, lat, sz, mass, P, T, dt, dpos, dbox):
     ''' writes header containing simulation information to thermo file '''
     thermo.write('#----------------------\n')
     thermo.write('# simulation parameters\n')
     thermo.write('#----------------------\n')
-    thermo.write('# nsmpl:    %d\n' % n_smpl)
+    thermo.write('# nsmpl:    %d\n' % nsmpl)
     thermo.write('# cutoff:   %d\n' % cutoff)
     thermo.write('# mod:      %d\n' % mod)
-    thermo.write('# nswps:    %d\n' % n_swps)
+    thermo.write('# nswps:    %d\n' % nswps)
     thermo.write('# ppos:     %f\n' % ppos)
     thermo.write('# pvol:     %f\n' % pvol)
     thermo.write('# phmc:     %f\n' % phmc)
-    thermo.write('# nstps:    %d\n' % n_stps)
+    thermo.write('# nstps:    %d\n' % nstps)
     thermo.write('# seed:     %d\n' % seed)
     thermo.write('#----------------------\n')
     thermo.write('# material properties\n')
@@ -299,7 +299,7 @@ def thermo_header(thermo, n_smpl, cutoff, mod, n_swps, ppos, pvol, phmc, n_stps,
     thermo.write('# ------------------------------------------------------------\n')
     thermo.flush()
 
-def write_thermo(thermo, temp, pe, ke, virial, vol, accpos, accvol, acchmc, verbose):
+def writeThermo(thermo, temp, pe, ke, virial, vol, accpos, accvol, acchmc, verbose):
     ''' writes thermodynamic properties to thermo file '''
     # print thermal argument string
     therm_args = (temp, pe, ke, virial, vol, accpos, accvol, acchmc)
@@ -309,7 +309,7 @@ def write_thermo(thermo, temp, pe, ke, virial, vol, accpos, accvol, acchmc, verb
     thermo.write('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E\n' % therm_args)
     thermo.flush()
 
-def write_traj(traj, natoms, box, x):
+def writeTraj(traj, natoms, box, x):
     ''' writes trajectory data to traj file '''
     # write data to file
     traj.write('%d %.4E\n' % (natoms, box))
@@ -321,7 +321,7 @@ def write_traj(traj, natoms, box, x):
 # monte carlo moves
 # -----------------
 
-def position_mc(lmps, Et, ntrypos, naccpos, dpos):
+def positionMC(lmps, Et, ntrypos, naccpos, dpos):
     ''' classic position monte carlo 
         loops through nudging atoms
         accepts/rejects based on energy metropolis criterion ''' 
@@ -357,7 +357,7 @@ def position_mc(lmps, Et, ntrypos, naccpos, dpos):
     # return lammps object and tries/acceptations
     return lmps, ntrypos, naccpos
     
-def volume_mc(lmps, Et, Pf, ntryvol, naccvol, dbox):
+def volumeMC(lmps, Et, Pf, ntryvol, naccvol, dbox):
     ''' isobaric-isothermal volume monte carlo
         scales box and positions
         accepts/rejects based on enthalpy metropolis criterion '''
@@ -399,7 +399,7 @@ def volume_mc(lmps, Et, Pf, ntryvol, naccvol, dbox):
     # return lammps object and tries/acceptations
     return lmps, ntryvol, naccvol
     
-def hamiltonian_mc(lmps, Et, ntryhmc, nacchmc, T, dt):
+def hamiltonianMC(lmps, Et, ntryhmc, nacchmc, T, dt):
     ''' hamiltionian monte carlo
         short md run at generated velocities for desired temp
         accepts/rejects based on energy metropolis criterion '''
@@ -418,7 +418,7 @@ def hamiltonian_mc(lmps, Et, ntryhmc, nacchmc, T, dt):
     ke = lmps.extract_compute('thermo_ke', None, 0)/Et
     etot = pe+ke
     # run md
-    lmps.command('run %d' % n_stps)  # this part should be implemented as parallel
+    lmps.command('run %d' % nstps)  # this part should be implemented as parallel
     # set new physical properties
     xnew = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
     vnew = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('v', 1, 3)))
@@ -447,7 +447,7 @@ def hamiltonian_mc(lmps, Et, ntryhmc, nacchmc, T, dt):
 # monte carlo parameter update
 # ----------------------------
 
-def update_mc_param(dpos, dbox, dt, accpos, accvol, acchmc):
+def updateMCParam(dpos, dbox, dt, accpos, accvol, acchmc):
     ''' adaptive update of monte carlo parameters '''
     # update position displacment for pos-mc
     if accpos < 0.5:
@@ -471,31 +471,31 @@ def update_mc_param(dpos, dbox, dt, accpos, accvol, acchmc):
 # monte carlo procedure
 # ---------------------
 
-def move_mc(lmps, Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-            dpos, dbox, T, dt):
+def moveMC(lmps, Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
+           dpos, dbox, T, dt):
     ''' performs monte carlo moves '''
     roll = np.random.rand()
     # position monte carlo
     if roll <= ppos:
-        lmps, ntrypos, naccpos = position_mc(lmps, Et, ntrypos, naccpos, dpos)
+        lmps, ntrypos, naccpos = positionMC(lmps, Et, ntrypos, naccpos, dpos)
     # volume monte carlo
     elif roll <= (ppos+pvol):
-        lmps, ntryvol, naccvol = volume_mc(lmps, Et, Pf, ntryvol, naccvol, dbox)
+        lmps, ntryvol, naccvol = volumeMC(lmps, Et, Pf, ntryvol, naccvol, dbox)
     # hamiltonian monte carlo
     else:
-        lmps, ntryhmc, nacchmc = hamiltonian_mc(lmps, Et, ntryhmc, nacchmc, T, dt)
+        lmps, ntryhmc, nacchmc = hamiltonianMC(lmps, Et, ntryhmc, nacchmc, T, dt)
     # return lammps object and tries/acceptations counts
     return lmps, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc
     
-def get_sample(x, v, box, el, units, lat, sz, mass, P, dt,
-               Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-               dpos, dbox, T, mod):
+def getSample(x, v, box, el, units, lat, sz, mass, P, dt,
+              Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
+              dpos, dbox, T, mod):
     ''' performs enough monte carlo moves to generate a sample (determined by mod) '''
     # initialize lammps object
-    lmps = lammps_init(x, v, box, el, units, lat, sz, mass, P, dt)
+    lmps = lammpsInit(x, v, box, el, units, lat, sz, mass, P, dt)
     # loop through monte carlo moves
     for i in xrange(mod):
-        dat =  move_mc(lmps, Et, Pf,
+        dat =  moveMC(lmps, Et, Pf,
                        ppos, pvol, phmc,
                        ntrypos, naccpos,
                        ntryvol, naccvol,
@@ -506,7 +506,7 @@ def get_sample(x, v, box, el, units, lat, sz, mass, P, dt,
         ntryvol, naccvol = dat[3:5]
         ntryhmc, nacchmc = dat[5:7]
     # extract system properties
-    natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
+    natoms, x, v, temp, pe, ke, virial, box, vol = lammpsExtract(lmps)
     # close lammps and remove input file
     lmps.close()
     # acceptation ratios
@@ -515,24 +515,24 @@ def get_sample(x, v, box, el, units, lat, sz, mass, P, dt,
         accvol = np.nan_to_num(np.float64(naccvol)/np.float64(ntryvol))
         acchmc = np.nan_to_num(np.float64(nacchmc)/np.float64(ntryhmc))
     # update mc params
-    dpos, dbox, dt = update_mc_param(dpos, dbox, dt, accpos, accvol, acchmc)
+    dpos, dbox, dt = updateMCParam(dpos, dbox, dt, accpos, accvol, acchmc)
     # return lammps object, tries/acceptation counts, and mc params
     return natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
     
-def get_samples(x, v, box, el, units, lat, sz, mass, P, dt,
-                Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-                dpos, dbox, T, mod, thermo, traj, verbose):
+def getSamples(x, v, box, el, units, lat, sz, mass, P, dt,
+               Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
+               dpos, dbox, T, mod, thermo, traj, verbose):
     ''' performs monte carlo for all configurations to generate new samples '''
-    n_press, n_temp = Pf.shape
+    npress, ntemp = Pf.shape
     # loop through pressures
-    for i in xrange(n_press):
+    for i in xrange(npress):
         # loop through temperatures
-        for j in xrange(n_temp):
+        for j in xrange(ntemp):
             # get new sample configuration for press/temp combo
-            dat = get_sample(x[i, j], v[i, j], box[i, j], el, units, lat, sz, mass, P[i], dt[i, j],
-                             Et[i, j], Pf[i, j], ppos, pvol, phmc,
-                             ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
-                             dpos[i, j], dbox[i, j], T[j], mod)
+            dat = getSample(x[i, j], v[i, j], box[i, j], el, units, lat, sz, mass, P[i], dt[i, j],
+                            Et[i, j], Pf[i, j], ppos, pvol, phmc,
+                            ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
+                            dpos[i, j], dbox[i, j], T[j], mod)
             natoms[i, j], x[i, j], v[i, j] = dat[:3]
             temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
             ntrypos[i, j], naccpos[i, j] = dat[9:11]
@@ -542,33 +542,33 @@ def get_samples(x, v, box, el, units, lat, sz, mass, P, dt,
     # write to data storage files
     if verbose:
         print('\n')
-    for i in xrange(n_press):
-        for j in xrange(n_temp):
+    for i in xrange(npress):
+        for j in xrange(ntemp):
             with np.errstate(invalid='ignore'):
                 accpos = np.nan_to_num(np.float64(naccpos[i, j])/np.float64(ntrypos[i, j]))
                 accvol = np.nan_to_num(np.float64(naccvol[i, j])/np.float64(ntryvol[i, j]))
                 acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
-            write_thermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
-            write_traj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
+            writeThermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
+            writeTraj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
     # return lammps object, tries/acceptation counts, and mc params
     return natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
     
-def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
-                    Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-                    dpos, dbox, T, mod, thermo, traj, verbose):
+def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
+                  Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
+                  dpos, dbox, T, mod, thermo, traj, verbose):
     ''' performs monte carlo in parallel for all configurations to generate new samples '''
-    n_press, n_temp = Pf.shape
-    operations = [delayed(get_sample)(x[i, j], v[i, j], box[i, j], el, units, lat, sz, mass, P[i], dt[i, j], 
-                                      Et[i, j], Pf[i, j], ppos, pvol, phmc, 
-                                      ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
-                                      dpos[i, j], dbox[i, j], T[j], mod) for i in xrange(n_press) for j in xrange(n_temp)]
+    npress, ntemp = Pf.shape
+    operations = [delayed(getSample)(x[i, j], v[i, j], box[i, j], el, units, lat, sz, mass, P[i], dt[i, j], 
+                                     Et[i, j], Pf[i, j], ppos, pvol, phmc, 
+                                     ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
+                                     dpos[i, j], dbox[i, j], T[j], mod) for i in xrange(npress) for j in xrange(ntemp)]
     futures = client.compute(operations)
     if verbose:
         progress(futures)
     results = client.gather(futures)
     k = 0
-    for i in xrange(n_press):
-        for j in xrange(n_temp):
+    for i in xrange(npress):
+        for j in xrange(ntemp):
             dat = results[k]
             k += 1
             natoms[i, j], x[i, j], v[i, j] = dat[:3]
@@ -578,14 +578,14 @@ def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
             ntryhmc[i, j], nacchmc[i, j] = dat[13:15]
             dpos[i, j], dbox[i, j], dt[i, j] = dat[15:18]
     # write to data storage files
-    for i in xrange(n_press):
-        for j in xrange(n_temp):
+    for i in xrange(npress):
+        for j in xrange(ntemp):
             with np.errstate(invalid='ignore'):
                 accpos = np.nan_to_num(np.float64(naccpos[i, j])/np.float64(ntrypos[i, j]))
                 accvol = np.nan_to_num(np.float64(naccvol[i, j])/np.float64(ntryvol[i, j]))
                 acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
-            write_thermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
-            write_traj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
+            writeThermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
+            writeTraj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
     # remove all computations
     client.cancel(futures)
     # return lammps object, tries/acceptation counts, and mc params
@@ -595,11 +595,11 @@ def get_samples_par(client, x, v, box, el, units, lat, sz, mass, P, dt,
 # replica exchange markov chain monte carlo
 # -----------------------------------------
 
-def rep_exch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf, verbose):
+def repExch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf, verbose):
     ''' performs parallel tempering acrros all samples 
         accepts/rejects based on enthalpy metropolis criterion '''
     # simulation set shape
-    n_press, n_temp = Pf.shape
+    npress, ntemp = Pf.shape
     # flatten lammps objects and constants
     natoms = natoms.reshape(-1)
     x = x.reshape(-1)
@@ -638,15 +638,15 @@ def rep_exch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf, verbose):
                 vol[j], vol[i] = vol[i], vol[j]
     if verbose:
         print('%d replica exchanges performed: ' % swaps, ' '.join(pairs))
-    natoms = natoms.reshape((n_press, n_temp))
-    x = x.reshape((n_press, n_temp))
-    v = v.reshape((n_press, n_temp))
-    temp = temp.reshape((n_press, n_temp))
-    pe = pe.reshape((n_press, n_temp))
-    ke = ke.reshape((n_press, n_temp))
-    virial = virial.reshape((n_press, n_temp))
-    box = box.reshape((n_press, n_temp))
-    vol = vol.reshape((n_press, n_temp))
+    natoms = natoms.reshape((npress, ntemp))
+    x = x.reshape((npress, ntemp))
+    v = v.reshape((npress, ntemp))
+    temp = temp.reshape((npress, ntemp))
+    pe = pe.reshape((npress, ntemp))
+    ke = ke.reshape((npress, ntemp))
+    virial = virial.reshape((npress, ntemp))
+    box = box.reshape((npress, ntemp))
+    vol = vol.reshape((npress, ntemp))
     # return list of lammps objects
     return natoms, x, v, temp, pe, ke, virial, box, vol
 
@@ -655,42 +655,42 @@ def rep_exch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf, verbose):
 # -----------
 
 # thermo constants
-Et = np.zeros((n_press, n_temp), dtype=float)
-Pf = np.zeros((n_press, n_temp), dtype=float)
+Et = np.zeros((npress, ntemp), dtype=float)
+Pf = np.zeros((npress, ntemp), dtype=float)
 # lammps objects and data storage files
-thermo = np.empty((n_press, n_temp), dtype=object)
-traj = np.empty((n_press, n_temp), dtype=object)
+thermo = np.empty((npress, ntemp), dtype=object)
+traj = np.empty((npress, ntemp), dtype=object)
 # system properties
-natoms = np.zeros((n_press, n_temp), dtype=int)
-x = np.empty((n_press, n_temp), dtype=object)
-v = np.empty((n_press, n_temp), dtype=object)
-temp = np.zeros((n_press, n_temp), dtype=float)
-pe = np.zeros((n_press, n_temp), dtype=float)
-ke = np.zeros((n_press, n_temp), dtype=float)
-virial = np.zeros((n_press, n_temp), dtype=float)
-box = np.zeros((n_press, n_temp), dtype=float)
-vol = np.zeros((n_press, n_temp), dtype=float)
+natoms = np.zeros((npress, ntemp), dtype=int)
+x = np.empty((npress, ntemp), dtype=object)
+v = np.empty((npress, ntemp), dtype=object)
+temp = np.zeros((npress, ntemp), dtype=float)
+pe = np.zeros((npress, ntemp), dtype=float)
+ke = np.zeros((npress, ntemp), dtype=float)
+virial = np.zeros((npress, ntemp), dtype=float)
+box = np.zeros((npress, ntemp), dtype=float)
+vol = np.zeros((npress, ntemp), dtype=float)
 # monte carlo tries/acceptations
-ntrypos = np.zeros((n_press, n_temp), dtype=float)
-naccpos = np.zeros((n_press, n_temp), dtype=float)
-ntryvol = np.zeros((n_press, n_temp), dtype=float)
-naccvol = np.zeros((n_press, n_temp), dtype=float)
-ntryhmc = np.zeros((n_press, n_temp), dtype=float)
-nacchmc = np.zeros((n_press, n_temp), dtype=float)
+ntrypos = np.zeros((npress, ntemp), dtype=float)
+naccpos = np.zeros((npress, ntemp), dtype=float)
+ntryvol = np.zeros((npress, ntemp), dtype=float)
+naccvol = np.zeros((npress, ntemp), dtype=float)
+ntryhmc = np.zeros((npress, ntemp), dtype=float)
+nacchmc = np.zeros((npress, ntemp), dtype=float)
 # loop through pressures
-for i in xrange(n_press):
+for i in xrange(npress):
     # loop through temperatures
-    for j in xrange(n_temp):
+    for j in xrange(ntemp):
         # set thermo constants
-        Et[i, j], Pf[i, j] = define_constants(units[el], P[el][i], T[el][j])
+        Et[i, j], Pf[i, j] = defineConstants(units[el], P[el][i], T[el][j])
         # initialize lammps object and data storage files
-        dat = sample_init(i, j, el, units[el], lat[el], sz[el], mass[el], P[el][i], dpos[i, j], dt[i, j])
+        dat = sampleInit(i, j, el, units[el], lat[el], sz[el], mass[el], P[el][i], dpos[i, j], dt[i, j])
         natoms[i, j], x[i, j], v[i, j] = dat[:3]
         temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
         thermo[i, j], traj[i, j] = dat[9:11]
         # write thermo file header
-        thermo_header(thermo[i, j], n_smpl, cutoff, mod, n_swps, ppos, pvol, phmc,
-                      n_stps, seed, el, units[el], lat[el], sz[el], mass[el],
+        thermoHeader(thermo[i, j], nsmpl, cutoff, mod, nswps, ppos, pvol, phmc,
+                      nstps, seed, el, units[el], lat[el], sz[el], mass[el],
                       P[el][i], T[el][j], dt[i, j], dpos[i, j], dbox[i, j])
 
 # -----------                      
@@ -712,18 +712,18 @@ if parallel:
     if verbose:
         print(client.scheduler_info)
 # loop through to number of samples that need to be collected
-for i in xrange(n_smpl):
+for i in xrange(nsmpl):
     if verbose:
         print('step:', i)
     # collect samples for all configurations
     if parallel:
-        dat = get_samples_par(client, x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
-                              Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-                              dpos, dbox, T[el], mod, thermo, traj, verbose)
+        dat = getSamplesPar(client, x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
+                            Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
+                            dpos, dbox, T[el], mod, thermo, traj, verbose)
     else:
-        dat = get_samples(x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
-                          Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-                          dpos, dbox, T[el], mod, thermo, traj, verbose)
+        dat = getSamples(x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
+                         Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
+                         dpos, dbox, T[el], mod, thermo, traj, verbose)
     # update system data
     natoms, x, v = dat[:3]
     temp, pe, ke, virial, box, vol = dat[3:9]
@@ -732,7 +732,7 @@ for i in xrange(n_smpl):
     ntryhmc, nacchmc = dat[13:15]
     dpos, dbox, dt = dat[15:18]
     # perform replica exchange markov chain monte carlo (parallel tempering)
-    natoms, x, v, temp, pe, ke, virial, box, vol = rep_exch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf, verbose)
+    natoms, x, v, temp, pe, ke, virial, box, vol = repExch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf, verbose)
 if parallel:
     # terminate client after completion
     client.close()
@@ -742,23 +742,23 @@ if parallel:
 # ------------------
 
 # loop through pressures
-for i in xrange(n_press):
+for i in xrange(npress):
     # loop through temperatures
-    for j in xrange(n_temp):
+    for j in xrange(ntemp):
         thermo[i, j].close()
         traj[i, j].close()
 
 # construct data storage file name lists
-fthrm = [[thermo[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
-ftraj = [[traj[i, j].name for j in xrange(n_temp)] for i in xrange(n_press)]
+fthrm = [[thermo[i, j].name for j in xrange(ntemp)] for i in xrange(npress)]
+ftraj = [[traj[i, j].name for j in xrange(ntemp)] for i in xrange(npress)]
 # loop through pressures
-for i in xrange(n_press):
+for i in xrange(npress):
     # get prefix
     prefix = fpref(name, el, lat[el], P[el][i])
     # open collected thermo data file
     with open(prefix+'.thrm', 'w') as fo:
         # write data to collected thermo file
-        for j in xrange(n_temp):
+        for j in xrange(ntemp):
             with open(fthrm[i][j], 'r') as fi:
                 k = 0
                 for line in fi:
@@ -771,7 +771,7 @@ for i in xrange(n_press):
     # open collected traj data file
     with open(prefix+'.traj', 'w') as fo:
         # write data to collected traj file
-        for j in xrange(n_temp):
+        for j in xrange(ntemp):
             with open(ftraj[i][j], 'r') as fi:
                 k = 0
                 for line in fi:
@@ -784,7 +784,7 @@ for i in xrange(n_press):
 # --------------
 
 # remove all temporary files
-for i in xrange(n_press):
-    for j in xrange(n_temp):
+for i in xrange(npress):
+    for j in xrange(ntemp):
         os.remove(fthrm[i][j])
         os.remove(ftraj[i][j])   
