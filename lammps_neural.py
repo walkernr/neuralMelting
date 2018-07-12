@@ -17,7 +17,11 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 # number of threads
-nthreads = 16
+if '--nthreads' in sys.argv:
+    i = sys.argv.index('--nthreads')
+    nthreads = int(sys.argv[i+1])
+else:
+    nthreads = 16
 
 # keras backend
 if '--theano' in sys.argv:
@@ -107,18 +111,18 @@ if '--scaler' in sys.argv:
     scaler = sys.argv[i+1]
 else:
     scaler = 'tanh'
-# neural network type
-if '--network' in sys.argv:
-    i = sys.argv.index('--network')
-    network = sys.argv[i+1]
-else:
-    network = 'keras_cnn1d'
 # reduction type
 if '--reduction' in sys.argv:
     i = sys.argv.index('--reduction')
     reduc = sys.argv[i+1]
 else:
     reduc = 'pca'
+# neural network type
+if '--network' in sys.argv:
+    i = sys.argv.index('--network')
+    network = sys.argv[i+1]
+else:
+    network = 'keras_cnn1d'
 # fitting function
 if '--fitfunc' in sys.argv:
     i = sys.argv.index('--fitfunc')
@@ -155,14 +159,14 @@ print('input summary')
 print('------------------------------------------------------------')
 print('potential:                 %s' % el.lower())
 print('pressure:                  %f' % press[pressind])  
-print('number of sets:            %d' % ntemp)
-print('number of samples:         %d' % nsmpl)
+print('number of temps:           %d' % ntemp)
 print('property:                  %s' % property)
+print('number of samples:         %d' % nsmpl)
 print('training sets (per phase): %d' % ntrain)
 print('scaler:                    %s' % scaler)
+print('reduction:                 %s' % reduc)
 print('network:                   %s' % network)
 print('fitting function:          %s' % fitfunc)
-print('reduction:                 %s' % reduc)
 print('------------------------------------------------------------')
 
 # fitting functions
@@ -239,7 +243,7 @@ scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(feature_range=(0,1
 # pca initialization
 npcacomp = properties[property].shape[1]
 pca = PCA(n_components=npcacomp)
-kpca = KernelPCA(n_components=npcacomp)
+kpca = KernelPCA(n_components=npcacomp, n_jobs=nthreads)
 reducers = {'pca':pca, 'kpca':kpca}
 print('scaler and reduction initialized')
 print('------------------------------------------------------------')
