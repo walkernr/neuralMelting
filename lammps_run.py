@@ -17,7 +17,7 @@ name = 'remcmc01'
 el = 'LJ'
 sz = 4
 
-npress = 16
+npress = 8
 lpress = 1
 hpress = 8
 
