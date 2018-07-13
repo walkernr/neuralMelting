@@ -27,7 +27,7 @@ else:
 # keras backend
 if '--theano' in sys.argv:
     os.environ['KERAS_BACKEND'] = 'theano'
-if '--tensorflow' in sys.argv:
+else:
     os.environ['KERAS_BACKEND'] = 'tensorflow'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # multithreading
@@ -276,7 +276,7 @@ print('data scaled')
 print('------------------------------------------------------------')
 
 # apply reduction and extract training/classification data
-if reduc:
+if reduc != 'none':
     reducers[reduc].fit(sdata[tind])                  # pca fit to training data
     tdata = reducers[reduc].transform(sdata[tind])    # pca transform training data
     cdata = reducers[reduc].transform(sdata[cind])    # pca transform classification data
