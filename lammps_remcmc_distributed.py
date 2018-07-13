@@ -789,13 +789,13 @@ for i in xrange(nsmpl):
         print('step:', i)
     # collect samples for all configurations
     if parallel:
-        dat = getSamplesPar(client, x, v, box, el, units[el], lat[el], sz, mass[el], P[el], dt,
+        dat = getSamplesPar(client, x, v, box, el, units[el], lat[el], sz, mass[el], P, dt,
                             Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-                            dpos, dbox, T[el], mod, thermo, traj, verbose)
+                            dpos, dbox, T, mod, thermo, traj, verbose)
     else:
-        dat = getSamples(x, v, box, el, units[el], lat[el], sz, mass[el], P[el], dt,
+        dat = getSamples(x, v, box, el, units[el], lat[el], sz, mass[el], P, dt,
                          Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-                         dpos, dbox, T[el], mod, thermo, traj, verbose)
+                         dpos, dbox, T, mod, thermo, traj, verbose)
     # update system data
     natoms, x, v = dat[:3]
     temp, pe, ke, virial, box, vol = dat[3:9]

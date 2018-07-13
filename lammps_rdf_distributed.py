@@ -85,7 +85,7 @@ else:
     pressind = 0
 
 # pressure
-P = np.linspace(lpress, hpress, npress, dtype=np.float64)}
+P = np.linspace(lpress, hpress, npress, dtype=np.float64)
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
