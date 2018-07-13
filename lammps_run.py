@@ -50,8 +50,8 @@ cmd_flags = ['--nworkers', str(nworkers),
 if verbose:
     cmd_args = cmd_args+['--verbose']
 
-subprocess.call(['python', 'lammps_remcmc_distributed.py']+cmd_flags)
+subprocess.call(['python', 'lammps_remcmc.py']+cmd_flags)
 for i in xrange(npress):
     subprocess.call(['python', 'lammps_parse.py']+cmd_flags+['--pressindex', str(i)])
 for i in xrange(npress):
-    subprocess.call(['python', 'lammps_rdf_distributed.py']+cmd_flags+['--pressindex', str(i)])
+    subprocess.call(['python', 'lammps_rdf.py']+cmd_flags+['--pressindex', str(i)])
