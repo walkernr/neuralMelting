@@ -276,7 +276,7 @@ print('data scaled')
 print('------------------------------------------------------------')
 
 # apply reduction and extract training/classification data
-if reduc not 'none':
+if reduc != 'none':
     reducers[reduc].fit(sdata[tind])                  # pca fit to training data
     tdata = reducers[reduc].transform(sdata[tind])    # pca transform training data
     cdata = reducers[reduc].transform(sdata[cind])    # pca transform classification data
