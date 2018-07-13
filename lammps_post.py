@@ -183,7 +183,7 @@ for i in xrange(npress):
     T = pickle.load(open(prefix+'.temp.pickle'))
     mT[i, :] = np.array([np.mean(T[O == j]) for j in xrange(ntemp)])
     sT[i, :] = np.array([np.std(T[O == j]) for j in xrange(ntemp)])
-    with open(neurfile, 'r') as fi:
+    with open(neurfile, 'rb') as fi:
         iters = iter(fi)
         for lina in iters:
             if 'transition | critical error' in lina:
@@ -201,7 +201,7 @@ if tsne:
     for i in xrange(npress):
         prefix = prefixes[i]
         tsnefile = '.'.join([prefix]+tsnepref+['out'])
-        with open(tsnefile, 'r') as fi:
+        with open(tsnefile, 'rb') as fi:
             iters = iter(fi)
             for lina in iters:
                 if 'transition | critical error' in lina:

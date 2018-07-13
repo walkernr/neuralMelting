@@ -409,7 +409,7 @@ print('------------------------------------------------------------')
 out_pref = [prefix, network, property, scaler, reduc, fitfunc]
 
 # save data to file
-with open('.'.join(out_pref+[str(nsmpl), 'out']), 'w') as fo:
+with open('.'.join(out_pref+[str(nsmpl), 'out']), 'wb') as fo:
     fo.write('# -------------------------------------------------------------\n')
     fo.write('# parameters\n')
     fo.write('# ---------------------------------------------------------------\n')

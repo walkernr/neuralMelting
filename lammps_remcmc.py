@@ -240,7 +240,7 @@ def lammpsInput(el, units, lat, sz, mass, P, dt):
     # set lammps file name
     lmpsfilein = prefix+'.in'
     # open lammps file
-    lmpsfile = open(lmpsfilein, 'w')
+    lmpsfile = open(lmpsfilein, 'wb')
     # file header
     lmpsfile.write('# LAMMPS Monte Carlo: %s\n\n' % el)
     # units and atom style
@@ -327,8 +327,8 @@ def sampleInit(i, j, el, units, lat, sz, mass, P, dpos, dt):
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammpsExtract(lmps)
     # open data storage files
-    thermo = open(lmpsfilein.replace('.in', '%02d%02d.thrm' % (i, j)), 'w')
-    traj = open(lmpsfilein.replace('.in', '%02d%02d.traj' % (i, j)), 'w')
+    thermo = open(lmpsfilein.replace('.in', '%02d%02d.thrm' % (i, j)), 'wb')
+    traj = open(lmpsfilein.replace('.in', '%02d%02d.traj' % (i, j)), 'wb')
     lmps.close()
     # return system info and data storage files
     return natoms, x, v, temp, pe, ke, virial, box, vol, thermo, traj
@@ -828,7 +828,7 @@ for i in xrange(npress):
     # get prefix
     prefix = fpref(name, el, lat[el], P[i])
     # open collected thermo data file
-    with open(prefix+'.thrm', 'w') as fo:
+    with open(prefix+'.thrm', 'wb') as fo:
         # write data to collected thermo file
         for j in xrange(ntemp):
             with open(fthrm[i][j], 'r') as fi:
@@ -841,7 +841,7 @@ for i in xrange(npress):
                         if k > cutoff:
                             fo.write(line)
     # open collected traj data file
-    with open(prefix+'.traj', 'w') as fo:
+    with open(prefix+'.traj', 'wb') as fo:
         # write data to collected traj file
         for j in xrange(ntemp):
             with open(ftraj[i][j], 'r') as fi:

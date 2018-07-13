@@ -65,7 +65,7 @@ file = os.getcwd()+'/'+prefix
 if verbose:
     print('parsing data for %s at pressure %f' % (el.lower(), P[pressind]))
 # parse thermo file
-with open(file+'.thrm', 'r') as fi:
+with open(file+'.thrm', 'rb') as fi:
     temp = []
     pe = []
     ke = []
@@ -92,7 +92,7 @@ with open(file+'.thrm', 'r') as fi:
 if verbose:
     print('%d thermodynamic property steps parsed' % len(temp))
 # parse trajectory file
-with open(file+'.traj', 'r') as fi:
+with open(file+'.traj', 'rb') as fi:
     iters = iter(fi)
     natoms = []
     box = []

@@ -237,7 +237,7 @@ print('------------------------------------------------------------')
 
 out_pref = [prefix, property, scaler, reduction, clust]
 # save data to file
-with open('.'.join(out_pref+[str(nsmpl), 'out']), 'w') as fo:
+with open('.'.join(out_pref+[str(nsmpl), 'out']), 'wb') as fo:
     fo.write('# transition | critical error\n')
     fo.write('%f %f\n' % (amt, ast))
 

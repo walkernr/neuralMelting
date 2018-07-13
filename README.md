@@ -73,6 +73,11 @@ This program calculates the radial distributions, structure factors, and entropi
 
 NOTE: not confirmed to work on a distributed cluster environment yet.
 
+lammps_run.py
+-------------
+
+This program performs the REMCMC simulations, parses the output files, and then calculates all of the structure data in one run.
+
 lammps_neural.py
 ----------------
 
