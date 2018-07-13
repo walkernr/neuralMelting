@@ -11,7 +11,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA, KernelPCA
-from sklearn.manifold import Isomap
+from sklearn.manifold import Isomap, LocallyLinearEmbedding
 from scipy.odr import ODR, Model, Data, RealData
 import matplotlib as mpl
 mpl.use('Agg')
@@ -249,11 +249,12 @@ properties = {'radial_distribution':G, 'entropic_fingerprint':I, 'structure_fact
 # scaler dict
 scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(feature_range=(0,1)), 'robust':RobustScaler(), 'tanh':TanhScaler()}
 # pca initialization
-npcacomp = properties[property].shape[1]
+npcacomp = 0.99  # properties[property].shape[1]
 pca = PCA(n_components=npcacomp)
 kpca = KernelPCA(n_components=npcacomp, n_jobs=nthreads)
 isomap = Isomap(n_components=npcacomp, n_jobs=nthreads)
-reducers = {'pca':pca, 'kpca':kpca, 'isomap':isomap}
+lle = LocallyLinearEmbedding(n_components=npcacomp, n_jobs=nthreads)
+reducers = {'pca':pca, 'kpca':kpca, 'isomap':isomap, 'lle':lle}
 print('scaler and reduction initialized')
 print('------------------------------------------------------------')
 
@@ -313,9 +314,7 @@ tclass = np.array(np.count_nonzero(sind)*[0]+np.count_nonzero(lind)*[1], dtype=i
 def build_keras_dense():
     model = Sequential([Dense(units=64, activation='relu', input_dim=tshape[1]),
                         Dropout(rate=0.5),
-                        Dense(units=16, activation='relu'),
-                        Dropout(rate=0.5),
-                        Dense(units=8, activation='relu'),
+                        Dense(units=64, activation='relu'),
                         Dropout(rate=0.5),
                         Dense(units=1, activation='softmax')])
     nadam = Nadam(lr=0.00024414062, beta_1=0.9375, beta_2=0.9990234375, epsilon=None, schedule_decay=0.00390625)

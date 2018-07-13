@@ -22,18 +22,40 @@ if '--verbose' in sys.argv:
 else:
     verbose = False       
 
-parallel = True      # boolean for controlling parallel run
-distributed = False  # boolean for choosing distributed or local cluster
-processes = True     # boolean for choosing whether to use processes
+# boolean for controlling parallel run
+if '--noparallel' in sys.argv:
+    parallel = False
+else:
+    parallel = True
+# boolean for choosing distributed or local cluster
+if '--distributed' in sys.argv:
+    distributed = True
+    path = os.getcwd()+'/scheduler.json'  # path for scheduler file
+else:
+    distributed = False 
+# boolean for choosing whether to use processes
+if '--noprocesses' in sys.argv:
+    processes = False
+else:
+    processes = True     
 
-system = 'mpi'                        # switch for mpirun or aprun
-nworkers = 16                         # number of processors
-nthreads = 1                          # threads per worker
-path = os.getcwd()+'/scheduler.json'  # path for scheduler file
-
-# number of data sets
-npress = 8
-ntemp = 48
+# switch for mpirun or aprun
+elif '--ap' is sys.argv:
+    system = 'ap'
+else:
+    system = 'mpi'
+# number of processors
+if '--nworkers' in sys.argv:
+    i = sys.argv.index('--nworker')
+    nworkers = int(sys.argv[i+1])
+else:
+    nworkers = 16
+# threads per worker
+if '--nthreads' in sys.argv:
+    i = sys.argv.index('--nthreads')
+    nthreads = int(sys.argv[i+1])
+else:
+    nthreads = 1
 
 # simulation name
 if '--name' in sys.argv:
@@ -41,25 +63,89 @@ if '--name' in sys.argv:
     name = sys.argv[i+1]
 else:
     name = 'remcmc'
-
-# monte carlo parameters
-cutoff = 1024         # sample cutoff
-nsmpl = cutoff+1024   # number of samples
-mod = 128             # frequency of data storage
-nswps = nsmpl*mod     # total mc sweeps
-ppos = 0.015625       # probability of pos move
-pvol = 0.25           # probability of vol move
-phmc = 1-ppos-pvol    # probability of hmc move
-nstps = 16            # md steps during hmc
-seed = 256            # random seed
-np.random.seed(seed)  # initialize rng
-
 # element choice
 if '--element' in sys.argv:
     i = sys.argv.index('--element')
     el = sys.argv[i+1]
 else:
     el = 'LJ'
+if '--size' in sys.argv:
+    i = sys.argv.index('--size')
+    sz = int(sys.argv[i+1])
+else:
+    sz = 4
+
+# pressure and temeprature parameters
+# number of pressure sets
+if '--npress' in sys.argv:
+    i = sys.argv.index('--npress')
+    npress = int(sys.argv[i+1])
+else:
+    npress = 8
+# pressure range
+if '--rpress' in sys.argv:
+    i = sys.argv.index('--rpress')
+    lpress = float(sys.argv[i+1])
+    hpress = float(sys.argv[i+2])
+else:
+    lpress = 1.0
+    hpress = 8.0
+# number of temperature sets
+if '--ntemp' in sys.argv:
+    i = sys.argv.index('--ntemp')
+    ntemp = int(sys.argv[i+1])
+else:
+    ntemp = 48
+# temperature range
+if '--rtemp' in sys.argv:
+    i = sys.argv.index('--rtemp')
+    ltemp = float(sys.argv[i+1])
+    htemp = float(sys.argv[i+2])
+else:
+    ltemp = 0.25
+    htemp = 2.5
+
+# monte carlo parameters
+# sample cutoff
+if '--cutoff' in sys.argv:
+    i = sys.argv.index('--cutoff')
+    cutoff = int(sys.argv[i+1])
+else:
+    cutoff = 1024
+# number of samples
+if '--nsmpl' in sys.argv:
+    i = sys.argv.index('--nsmpl')
+    nsmpl = cutoff+int(sys.argv[i+1])
+else:
+    nsmpl = cutoff+1024
+# frequency of data storage
+if '--mod' in sys.argv:
+    i = sys.argv.index('--mod')
+    mod = int(sys.argv[i+1])
+else:
+    mod = 128
+nswps = nsmpl*mod     # total mc sweeps
+# probability of pos move
+if '--ppos' in sys.argv:
+    i = sys.argv.index('--ppos')
+    ppos = float(sys.argv[i+1])
+else:
+    ppos = 0.015625
+# probability of vol move
+if '--pvol' in sys.argv:
+    i = sys.argv.index('--pvol')
+    pvol = float(sys.argv[i+1])
+else:
+    pvol = 0.25
+phmc = 1-ppos-pvol    # probability of hmc move
+# md steps during hmc
+if '--nstps' in sys.argv:
+    i = sys.argv.index('--nstps')
+    nstps = int(sys.argv[i+1])
+else:
+    nstps = 16
+seed = 256            # random seed
+np.random.seed(seed)  # initialize rng
 
 # -------------------
 # material properties
@@ -72,29 +158,15 @@ units = {'Ti': 'metal',
          'Cu': 'metal',
          'LJ': 'lj'}
 # pressure
-P = {'Ti': np.linspace(1.0, 8.0, npress, dtype=np.float64),
-     'Al': np.linspace(1.0, 8.0, npress, dtype=np.float64),
-     'Ni': np.linspace(1.0, 8.0, npress, dtype=np.float64),
-     'Cu': np.linspace(1.0, 8.0, npress, dtype=np.float64),
-     'LJ': np.linspace(1.0, 8.0, npress, dtype=np.float64)}
+P = np.linspace(lpress, hpress, npress, dtype=np.float64)
 # temperature
-T = {'Ti': np.linspace(256, 2560, ntemp, dtype=np.float64),
-     'Al': np.linspace(256, 2560, ntemp, dtype=np.float64),
-     'Ni': np.linspace(256, 2560, ntemp, dtype=np.float64),
-     'Cu': np.linspace(256, 2560, ntemp, dtype=np.float64),
-     'LJ': np.linspace(0.25, 2.5, ntemp, dtype=np.float64)}
+T = np.linspace(ltemp, htemp, ntemp, dtype=np.float64)
 # lattice type and parameter
 lat = {'Ti': ('bcc', 2.951),
        'Al': ('fcc', 4.046),
        'Ni': ('fcc', 3.524),
        'Cu': ('fcc', 3.615),
        'LJ': ('fcc', 1.122)}
-# box size
-sz = {'Ti': 4,
-      'Al': 3,
-      'Ni': 3,
-      'Cu': 3,
-      'LJ': 4}
 # mass
 mass = {'Ti': 47.867,
         'Al': 29.982,
@@ -682,16 +754,16 @@ for i in xrange(npress):
     # loop through temperatures
     for j in xrange(ntemp):
         # set thermo constants
-        Et[i, j], Pf[i, j] = defineConstants(units[el], P[el][i], T[el][j])
+        Et[i, j], Pf[i, j] = defineConstants(units[el], P[i], T[j])
         # initialize lammps object and data storage files
-        dat = sampleInit(i, j, el, units[el], lat[el], sz[el], mass[el], P[el][i], dpos[i, j], dt[i, j])
+        dat = sampleInit(i, j, el, units[el], lat[el], sz, mass[el], P[i], dpos[i, j], dt[i, j])
         natoms[i, j], x[i, j], v[i, j] = dat[:3]
         temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
         thermo[i, j], traj[i, j] = dat[9:11]
         # write thermo file header
         thermoHeader(thermo[i, j], nsmpl, cutoff, mod, nswps, ppos, pvol, phmc,
-                      nstps, seed, el, units[el], lat[el], sz[el], mass[el],
-                      P[el][i], T[el][j], dt[i, j], dpos[i, j], dbox[i, j])
+                      nstps, seed, el, units[el], lat[el], sz, mass[el],
+                      P[i], T[j], dt[i, j], dpos[i, j], dbox[i, j])
 
 # -----------                      
 # monte carlo
@@ -717,11 +789,11 @@ for i in xrange(nsmpl):
         print('step:', i)
     # collect samples for all configurations
     if parallel:
-        dat = getSamplesPar(client, x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
+        dat = getSamplesPar(client, x, v, box, el, units[el], lat[el], sz, mass[el], P[el], dt,
                             Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
                             dpos, dbox, T[el], mod, thermo, traj, verbose)
     else:
-        dat = getSamples(x, v, box, el, units[el], lat[el], sz[el], mass[el], P[el], dt,
+        dat = getSamples(x, v, box, el, units[el], lat[el], sz, mass[el], P[el], dt,
                          Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
                          dpos, dbox, T[el], mod, thermo, traj, verbose)
     # update system data
@@ -754,7 +826,7 @@ ftraj = [[traj[i, j].name for j in xrange(ntemp)] for i in xrange(npress)]
 # loop through pressures
 for i in xrange(npress):
     # get prefix
-    prefix = fpref(name, el, lat[el], P[el][i])
+    prefix = fpref(name, el, lat[el], P[i])
     # open collected thermo data file
     with open(prefix+'.thrm', 'w') as fo:
         # write data to collected thermo file

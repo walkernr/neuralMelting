@@ -19,37 +19,73 @@ if '--verbose' in sys.argv:
 else:
     verbose = False
     
-distributed = False  # boolean for choosing distributed or local cluster
-processes = True     # boolean for choosing whether to use processes
+# boolean for choosing distributed or local cluster
+if '--distributed' in sys.argv:
+    distributed = True
+    path = os.getcwd()+'/scheduler.json'  # path for scheduler file
+else:
+    distributed = False 
+# boolean for choosing whether to use processes
+if '--noprocesses' in sys.argv:
+    processes = False
+else:
+    processes = True
 
-system = 'mpi'                        # switch for mpirun or aprun
-nworkers = 16                         # number of processors
-nthreads = 1                          # threads per worker
-path = os.getcwd()+'/scheduler.json'  # path for scheduler file
-
-# number of pressure data sets
-n_press = 8
+# switch for mpirun or aprun
+elif '--ap' is sys.argv:
+    system = 'ap'
+else:
+    system = 'mpi'
+# number of processors
+if '--nworkers' in sys.argv:
+    i = sys.argv.index('--nworker')
+    nworkers = int(sys.argv[i+1])
+else:
+    nworkers = 16
+# threads per worker
+if '--nthreads' in sys.argv:
+    i = sys.argv.index('--nthreads')
+    nthreads = int(sys.argv[i+1])
+else:
+    nthreads = 1
+    
 # simulation name
-name = 'remcmc'
+if '--name' in sys.argv:
+    i = sys.argv.index('--name')
+    name = sys.argv[i+1]
+else:
+    name = 'remcmc'
 
-# element and pressure index choice
+# element
 if '--element' in sys.argv:
     i = sys.argv.index('--element')
     el = sys.argv[i+1]
 else:
     el = 'LJ'
-if '--pressure_index' in sys.argv:
-    i = sys.argv.index('--pressure_index')
+    
+# number of pressure sets
+if '--npress' in sys.argv:
+    i = sys.argv.index('--npress')
+    npress = int(sys.argv[i+1])
+else:
+    npress = 8
+# pressure range
+if '--rpress' in sys.argv:
+    i = sys.argv.index('--rpress')
+    lpress = float(sys.argv[i+1])
+    hpress = float(sys.argv[i+2])
+else:
+    lpress = 1.0
+    hpress = 8.0
+# pressure index
+if '--pressindex' in sys.argv:
+    i = sys.argv.index('--pressindex')
     pressind = int(sys.argv[i+1])
 else:
     pressind = 0
 
 # pressure
-P = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Al': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Ni': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Cu': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'LJ': np.linspace(1.0, 8.0, n_press, dtype=np.float64)}
+P = np.linspace(lpress, hpress, npress, dtype=np.float64)}
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -57,7 +93,7 @@ lat = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # file prefix
-prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el][pressind]))
+prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[pressind]))
 
 def sched_init(system, nproc, path):
     ''' creates scheduler file using dask-mpi binary, network is initialized with mpi4py '''
@@ -149,7 +185,7 @@ else:
 if verbose:
     # display client information
     print(client.scheduler_info)
-    print('calculating data for %s at pressure %f' % (el.lower(), P[el][pressind]))
+    print('calculating data for %s at pressure %f' % (el.lower(), P[pressind]))
     futures = client.compute(operations)
     progress(futures)
     results = client.gather(futures)

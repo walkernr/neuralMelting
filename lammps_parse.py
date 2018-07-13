@@ -15,29 +15,42 @@ if '--verbose' in sys.argv:
 else:
     verbose = False
 
-# number of pressure data sets
-n_press = 8
 # simulation name
-name = 'remcmc'
+if '--name' in sys.argv:
+    i = sys.argv.index('--name')
+    name = sys.argv[i+1]
+else:
+    name = 'remcmc'
 
-# element and pressure index choice
+# element
 if '--element' in sys.argv:
     i = sys.argv.index('--element')
     el = sys.argv[i+1]
 else:
     el = 'LJ'
-if '--pressure_index' in sys.argv:
-    i = sys.argv.index('--pressure_index')
+# number of pressure sets
+if '--npress' in sys.argv:
+    i = sys.argv.index('--npress')
+    npress = int(sys.argv[i+1])
+else:
+    npress = 8
+# pressure range
+if '--rpress' in sys.argv:
+    i = sys.argv.index('--rpress')
+    lpress = float(sys.argv[i+1])
+    hpress = float(sys.argv[i+2])
+else:
+    lpress = 1.0
+    hpress = 8.0
+# pressure index
+if '--pressindex' in sys.argv:
+    i = sys.argv.index('--pressindex')
     pressind = int(sys.argv[i+1])
 else:
     pressind = 0
 
 # pressure
-P = {'Ti': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Al': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Ni': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'Cu': np.linspace(1.0, 8.0, n_press, dtype=np.float64),
-     'LJ': np.linspace(1.0, 8.0, n_press, dtype=np.float64)}
+P = np.linspace(lpress, hpress, npress, dtype=np.float64)
 # lattice type
 lat = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -45,12 +58,12 @@ lat = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # file prefix
-prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[el][pressind]))
+prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[pressind]))
 # get full directory
 file = os.getcwd()+'/'+prefix
 
 if verbose:
-    print('parsing data for %s at pressure %f' % (el.lower(), P[el][pressind]))
+    print('parsing data for %s at pressure %f' % (el.lower(), P[pressind]))
 # parse thermo file
 with open(file+'.thrm', 'r') as fi:
     temp = []
