@@ -8,30 +8,31 @@ Created on Thu Jul 12 21:38:03 2018
 from __future__ import division, print_function
 import subprocess
 
+verbose = False
+
 nworkers = 16
 nthreads = 1
 
-name = 'test'
+name = 'remcmc'
 el = 'LJ'
 sz = 4
 
-npress = 4
+npress = 8
 lpress = 1
 hpress = 8
 
-ntemp = 4
+ntemp = 96
 ltemp = 0.25
 htemp = 2.5
 
-cutoff = 4
-nsmpl = 4
-mod = 4
+cutoff = 1024
+nsmpl = 1024
+mod = 128
 ppos = 0.015625
 pvol = 0.25
-nstps = 4
+nstps = 16
 
-cmd_flags = ['--verbose',
-             '--nworkers', str(nworkers),
+cmd_flags = ['--nworkers', str(nworkers),
              '--nthreads', str(nthreads),
              '--name', name,
              '--element', el,
@@ -46,6 +47,8 @@ cmd_flags = ['--verbose',
              '--ppos', str(ppos),
              '--pvol', str(pvol),
              '--nstps', str(nstps)]
+if verbose:
+    cmd_args = cmd_args+['--verbose']
 
 subprocess.call(['python', 'lammps_remcmc_distributed.py']+cmd_flags)
 for i in xrange(npress):
