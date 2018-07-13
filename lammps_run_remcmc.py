@@ -15,11 +15,11 @@ name = 'test'
 el = 'LJ'
 sz = 4
 
-npress = 8
+npress = 4
 lpress = 1
 hpress = 8
 
-ntemp = 48
+ntemp = 4
 ltemp = 0.25
 htemp = 2.5
 
