@@ -30,13 +30,14 @@ if '--theano' in sys.argv:
 else:
     os.environ['KERAS_BACKEND'] = 'tensorflow'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+    from tensorflow import set_random_seed
+    set_random_seed(seed)
 # multithreading
 os.environ['MKL_NUM_THREADS'] = str(nthreads)
 os.environ['GOTO_NUM_THREADS'] = str(nthreads)
 os.environ['OMP_NUM_THREADS'] = str(nthreads)
 os.environ['openmp'] = 'True'
 
-from tensorflow import set_random_seed
 from keras.models import Sequential
 from keras.layers import Input, Conv1D, MaxPooling1D, GlobalAveragePooling1D, Dropout, Dense
 from keras.optimizers import SGD, Nadam
@@ -45,7 +46,6 @@ from keras.utils import plot_model
 
 seed = 256
 np.random.seed(seed)
-set_random_seed(seed)
 
 # plotting parameters
 # plt.rc('text', usetex=True)

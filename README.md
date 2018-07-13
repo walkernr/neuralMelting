@@ -48,14 +48,14 @@ In order to use LAMMPS in Python, it must be compiled as a shared library. The i
 File Descriptions
 =================
 
-lammps_remcmc_distributed.py
+lammps_remcmc.py
 ----------------------------------
 
 This program interfaces with LAMMPS to produce thermodynamic information and trajectories from NPT-HMC simulations that sweep through a range of temperatures and pressures simultaneously. LAMMPS is used to constuct the system, run the dynamics, and calculate the physical properties. The Monte Carlo moves, however, are performed in Python. Three types of Monte Carlo moves are defined and can be performed at each Monte Carlo sweep: The standard atom-wise position move (PMC), the NPT volume move (VMC), and the Hamiltonian Monte Carlo move (HMC). Different probabilities can be chosen for each type of MC move (specified for PMC and VMC while HMC takes the remaining probability). At the end of each data collection cycle, replica exchange Markov chain Monte Carlo is performed between all sample pairs.
 
-The simulation can be run in multiple modes for debugging and implementing parallelism. There are boolean values for controlling verbosity, whether to run in parallel, if the parallelism is on a local or distributed cluster, and if the parallel method is multiprocessing or multithreading. The parallel implementation is done with the Dask Distributed library and only runs the Monte Carlo simulations in parallel (the LAMMPS instances are serial). 
+The simulation can be run in multiple modes for debugging and implementing parallelism. There are boolean values for controlling verbosity, whether to run in parallel, if the parallelism is on a local or distributed cluster, and if the parallel method is multiprocessing or multithreading. The parallel implementation is done with the Dask Distributed library and only runs the Monte Carlo simulations in parallel (the LAMMPS instances are serial). Since Dask uses Bokeh, multiprocessing runs may be monitored at localhost:8787/status assuming the default Bokeh TCP port is used.
 
-General user-controlled parameters include the number of pressures and temperatures to be simulated, the cutoff for data collection, the number of samples to be collected, the frequency of data collection, the probability of the PMC and VMC moves, and the number of HMC timesteps. Material specific parameters are stored dictionaries with the atomic symbols serving as the keys ('LJ' for Lennard-Jones). The default is Lennard-Jones since it is useful for testing and is included with LAMMPS with no extra libraries needed. These dictionaries control the simulation pressure range (length determined by general parameter), the simulation temperature range (length determined by general parameter), the lattice type and parameter, the supercell size in unit cells, the atomic mass, and the parameters for each MC move (position adjustment, box size adjustment, and timestep). The MC parameters are adaptively adjusted during the simulations for each sample independently. Since Dask uses Bokeh, multiprocessing runs may be monitored at localhost:8787/status assuming the default Bokeh TCP port is used.
+General user-controlled parameters include the verbosity, parallel modes, number of workers/threads, simulation name, the element, the system size (in unit cells), the pressure and temperature ranges to be simulated, the cutoff for data collection, the number of samples to be collected, the frequency of data collection, the probability of the PMC and VMC moves, and the number of HMC timesteps. Material specific parameters are stored dictionaries with the atomic symbols serving as the keys ('LJ' for Lennard-Jones). The default is Lennard-Jones since it is useful for testing and is included with LAMMPS with no extra libraries needed. These dictionaries control the define the lattice type and parameter, the atomic mass, and the parameters for each MC move (position adjustment, box size adjustment, and timestep). The MC parameters are adaptively adjusted during the simulations for each sample independently.
 
 Two output files are written to during the data collection cycles, one containing general thermodynamic properties and simulation details, and another containing the atom trajectories.
 
@@ -66,7 +66,7 @@ lammps_parse.py
 
 This program parses the output from Monte Carlo simulations and pickles the data. The pickled data includes the temperatures, potential energies, kinetic energies, virial pressures, volumes, acceptation ratios for each MC move, and trajectories for each sample.
 
-lammps_rdf_distributed.py
+lammps_rdf.py
 -------------------------
 
 This program calculates the radial distributions, structure factors, and entropic fingerprints, and densities alongside the domains for each structural function for each sample using the pickled trajectory information from the parsing script. The calculations can be run in parallel using a multiprocessing or multithreading approach on local or distributed clusters. The parallelism is implemented with the Dask Distributed library. Since Dask uses Bokeh, multiprocessing runs may be monitored at localhost:8787/status assuming the default Bokeh TCP port is used. The rdf calculations are also optimized using a combination of vectorized code by way of NumPy alongside a JIT compiler by way of Numba.
@@ -90,9 +90,11 @@ This program classifies samples as either solids or liquids by passing structura
 - Tanh: resilient to outliers, guarantees a map to a common numerical range
 
 ### Available reducers
-- False: use the raw scaled data
+- none: use the raw scaled data
 - PCA: common and fast, orthogonal linear transformation into new basis that maximizes variance of data along new projections
 - Kernal PCA: slower than PCA, nonlinear reduction in the sample space rather than feature space
+- Isomap: slower than PCA, a nonlinear reduction considered to be an extension of the Kernel PCA algorithm
+- Locally Linear Embedding: slower than PCA, can be considered as a series of local PCA reductions that are globally stiched together
 
 ### Available networks
 - Dense Classifier (not currently working: doesn't learn)
@@ -100,8 +102,8 @@ This program classifies samples as either solids or liquids by passing structura
           
 ### Available fitting functions
 - Logistic: well-behaved and easily extracted transition temperature estimate, symmetric
-- Gompertz: well-behaved and easily extracted transition temperature estimate, faster uptake than saturation
-- Richard: generalized logistic function, (note recommended: too many fitting parameters)
+- Gompertz: well-behaved and easily extracted transition temperature estimate, faster uptake than saturation (not recommended: error analysis is not robust)
+- Richard: generalized logistic function, (not recommended: too many fitting parameters)
 
 ### Plans for the future
 - Refine neural network structures and hyperparameters (learning rate, weights, iterations, grid searching, etc.)
@@ -132,6 +134,11 @@ This will take second priority to the supervised method with respect to data ana
 - Perhaps support for other nonlinear dimensionality reduction algorithms will be added
 
 Since the scalers and clustering methods are embedded in libraries, the user may feel free to add their own features.
+
+lammps_post.py
+--------------
+
+This program does post-processing on the transition predictions at multiple different pressures to extract a melting curve in addition to plots of the potential energies and pressures as a function of temperature for each pressure.
 
 TanhScaler.py
 -------------
