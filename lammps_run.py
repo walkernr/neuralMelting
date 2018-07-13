@@ -13,7 +13,7 @@ verbose = False
 nworkers = 16
 nthreads = 1
 
-name = 'remcmc'
+name = 'remcmc01'
 el = 'LJ'
 sz = 4
 
