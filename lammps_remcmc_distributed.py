@@ -40,7 +40,7 @@ else:
     processes = True     
 
 # switch for mpirun or aprun
-elif '--ap' is sys.argv:
+if '--ap' is sys.argv:
     system = 'ap'
 else:
     system = 'mpi'
