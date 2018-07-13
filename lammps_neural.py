@@ -276,7 +276,7 @@ print('data scaled')
 print('------------------------------------------------------------')
 
 # apply reduction and extract training/classification data
-if reduc != 'none':
+if reduc not 'none':
     reducers[reduc].fit(sdata[tind])                  # pca fit to training data
     tdata = reducers[reduc].transform(sdata[tind])    # pca transform training data
     cdata = reducers[reduc].transform(sdata[cind])    # pca transform classification data
@@ -406,10 +406,7 @@ print('parameter error:  %s' % ', '.join(perr.astype('|S32')))
 print('------------------------------------------------------------')
 
 # prefix for output files
-if reduc:
-    out_pref = [prefix, network, property, scaler, reduc, fitfunc]
-else:
-    out_pref = [prefix, network, property, scaler, 'none', fitfunc]
+out_pref = [prefix, network, property, scaler, reduc, fitfunc]
 
 # save data to file
 with open('.'.join(out_pref+[str(nsmpl), 'out']), 'w') as fo:
