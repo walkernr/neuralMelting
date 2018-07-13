@@ -17,6 +17,9 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 
+seed = 256
+np.random.seed(seed)
+
 # number of threads
 if '--nthreads' in sys.argv:
     i = sys.argv.index('--nthreads')
@@ -43,9 +46,6 @@ from keras.layers import Input, Conv1D, MaxPooling1D, GlobalAveragePooling1D, Dr
 from keras.optimizers import SGD, Nadam
 from keras.wrappers.scikit_learn import KerasClassifier
 from keras.utils import plot_model
-
-seed = 256
-np.random.seed(seed)
 
 # plotting parameters
 # plt.rc('text', usetex=True)
