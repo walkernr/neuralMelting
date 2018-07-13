@@ -17,11 +17,11 @@ name = 'remcmc01'
 el = 'LJ'
 sz = 4
 
-npress = 8
+npress = 16
 lpress = 1
 hpress = 8
 
-ntemp = 96
+ntemp = 48
 ltemp = 0.25
 htemp = 2.5
 
