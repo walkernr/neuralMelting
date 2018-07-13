@@ -32,13 +32,13 @@ else:
     processes = True
 
 # switch for mpirun or aprun
-elif '--ap' is sys.argv:
+if '--ap' is sys.argv:
     system = 'ap'
 else:
     system = 'mpi'
 # number of processors
 if '--nworkers' in sys.argv:
-    i = sys.argv.index('--nworker')
+    i = sys.argv.index('--nworkers')
     nworkers = int(sys.argv[i+1])
 else:
     nworkers = 16
