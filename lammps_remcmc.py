@@ -659,8 +659,6 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
                 acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
             writeThermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
             writeTraj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
-    # remove all computations
-    client.cancel(futures)
     # return lammps object, tries/acceptation counts, and mc params
     return natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
     
@@ -793,6 +791,8 @@ for i in xrange(nsmpl):
         dat = getSamplesPar(client, x, v, box, el, units[el], lat[el], sz, mass[el], P, dt,
                             Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
                             dpos, dbox, T, mod, thermo, traj, verbose)
+        # remove all computations
+        client.cancel(futures)
     else:
         dat = getSamples(x, v, box, el, units[el], lat[el], sz, mass[el], P, dt,
                          Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
