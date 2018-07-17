@@ -652,7 +652,7 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
             ntryhmc[i, j], nacchmc[i, j] = dat[13:15]
             dpos[i, j], dbox[i, j], dt[i, j] = dat[15:18]
     # remove all computations
-    client.cancel(futures)
+    # client.cancel(futures)
     # write to data storage files
     for i in xrange(npress):
         for j in xrange(ntemp):
