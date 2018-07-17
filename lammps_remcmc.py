@@ -634,16 +634,17 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
                                      Et[i, j], Pf[i, j], ppos, pvol, phmc, 
                                      ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
                                      dpos[i, j], dbox[i, j], T[j], mod) for i in xrange(npress) for j in xrange(ntemp)]
-    futures = client.compute(operations)
+    # futures = client.compute(operations)
+    futures = client.persist(operations)
     if verbose:
         progress(futures)
-    results = client.gather(futures)
-    del futures
+    # results = client.gather(futures)
+    # del futures
     k = 0
     for i in xrange(npress):
         for j in xrange(ntemp):
-            # dat = futures[k].result()
-            dat = results[k]
+            dat = futures[k].result()
+            # dat = results[k]
             k += 1
             natoms[i, j], x[i, j], v[i, j] = dat[:3]
             temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
