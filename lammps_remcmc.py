@@ -637,12 +637,13 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     futures = client.compute(operations)
     if verbose:
         progress(futures)
-    # results = client.gather(futures)
+    results = client.gather(futures)
+    del futures
     k = 0
     for i in xrange(npress):
         for j in xrange(ntemp):
-            # dat = results[k]
-            dat = futures[k].result()
+            # dat = futures[k].result()
+            dat = results[k]
             k += 1
             natoms[i, j], x[i, j], v[i, j] = dat[:3]
             temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
