@@ -189,7 +189,7 @@ dt = timestep[units[el]]*np.ones((npress, ntemp))
 # client initialization
 # ---------------------
 
-def sched_init(system, nproc, path):
+def schedInit(system, nproc, path):
     ''' creates scheduler file using dask-mpi binary, network is initialized with mpi4py '''
     # for use on most systems
     if system == 'mpi':
@@ -637,11 +637,12 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     futures = client.compute(operations)
     if verbose:
         progress(futures)
-    results = client.gather(futures)
+    # results = client.gather(futures)
     k = 0
     for i in xrange(npress):
         for j in xrange(ntemp):
-            dat = results[k]
+            # dat = results[k]
+            data = futures[k].result()
             k += 1
             natoms[i, j], x[i, j], v[i, j] = dat[:3]
             temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
@@ -772,7 +773,7 @@ for i in xrange(npress):
 if parallel:
     if distributed:
         # construct scheduler with mpi
-        sched_init(system, nworkers, path)
+        schedInit(system, nworkers, path)
         # start client with scheduler file
         client = Client(scheduler=path)
     else:

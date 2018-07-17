@@ -95,7 +95,7 @@ lat = {'Ti': 'bcc',
 # file prefix
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[pressind]))
 
-def sched_init(system, nproc, path):
+def schedInit(system, nproc, path):
     ''' creates scheduler file using dask-mpi binary, network is initialized with mpi4py '''
     # for use on most systems
     if system == 'mpi':
@@ -105,7 +105,7 @@ def sched_init(system, nproc, path):
         subprocess.call(['aprun', '-n', str(nproc), 'dask-mpi', '--scheduler-file', path])
     return
 
-def load_data():
+def loadData():
     ''' load atom count, box dimension, and atom positions '''
     # load pickles
     natoms = pickle.load(open('.'.join([prefix, 'natoms', 'pickle'])))
@@ -114,10 +114,10 @@ def load_data():
     # return data
     return natoms, box, pos
     
-def calculate_spatial():
+def calculateSpatial():
     ''' calculate spatial properties '''
     # load atom count, box dimensions, and atom positions
-    natoms, box, pos = load_data()
+    natoms, box, pos = loadData()
     # number density of atoms
     nrho = np.divide(natoms, np.power(box, 3))
     # minimum box size in simulation
@@ -156,7 +156,7 @@ def calculate_spatial():
     return natoms, box, pos, R, r, dr, nrho, dni, gs
     
 @nb.njit
-def calculate_rdf(box, pos, R, r, gs):
+def calculateRDF(box, pos, R, r, gs):
     ''' calculate rdf for sample j '''
     # loop through lattice vectors
     for k in xrange(R.shape[0]):
@@ -169,12 +169,12 @@ def calculate_rdf(box, pos, R, r, gs):
     return gs
 
 # get spatial properties
-natoms, box, pos, R, r, dr, nrho, dni, gs = calculate_spatial()
+natoms, box, pos, R, r, dr, nrho, dni, gs = calculateSpatial()
 # calculate radial distribution for each sample in parallel
-operations = [delayed(calculate_rdf)(box[j], pos[j, :], R, r, gs[j, :]) for j in xrange(len(natoms))]
+operations = [delayed(calculateRDF)(box[j], pos[j, :], R, r, gs[j, :]) for j in xrange(len(natoms))]
 if distributed:
     # construct scheduler with mpi
-    sched_init(system, nworkers, path)
+    schedInit(system, nworkers, path)
     # start client with scheduler file
     client = Client(scheduler=path)
 else:
