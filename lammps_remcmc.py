@@ -49,7 +49,7 @@ if '--nworkers' in sys.argv:
     i = sys.argv.index('--nworkers')
     nworkers = int(sys.argv[i+1])
 else:
-    nworkers = 16
+    nworkers = 4
 # threads per worker
 if '--nthreads' in sys.argv:
     i = sys.argv.index('--nthreads')
@@ -62,7 +62,7 @@ if '--name' in sys.argv:
     i = sys.argv.index('--name')
     name = sys.argv[i+1]
 else:
-    name = 'remcmc'
+    name = 'test'
 # element choice
 if '--element' in sys.argv:
     i = sys.argv.index('--element')
@@ -81,7 +81,7 @@ if '--npress' in sys.argv:
     i = sys.argv.index('--npress')
     npress = int(sys.argv[i+1])
 else:
-    npress = 8
+    npress = 4
 # pressure range
 if '--rpress' in sys.argv:
     i = sys.argv.index('--rpress')
@@ -95,7 +95,7 @@ if '--ntemp' in sys.argv:
     i = sys.argv.index('--ntemp')
     ntemp = int(sys.argv[i+1])
 else:
-    ntemp = 48
+    ntemp = 4
 # temperature range
 if '--rtemp' in sys.argv:
     i = sys.argv.index('--rtemp')
@@ -111,19 +111,19 @@ if '--cutoff' in sys.argv:
     i = sys.argv.index('--cutoff')
     cutoff = int(sys.argv[i+1])
 else:
-    cutoff = 1024
+    cutoff = 4
 # number of samples
 if '--nsmpl' in sys.argv:
     i = sys.argv.index('--nsmpl')
     nsmpl = cutoff+int(sys.argv[i+1])
 else:
-    nsmpl = cutoff+1024
+    nsmpl = cutoff+4
 # frequency of data storage
 if '--mod' in sys.argv:
     i = sys.argv.index('--mod')
     mod = int(sys.argv[i+1])
 else:
-    mod = 128
+    mod = 4
 nswps = nsmpl*mod     # total mc sweeps
 # probability of pos move
 if '--ppos' in sys.argv:
@@ -642,7 +642,7 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     for i in xrange(npress):
         for j in xrange(ntemp):
             # dat = results[k]
-            data = futures[k].result()
+            dat = futures[k].result()
             k += 1
             natoms[i, j], x[i, j], v[i, j] = dat[:3]
             temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
