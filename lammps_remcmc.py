@@ -9,6 +9,7 @@ from __future__ import division, print_function
 import sys, os, subprocess
 import numpy as np
 from lammps import lammps
+os.environ['DASK_ALLOWED_FAILURES'] = '32'
 from distributed import Client, LocalCluster, progress
 from dask import delayed
 
@@ -615,14 +616,14 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
         progress(futures)
     statuses = np.array([f.status for f in futures])
     if verbose:
+        print('future statuses: ')
         print(statuses)
     if 'error' in statuses:
         if verbose:
-            errors = futures[statuses == 'error']
-            print('%d calculations failed' % errors.size)
+            errors = np.array(futures)[statuses != 'finished']
+            print('%d calculations unfinished' % errors.size)
         client.recreate_error_locally(futures)
     results = client.gather(futures)
-    client.cancel(futures)
     k = 0
     for i in xrange(npress):
         for j in xrange(ntemp):
