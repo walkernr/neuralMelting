@@ -10,7 +10,7 @@ import subprocess
 
 verbose = True  # False
 
-nworker = 16  # 16
+nworker = 16
 nthread = 1
 
 name = 'test'  # 'remcmc01'
@@ -21,13 +21,13 @@ npress = 4
 lpress = 1
 hpress = 8
 
-ntemp = 12  # 48
+ntemp = 48
 ltemp = 0.25
 htemp = 2.5
 
 cutoff = 64
-nsmpl = 4  # 1024
-mod = 4  # 128
+nsmpl = 1024
+mod = 128
 ppos = 0.015625
 pvol = 0.25
 nstps = 16
