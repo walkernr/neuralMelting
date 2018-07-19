@@ -41,13 +41,19 @@ if '--nworker' in sys.argv:
     i = sys.argv.index('--nworker')
     nworker = int(sys.argv[i+1])
 else:
-    nworker = 16
+    if processes:
+        nworker = 16
+    else:
+        nworker = 1
 # threads per worker
 if '--nthread' in sys.argv:
     i = sys.argv.index('--nthread')
     nthread = int(sys.argv[i+1])
 else:
-    nthread = 1
+    if processes:
+        nthread = 1
+    else:
+        nthread = 16
     
 # simulation name
 if '--name' in sys.argv:
