@@ -218,10 +218,10 @@ cscale = lambda i: (msP[i, 0]-np.min(mP))/np.max(mP)
 fig0 = plt.figure()
 ax0 = fig0.add_subplot(111)
 for i in xrange(npress):
-    ax0.errorbar(mT[i], mP[i], xerr=sT[i], yerr=sP[i], color=cm(cscale(i)), alpha=0.5, label='P = %.1f' % press[i])
+    ax0.errorbar(mT[i], mP[i], xerr=sT[i], yerr=sP[i], color=cm(cscale(i)), alpha=0.5, label=r'$P = %.1f$' % press[i])
     ax0.axvline(neurtrans[i, 0], color=cm(cscale(i)))
-ax0.set_xlabel('T')
-ax0.set_ylabel('P')
+ax0.set_xlabel(r'$T$')
+ax0.set_ylabel(r'$P$')
 ax0.legend(loc='center right')
 
 fig1 = plt.figure()
@@ -229,21 +229,26 @@ ax1 = fig1.add_subplot(111)
 for i in xrange(npress):
     ax1.errorbar(mT[i], mU[i], xerr=sT[i], yerr=sU[i], color=cm(cscale(i)), alpha=0.5, label='P = %.1f' % press[i])
     ax1.axvline(neurtrans[i, 0], color=cm(cscale(i)))
-ax1.set_xlabel('T')
-ax1.set_ylabel('U')
+ax1.set_xlabel(r'$T$')
+ax1.set_ylabel(r'$U$')
 ax1.legend(loc='upper left')
 
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(111)
 if el == 'LJ':
-    litpress = [1, 5, 10]
-    littemp = [0.77, 1.061, 1.379]
-    ax2.plot(littemp, litpress, color=cm(0.25), label='Literature')
-ax2.errorbar(neurtrans[:, 0], msP[:, 0], xerr=neurtrans[:, 1], yerr=msP[:, 1], color=cm(0.5), label='Keras CNN-1D')
+    # ref 1: http://paros.princeton.edu/cbe422/MP.pdf
+    # ref 2: http://dirac.ruc.dk/~urp/interface.pdf
+    litpress0 = np.array([1, 5, 10])
+    litpress1 = np.array([0.928, 2.185, 3.514, 4.939, 7.921])
+    littemp0 = np.array([0.77, 1.061, 1.379])
+    littemp1 = np.array([0.7, 0.8, 0.9, 1.0, 1.2])
+    ax2.plot(littemp0, litpress0, color=cm(0.125), label=r'$\mathrm{Literature\enspace (full\enspace potential)}')
+    ax2.plot(littemp1, litpress1, color=cm(0.25), label=(r'$\mathrm{Literature\enspace} (r_c = 2.5)$')
+ax2.errorbar(neurtrans[:, 0], msP[:, 0], xerr=neurtrans[:, 1], yerr=msP[:, 1], color=cm(0.5), label=r'$\mathrm{Keras\enspace CNN-1D}$')
 if tsne:
-    ax2.errorbar(tsnetrans[:, 0], msP[:, 0], xerr=tsnetrans[:, 1], yerr=msP[:, 1], color=cm(0.75), label='t-SNE Spectral')
-ax2.set_xlabel('T')
-ax2.set_ylabel('P')
+    ax2.errorbar(tsnetrans[:, 0], msP[:, 0], xerr=tsnetrans[:, 1], yerr=msP[:, 1], color=cm(0.75), label=r'$\mathrm{t-SNE\enspace Spectral}$')
+ax2.set_xlabel(r'$T$')
+ax2.set_ylabel(r'$P$')
 ax2.legend(loc='lower right')
 
 fig0.savefig('.'.join(base_pref+['pressure', 'png']))
