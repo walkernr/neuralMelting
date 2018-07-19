@@ -249,7 +249,7 @@ if tsne:
     ax2.errorbar(tsnetrans[:, 0], msP[:, 0], xerr=tsnetrans[:, 1], yerr=msP[:, 1], color=cm(0.5), label=r'$\mathrm{t-SNE\enspace Spectral}$')
 ax2.set_xlabel(r'$T$')
 ax2.set_ylabel(r'$P$')
-ax2.legend(loc='top left')
+ax2.legend(loc='upper left')
 
 fig0.savefig('.'.join(base_pref+['pressure', 'png']))
 fig1.savefig('.'.join(base_pref+['potential', 'png']))
