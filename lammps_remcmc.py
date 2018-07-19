@@ -614,6 +614,8 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     if verbose:
         progress(futures)
     statuses = np.array([f.status for f in futures])
+    if verbose:
+        print(statuses)
     if 'error' in statuses:
         if verbose:
             errors = futures[statuses == 'error']
