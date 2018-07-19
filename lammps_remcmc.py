@@ -406,36 +406,54 @@ def writeTraj(traj, natoms, box, x):
 def positionMC(lmps, Et, ntrypos, naccpos, dpos):
     ''' classic position monte carlo 
         loops through nudging atoms
-        accepts/rejects based on energy metropolis criterion ''' 
-    # get number of atoms
-    natoms = lmps.extract_global('natoms', 0)
-    boxmin = lmps.extract_global('boxlo', 1)
-    boxmax = lmps.extract_global('boxhi', 1)
-    box = boxmax-boxmin
-    # loop through atoms
-    for k in xrange(natoms):
-        # update position tries
-        ntrypos += 1
-        # save current physical properties
-        x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
-        pe = lmps.extract_compute('thermo_pe', None, 0)/Et
-        xnew = np.copy(x)
-        xnew[3*k:3*k+3] += (np.random.rand(3)-0.5)*dpos
-        xnew[3*k:3*k+3] -= np.floor(xnew[3*k:3*k+3]/box)*box
-        lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
+        accepts/rejects based on energy metropolis criterion '''
+    ntrypos += 1
+    x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
+    pe = lmps.extract_compute('thermo_pe', None, 0)/Et
+    lmps.command('displace_atoms all random %f %f %f %d' % (3*(dpos,)+(np.random.randint(1, 2**16),)))
+    lmps.command('run 0')
+    xnew = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
+    penew = lmps.extract_compute('thermo_pe', None, 0)/Et
+    dE = penew-pe
+    if np.random.rand() <= np.min([1, np.exp(-dE)]):
+        # update pos acceptations
+        naccpos += 1
+        # save new physical properties
+        x = xnew
+        pe = penew
+    else:
+        # revert physical properties
+        lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
         lmps.command('run 0')
-        penew = lmps.extract_compute('thermo_pe', None, 0)/Et
-        dE = penew-pe
-        if np.random.rand() <= np.min([1, np.exp(-dE)]):
-            # update pos acceptations
-            naccpos += 1
-            # save new physical properties
-            x = xnew
-            pe = penew
-        else:
-            # revert physical properties
-            lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
-            lmps.command('run 0')
+    # # get number of atoms
+    # natoms = lmps.extract_global('natoms', 0)
+    # boxmin = lmps.extract_global('boxlo', 1)
+    # boxmax = lmps.extract_global('boxhi', 1)
+    # box = boxmax-boxmin
+    # # loop through atoms
+    # for k in xrange(natoms):
+        # # update position tries
+        # ntrypos += 1
+        # # save current physical properties
+        # x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
+        # pe = lmps.extract_compute('thermo_pe', None, 0)/Et
+        # xnew = np.copy(x)
+        # xnew[3*k:3*k+3] += (np.random.rand(3)-0.5)*dpos
+        # xnew[3*k:3*k+3] -= np.floor(xnew[3*k:3*k+3]/box)*box
+        # lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
+        # lmps.command('run 0')
+        # penew = lmps.extract_compute('thermo_pe', None, 0)/Et
+        # dE = penew-pe
+        # if np.random.rand() <= np.min([1, np.exp(-dE)]):
+            # # update pos acceptations
+            # naccpos += 1
+            # # save new physical properties
+            # x = xnew
+            # pe = penew
+        # else:
+            # # revert physical properties
+            # lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
+            # lmps.command('run 0')
     # return lammps object and tries/acceptations
     return lmps, ntrypos, naccpos
     
