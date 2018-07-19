@@ -9,6 +9,7 @@ from __future__ import division, print_function
 import subprocess
 
 verbose = True  # False
+noprocesses = True  # False
 
 nworker = 16
 nthread = 1
@@ -49,6 +50,8 @@ cmd_args = ['--nworker', str(nworker),
             '--nstps', str(nstps)]
 if verbose:
     cmd_args = cmd_args+['--verbose']
+if noprocesses:
+    cmd_args = cmd_args+['--noprocesses']
 
 subprocess.call(['python', 'lammps_remcmc.py']+cmd_args)
 # for i in xrange(npress):
