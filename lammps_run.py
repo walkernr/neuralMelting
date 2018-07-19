@@ -25,7 +25,7 @@ ntemp = 12  # 48
 ltemp = 0.25
 htemp = 2.5
 
-cutoff = 4  # 1024
+cutoff = 64
 nsmpl = 4  # 1024
 mod = 4  # 128
 ppos = 0.015625

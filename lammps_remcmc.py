@@ -62,7 +62,7 @@ if '--name' in sys.argv:
     i = sys.argv.index('--name')
     name = sys.argv[i+1]
 else:
-    name = 'test'
+    name = 'remcmc'
 # element choice
 if '--element' in sys.argv:
     i = sys.argv.index('--element')
