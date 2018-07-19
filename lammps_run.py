@@ -20,17 +20,17 @@ name = 'test'
 el = 'LJ'
 sz = 4
 
-npress = 4  # 8
+npress = 8
 lpress = 1
 hpress = 8
 
-ntemp = 4  # 48
+ntemp = 8  # 48
 ltemp = 0.25
 htemp = 2.5
 
-cutoff = 4  # 1024
-nsmpl = 4  # 1024
-mod = 4  # 128
+cutoff = 16  # 1024
+nsmpl = 16  # 1024
+mod = 16  # 128
 ppos = 0.015625
 pvol = 0.25
 nstps = 16
