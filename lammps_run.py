@@ -12,6 +12,10 @@ if '--verbose' in sys.argv:
     verbose = True
 else:
     verbose = False
+if '--noparallel' in sys.argv:
+    parallel = False
+else:
+    parallel = True
 if '--nopost' in sys.argv:
     post = False
 else:
@@ -56,6 +60,8 @@ cmd_args = ['--nworker', str(nworker),
             '--nstps', str(nstps)]
 if verbose:
     cmd_args = cmd_args+['--verbose']
+if not parallel:
+    cmd_args = cmd_args+['--noparallel']
 
 subprocess.call(['python', 'lammps_remcmc.py']+cmd_args)
 if post:
