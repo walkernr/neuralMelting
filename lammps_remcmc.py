@@ -615,7 +615,10 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
         progress(futures)
     statuses = np.array([f.status for f in futures])
     if 'error' in statuses:
-        client.recreate_error_locally(futures[statuses == 'error'])
+        if verbose:
+            errors = futures[statuses == 'error']
+            print('%d calculations failed' % errors.size)
+        client.recreate_error_locally(futures)
     results = client.gather(futures)
     client.cancel(futures)
     k = 0
