@@ -631,7 +631,6 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
         if verbose:
             print('%d errors resolved' % (errored-errorednew))
     results = client.gather(futures)
-    client.restart()
     k = 0
     for i in xrange(npress):
         for j in xrange(ntemp):
@@ -653,7 +652,7 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
             writeThermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
             writeTraj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
     # return lammps object, tries/acceptation counts, and mc params
-    return natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
+    return client, natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
     
 def getSamples(x, v, box, el, units, lat, sz, mass, P, dt,
                Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
@@ -818,6 +817,8 @@ for i in xrange(nsmpl):
         dat = getSamplesPar(client, x, v, box, el, units[el], lat[el], sz, mass[el], P, dt,
                             Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
                             dpos, dbox, T, mod, thermo, traj, verbose)
+        client = dat[0]
+        dat = dat[1:]
     else:
         dat = getSamples(x, v, box, el, units[el], lat[el], sz, mass[el], P, dt,
                          Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,

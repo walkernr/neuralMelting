@@ -12,6 +12,10 @@ if '--verbose' in sys.argv:
     verbose = True
 else:
     verbose = False
+if '--nopost' in sys.argv:
+    post = False
+else:
+    post = True
 
 nworker = 16
 nthread = 1
@@ -54,7 +58,8 @@ if verbose:
     cmd_args = cmd_args+['--verbose']
 
 subprocess.call(['python', 'lammps_remcmc.py']+cmd_args)
-for i in xrange(npress):
-    subprocess.call(['python', 'lammps_parse.py']+cmd_args+['--pressindex', str(i)])
-for i in xrange(npress):
-    subprocess.call(['python', 'lammps_rdf.py']+cmd_args+['--pressindex', str(i)])
+if post:
+    for i in xrange(npress):
+        subprocess.call(['python', 'lammps_parse.py']+cmd_args+['--pressindex', str(i)])
+    for i in xrange(npress):
+        subprocess.call(['python', 'lammps_rdf.py']+cmd_args+['--pressindex', str(i)])
