@@ -54,7 +54,7 @@ if noprocesses:
     cmd_args = cmd_args+['--noprocesses']
 
 subprocess.call(['python', 'lammps_remcmc.py']+cmd_args)
-# for i in xrange(npress):
-    # subprocess.call(['python', 'lammps_parse.py']+cmd_args+['--pressindex', str(i)])
-# for i in xrange(npress):
-    # subprocess.call(['python', 'lammps_rdf.py']+cmd_args+['--pressindex', str(i)])
+for i in xrange(npress):
+    subprocess.call(['python', 'lammps_parse.py']+cmd_args+['--pressindex', str(i)])
+for i in xrange(npress):
+    subprocess.call(['python', 'lammps_rdf.py']+cmd_args+['--pressindex', str(i)])

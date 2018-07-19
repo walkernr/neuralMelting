@@ -641,6 +641,7 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
                                      ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
                                      dpos[i, j], dbox[i, j], T[j], mod) for i in xrange(npress) for j in xrange(ntemp)]
     futures = client.compute(operations)
+    client.recreate_error_locally(futures)
     if verbose:
         progress(futures)
     results = client.gather(futures)
