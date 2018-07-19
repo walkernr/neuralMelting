@@ -9,7 +9,7 @@ from __future__ import division, print_function
 import subprocess
 
 verbose = True  # False
-noprocesses = True  # False
+noprocesses = False
 
 nworker = 16
 nthread = 1
@@ -26,7 +26,7 @@ ntemp = 48
 ltemp = 0.25
 htemp = 2.5
 
-cutoff = 64
+cutoff = 1024
 nsmpl = 1024
 mod = 128
 ppos = 0.015625
@@ -54,7 +54,7 @@ if noprocesses:
     cmd_args = cmd_args+['--noprocesses']
 
 subprocess.call(['python', 'lammps_remcmc.py']+cmd_args)
-# for i in xrange(npress):
-    # subprocess.call(['python', 'lammps_parse.py']+cmd_args+['--pressindex', str(i)])
-# for i in xrange(npress):
-    # subprocess.call(['python', 'lammps_rdf.py']+cmd_args+['--pressindex', str(i)])
+for i in xrange(npress):
+    subprocess.call(['python', 'lammps_parse.py']+cmd_args+['--pressindex', str(i)])
+for i in xrange(npress):
+    subprocess.call(['python', 'lammps_rdf.py']+cmd_args+['--pressindex', str(i)])
