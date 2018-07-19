@@ -16,7 +16,7 @@ else:
 nworker = 16
 nthread = 1
 
-name = 'test'  # 'remcmc01'
+name = 'remcmc01'
 el = 'LJ'
 sz = 4
 
