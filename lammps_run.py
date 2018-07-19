@@ -9,10 +9,10 @@ from __future__ import division, print_function
 import subprocess
 
 verbose = True  # False
-noprocesses = True  # False
+noprocesses = False
 
-nworker = 1  # 16
-nthread = 16  # 1
+nworker = 16
+nthread = 1
 
 name = 'test'  # 'remcmc01'
 el = 'LJ'
