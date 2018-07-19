@@ -615,14 +615,15 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     if verbose:
         progress(futures)
     statuses = np.array([f.status for f in futures])
+    unfinished = np.array(futures)[statuses != 'finished']
     if verbose:
-        print('future statuses: ')
-        print(statuses)
-    if 'error' in statuses:
-        if verbose:
-            errors = np.array(futures)[statuses != 'finished']
-            print('%d calculations unfinished' % errors.size)
+        print('%d calculations unfinished' % unfinished.size)
+    if unfinished.size > 0:
         client.recreate_error_locally(futures)
+        statusesnew = np.array([f.status for f in futures])
+        unfinishednew = np.array(futures)[statusesnew != 'finished']
+        if verbose:
+            print('%d calculations resolved' % (unfinished.size-unfinishednew.size))
     results = client.gather(futures)
     k = 0
     for i in xrange(npress):
