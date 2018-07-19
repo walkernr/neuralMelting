@@ -256,6 +256,7 @@ def lammpsInput(el, units, lat, sz, mass, P, dt):
     lmpsfile.write('atom_style atomic\n')
     lmpsfile.write('atom_modify map yes\n\n')
     # construct simulation box
+    lmpsfile.write('boundary p p p\n')
     lmpsfile.write('lattice %s %s\n' % tuple(lat))
     lmpsfile.write('region box block 0 %d 0 %d 0 %d\n' % (3*(sz,)))
     lmpsfile.write('create_box 1 box\n')
@@ -419,7 +420,6 @@ def positionMC(lmps, Et, ntrypos, naccpos, dpos):
         pe = lmps.extract_compute('thermo_pe', None, 0)/Et
         xnew = np.copy(x)
         xnew[3*k:3*k+3] += (np.random.rand(3)-0.5)*dpos
-        xnew[3*k:3*k+3] += box
         xnew[3*k:3*k+3] -= np.floor(xnew[3*k:3*k+3]/box)*box
         lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
         lmps.command('run 0')
@@ -613,8 +613,11 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     futures = client.compute(operations)
     if verbose:
         progress(futures)
+    statuses = np.array([f.status for f in futures])
+    if 'error' in statuses:
+        client.recreate_error_locally(futures[statuses == 'error'])
     results = client.gather(futures)
-    # client.cancel(futures)
+    client.cancel(futures)
     k = 0
     for i in xrange(npress):
         for j in xrange(ntemp):
