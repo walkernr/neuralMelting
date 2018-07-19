@@ -637,13 +637,13 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     futures = client.compute(operations, rerun_exceptions_locally=True)
     if verbose:
         progress(futures)
-    # results = client.gather(futures)
-    # del futures
+    results = client.gather(futures)
+    del futures
     k = 0
     for i in xrange(npress):
         for j in xrange(ntemp):
-            dat = futures[k].result()
-            # dat = results[k]
+            # dat = futures[k].result()
+            dat = results[k]
             k += 1
             natoms[i, j], x[i, j], v[i, j] = dat[:3]
             temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
@@ -652,7 +652,7 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
             ntryhmc[i, j], nacchmc[i, j] = dat[13:15]
             dpos[i, j], dbox[i, j], dt[i, j] = dat[15:18]
     # remove all computations
-    client.cancel(futures)
+    # client.cancel(futures)
     # write to data storage files
     for i in xrange(npress):
         for j in xrange(ntemp):
