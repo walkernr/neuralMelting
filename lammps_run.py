@@ -41,7 +41,7 @@ nsmpl = 32  # 1024
 mod = 32  # 128
 ppos = 0.0  # 0.015625
 pvol = 0.25
-nstps = 8  # 16
+nstps = 16
 
 cmd_args = ['--nworker', str(nworker),
             '--nthread', str(nthread),
