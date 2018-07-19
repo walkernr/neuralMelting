@@ -8,6 +8,7 @@ Created on Wed May 22 13:31:27 2018
 from __future__ import division, print_function
 import sys, pickle
 import numpy as np
+from scipy.stats import linregress
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -242,11 +243,19 @@ if el == 'LJ':
     litpress1 = np.array([0.928, 2.185, 3.514, 4.939, 7.921])
     littemp0 = np.array([0.77, 1.061, 1.379])
     littemp1 = np.array([0.7, 0.8, 0.9, 1.0, 1.2])
-    ax2.plot(littemp0, litpress0, color=cm(0.125), label=r'$\mathrm{Literature\enspace (full\enspace potential)}$')
-    ax2.plot(littemp1, litpress1, color=cm(0.25), label=r'$\mathrm{Literature\enspace} (r_c = 2.5)$')
-ax2.errorbar(neurtrans[:, 0], msP[:, 0], xerr=neurtrans[:, 1], yerr=msP[:, 1], color=cm(0.375), label=r'$\mathrm{Keras\enspace CNN-1D}$')
+    litslp0, litint0 = linregress(littemp0, litpress0)[:2]
+    litslp1, litint1 = linregress(littemp1, litpress1)[:2]
+    ax2.scatter(littemp0, litpress0, color=cm(0.125), label=r'$\mathrm{Literature\enspace (full\enspace potential)}$')
+    ax2.plot(littemp0, litslp0*littemp0+litint0, color=cm(0.125))
+    ax2.scatter(littemp1, litpress1, color=cm(0.25), label=r'$\mathrm{Literature\enspace} (r_c = 2.5)$')
+    ax2.plot(littemp1, litslp1*littemp1+litint1, color=cm(0.25))
+ax2.errorbar(neurtrans[:, 0], msP[:, 0], xerr=neurtrans[:, 1], yerr=msP[:, 1], color=cm(0.375), fmt='o', label=r'$\mathrm{Keras\enspace CNN-1D}$')
+neurslp, neurint = linregress(neurtrans[:, 0], msP[:, 0])[:2]
+ax2.plot(neurtrans[:, 0], neurslp*neurtrans[:, 0]+neurint, color=cm(0.375))
 if tsne:
-    ax2.errorbar(tsnetrans[:, 0], msP[:, 0], xerr=tsnetrans[:, 1], yerr=msP[:, 1], color=cm(0.5), label=r'$\mathrm{t-SNE\enspace Spectral}$')
+    ax2.errorbar(tsnetrans[:, 0], msP[:, 0], xerr=tsnetrans[:, 1], yerr=msP[:, 1], color=cm(0.5), fmt='o', label=r'$\mathrm{t-SNE\enspace Spectral}$')
+    tsneslp, tsneint = linregress(tsnetrans[:, 0], msP[:, 0])[:2]
+    ax2.plot(tsnetrans[:, 0], tsneslp*tsnetrans[:, 0]+tsneint, color=cm(0.375))
 ax2.set_xlabel(r'$T$')
 ax2.set_ylabel(r'$P$')
 ax2.legend(loc='upper left')
