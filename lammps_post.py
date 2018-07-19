@@ -243,7 +243,7 @@ if el == 'LJ':
     littemp0 = np.array([0.77, 1.061, 1.379])
     littemp1 = np.array([0.7, 0.8, 0.9, 1.0, 1.2])
     ax2.plot(littemp0, litpress0, color=cm(0.125), label=r'$\mathrm{Literature\enspace (full\enspace potential)}')
-    ax2.plot(littemp1, litpress1, color=cm(0.25), label=(r'$\mathrm{Literature\enspace} (r_c = 2.5)$')
+    ax2.plot(littemp1, litpress1, color=cm(0.25), label=r'$\mathrm{Literature\enspace} (r_c = 2.5)$')
 ax2.errorbar(neurtrans[:, 0], msP[:, 0], xerr=neurtrans[:, 1], yerr=msP[:, 1], color=cm(0.375), label=r'$\mathrm{Keras\enspace CNN-1D}$')
 if tsne:
     ax2.errorbar(tsnetrans[:, 0], msP[:, 0], xerr=tsnetrans[:, 1], yerr=msP[:, 1], color=cm(0.5), label=r'$\mathrm{t-SNE\enspace Spectral}$')
