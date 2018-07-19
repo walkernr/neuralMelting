@@ -37,17 +37,17 @@ if '--ap' is sys.argv:
 else:
     system = 'mpi'
 # number of processors
-if '--nworkers' in sys.argv:
-    i = sys.argv.index('--nworkers')
-    nworkers = int(sys.argv[i+1])
+if '--nworker' in sys.argv:
+    i = sys.argv.index('--nworker')
+    nworker = int(sys.argv[i+1])
 else:
-    nworkers = 16
+    nworker = 16
 # threads per worker
-if '--nthreads' in sys.argv:
-    i = sys.argv.index('--nthreads')
-    nthreads = int(sys.argv[i+1])
+if '--nthread' in sys.argv:
+    i = sys.argv.index('--nthread')
+    nthread = int(sys.argv[i+1])
 else:
-    nthreads = 1
+    nthread = 1
     
 # simulation name
 if '--name' in sys.argv:
@@ -174,12 +174,12 @@ natoms, box, pos, R, r, dr, nrho, dni, gs = calculateSpatial()
 operations = [delayed(calculateRDF)(box[j], pos[j, :], R, r, gs[j, :]) for j in xrange(len(natoms))]
 if distributed:
     # construct scheduler with mpi
-    schedInit(system, nworkers, path)
+    schedInit(system, nworker, path)
     # start client with scheduler file
     client = Client(scheduler=path)
 else:
     # construct local cluster
-    cluster = LocalCluster(n_workers=nworkers, threads_per_worker=nthreads, processes=processes)
+    cluster = LocalCluster(n_workers=nworker, threads_per_worker=nthread, processes=processes)
     # start client with local cluster
     client = Client(cluster)
 if verbose:

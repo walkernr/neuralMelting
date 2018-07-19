@@ -45,17 +45,17 @@ if '--ap' is sys.argv:
 else:
     system = 'mpi'
 # number of processors
-if '--nworkers' in sys.argv:
-    i = sys.argv.index('--nworkers')
-    nworkers = int(sys.argv[i+1])
+if '--nworker' in sys.argv:
+    i = sys.argv.index('--nworker')
+    nworker = int(sys.argv[i+1])
 else:
-    nworkers = 4
+    nworker = 16
 # threads per worker
-if '--nthreads' in sys.argv:
-    i = sys.argv.index('--nthreads')
-    nthreads = int(sys.argv[i+1])
+if '--nthread' in sys.argv:
+    i = sys.argv.index('--nthread')
+    nthread = int(sys.argv[i+1])
 else:
-    nthreads = 1
+    nthread = 1
 
 # simulation name
 if '--name' in sys.argv:
@@ -81,7 +81,7 @@ if '--npress' in sys.argv:
     i = sys.argv.index('--npress')
     npress = int(sys.argv[i+1])
 else:
-    npress = 4
+    npress = 8
 # pressure range
 if '--rpress' in sys.argv:
     i = sys.argv.index('--rpress')
@@ -95,7 +95,7 @@ if '--ntemp' in sys.argv:
     i = sys.argv.index('--ntemp')
     ntemp = int(sys.argv[i+1])
 else:
-    ntemp = 4
+    ntemp = 48
 # temperature range
 if '--rtemp' in sys.argv:
     i = sys.argv.index('--rtemp')
@@ -111,19 +111,19 @@ if '--cutoff' in sys.argv:
     i = sys.argv.index('--cutoff')
     cutoff = int(sys.argv[i+1])
 else:
-    cutoff = 4
+    cutoff = 1024
 # number of samples
 if '--nsmpl' in sys.argv:
     i = sys.argv.index('--nsmpl')
     nsmpl = cutoff+int(sys.argv[i+1])
 else:
-    nsmpl = cutoff+4
+    nsmpl = cutoff+1024
 # frequency of data storage
 if '--mod' in sys.argv:
     i = sys.argv.index('--mod')
     mod = int(sys.argv[i+1])
 else:
-    mod = 4
+    mod = 128
 nswps = nsmpl*mod     # total mc sweeps
 # probability of pos move
 if '--ppos' in sys.argv:
@@ -393,10 +393,11 @@ def writeTraj(traj, natoms, box, x):
 # monte carlo moves
 # -----------------
 
-def positionMC(lmps, Et, ntrypos, naccpos, dpos):
+def positionMC(x, v, box, el, units, lat, sz, mass, P, dt, Et, ntrypos, naccpos, dpos):
     ''' classic position monte carlo 
         loops through nudging atoms
-        accepts/rejects based on energy metropolis criterion ''' 
+        accepts/rejects based on energy metropolis criterion '''
+    lmps = lammpsInit(x, v, box, el, units, lat, sz, mass, P, dt)
     # get number of atoms
     natoms = lmps.extract_global('natoms', 0)
     boxmin = lmps.extract_global('boxlo', 1)
@@ -426,13 +427,18 @@ def positionMC(lmps, Et, ntrypos, naccpos, dpos):
             # revert physical properties
             lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
             lmps.command('run 0')
+    # extract system properties
+    natoms, x, v, temp, pe, ke, virial, box, vol = lammpsExtract(lmps)
+    # close lammps and remove input file
+    lmps.close()
     # return lammps object and tries/acceptations
-    return lmps, ntrypos, naccpos
+    return natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos
     
-def volumeMC(lmps, Et, Pf, ntryvol, naccvol, dbox):
+def volumeMC(x, v, box, el, units, lat, sz, mass, P, dt, Et, Pf, ntryvol, naccvol, dbox):
     ''' isobaric-isothermal volume monte carlo
         scales box and positions
         accepts/rejects based on enthalpy metropolis criterion '''
+    lmps = lammpsInit(x, v, box, el, units, lat, sz, mass, P, dt)
     # update volume tries
     ntryvol += 1
     # save current physical properties
@@ -468,13 +474,18 @@ def volumeMC(lmps, Et, Pf, ntryvol, naccvol, dbox):
         lmps.command('change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box' % (3*(box,)))
         lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
         lmps.command('run 0')
+    # extract system properties
+    natoms, x, v, temp, pe, ke, virial, box, vol = lammpsExtract(lmps)
+    # close lammps and remove input file
+    lmps.close()
     # return lammps object and tries/acceptations
-    return lmps, ntryvol, naccvol
+    return natoms, x, v, temp, pe, ke, virial, box, vol, ntryvol, naccvol
     
-def hamiltonianMC(lmps, Et, ntryhmc, nacchmc, T, dt):
+def hamiltonianMC(x, v, box, el, units, lat, sz, mass, P, dt, Et, ntryhmc, nacchmc, T):
     ''' hamiltionian monte carlo
         short md run at generated velocities for desired temp
         accepts/rejects based on energy metropolis criterion '''
+    lmps = lammpsInit(x, v, box, el, units, lat, sz, mass, P, dt)
     # update hmc tries
     ntryhmc += 1
     # set new atom velocities and initialize
@@ -512,8 +523,12 @@ def hamiltonianMC(lmps, Et, ntryhmc, nacchmc, T, dt):
         lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
         lmps.scatter_atoms('v', 1, 3, np.ctypeslib.as_ctypes(v))
         lmps.command('run 0')
+    # extract system properties
+    natoms, x, v, temp, pe, ke, virial, box, vol = lammpsExtract(lmps)
+    # close lammps and remove input file
+    lmps.close()
     # return lammps object and tries/acceptations
-    return lmps, ntryhmc, nacchmc
+    return natoms, x, v, temp, pe, ke, virial, box, vol, ntryhmc, nacchmc
     
 # ----------------------------
 # monte carlo parameter update
@@ -543,44 +558,46 @@ def updateMCParam(dpos, dbox, dt, accpos, accvol, acchmc):
 # monte carlo procedure
 # ---------------------
 
-def moveMC(lmps, Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-           dpos, dbox, T, dt):
+def moveMC(x, v, box, el, units, lat, sz, mass, P, dt,
+           Et, Pf,
+           ppos, pvol, phmc,
+           ntrypos, naccpos, ntryvol,
+           naccvol, ntryhmc, nacchmc,
+           dpos, dbox, T):
     ''' performs monte carlo moves '''
     roll = np.random.rand()
     # position monte carlo
     if roll <= ppos:
-        lmps, ntrypos, naccpos = positionMC(lmps, Et, ntrypos, naccpos, dpos)
+        natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos = positionMC(x, v, box, el, units, lat, sz, mass, P, dt,
+                                                                                    Et, ntrypos, naccpos, dpos)
     # volume monte carlo
     elif roll <= (ppos+pvol):
-        lmps, ntryvol, naccvol = volumeMC(lmps, Et, Pf, ntryvol, naccvol, dbox)
+        natoms, x, v, temp, pe, ke, virial, box, vol, ntryvol, naccvol = volumeMC(x, v, box, el, units, lat, sz, mass, P, dt,
+                                                                                  Et, Pf, ntryvol, naccvol, dbox)
     # hamiltonian monte carlo
     else:
-        lmps, ntryhmc, nacchmc = hamiltonianMC(lmps, Et, ntryhmc, nacchmc, T, dt)
+        natoms, x, v, temp, pe, ke, virial, box, vol, ntryhmc, nacchmc = hamiltonianMC(x, v, box, el, units, lat, sz, mass, P, dt,
+                                                                                       Et, ntryhmc, nacchmc, T)
     # return lammps object and tries/acceptations counts
-    return lmps, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc
+    return natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc
     
 def getSample(x, v, box, el, units, lat, sz, mass, P, dt,
               Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
               dpos, dbox, T, mod):
     ''' performs enough monte carlo moves to generate a sample (determined by mod) '''
-    # initialize lammps object
-    lmps = lammpsInit(x, v, box, el, units, lat, sz, mass, P, dt)
     # loop through monte carlo moves
     for i in xrange(mod):
-        dat =  moveMC(lmps, Et, Pf,
+        dat =  moveMC(x, v, box, el, units, lat, sz, mass, P, dt,
+                      Et, Pf,
                       ppos, pvol, phmc,
                       ntrypos, naccpos,
                       ntryvol, naccvol,
                       ntryhmc, nacchmc,
-                      dpos, dbox, T, dt)
-        lmps = dat[0]
-        ntrypos, naccpos = dat[1:3]
-        ntryvol, naccvol = dat[3:5]
-        ntryhmc, nacchmc = dat[5:7]
-    # extract system properties
-    natoms, x, v, temp, pe, ke, virial, box, vol = lammpsExtract(lmps)
-    # close lammps and remove input file
-    lmps.close()
+                      dpos, dbox, T)
+        natoms, x, v, temp, pe, ke, virial, box, vol = dat[:9]
+        ntrypos, naccpos = dat[9:11]
+        ntryvol, naccvol = dat[11:13]
+        ntryhmc, nacchmc = dat[13:15]
     # acceptation ratios
     with np.errstate(invalid='ignore'):
         accpos = np.nan_to_num(np.float64(naccpos)/np.float64(ntrypos))
@@ -634,17 +651,16 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
                                      Et[i, j], Pf[i, j], ppos, pvol, phmc, 
                                      ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
                                      dpos[i, j], dbox[i, j], T[j], mod) for i in xrange(npress) for j in xrange(ntemp)]
-    # futures = client.compute(operations)
-    futures = client.persist(operations)
+    futures = client.compute(operations)
     if verbose:
         progress(futures)
-    # results = client.gather(futures)
+    results = client.gather(futures)
     # del futures
     k = 0
     for i in xrange(npress):
         for j in xrange(ntemp):
-            dat = futures[k].result()
-            # dat = results[k]
+            # dat = futures[k].result()
+            dat = results[k]
             k += 1
             natoms[i, j], x[i, j], v[i, j] = dat[:3]
             temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
@@ -775,12 +791,12 @@ for i in xrange(npress):
 if parallel:
     if distributed:
         # construct scheduler with mpi
-        schedInit(system, nworkers, path)
+        schedInit(system, nworker, path)
         # start client with scheduler file
         client = Client(scheduler=path)
     else:
         # construct local cluster
-        cluster = LocalCluster(n_workers=nworkers, threads_per_worker=nthreads, processes=processes)
+        cluster = LocalCluster(n_workers=nworker, threads_per_worker=nthread, processes=processes)
         # start client with local cluster
         client = Client(cluster)
     # display client information
