@@ -6,7 +6,7 @@ Created on Thu Jul 12 21:38:03 2018
 """
 
 from __future__ import division, print_function
-import subprocess
+import sys, subprocess
 
 if '--verbose' in sys.argv:
     verbose = True

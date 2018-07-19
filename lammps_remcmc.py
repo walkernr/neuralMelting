@@ -130,7 +130,7 @@ if '--mod' in sys.argv:
     mod = int(sys.argv[i+1])
 else:
     mod = 128
-nswps = nsmpl*mod     # total mc sweeps
+nswps = nsmpl*mod  # total mc sweeps
 # probability of pos move
 if '--ppos' in sys.argv:
     i = sys.argv.index('--ppos')
@@ -143,15 +143,17 @@ if '--pvol' in sys.argv:
     pvol = float(sys.argv[i+1])
 else:
     pvol = 0.25
-phmc = 1-ppos-pvol    # probability of hmc move
+phmc = 1-ppos-pvol  # probability of hmc move
 # md steps during hmc
 if '--nstps' in sys.argv:
     i = sys.argv.index('--nstps')
     nstps = int(sys.argv[i+1])
 else:
     nstps = 16
-seed = 256            # random seed
-np.random.seed(seed)  # initialize rng
+
+# set random seed
+seed = 256
+np.random.seed(seed)
 
 # -------------------
 # material properties
@@ -417,6 +419,7 @@ def positionMC(lmps, Et, ntrypos, naccpos, dpos):
         pe = lmps.extract_compute('thermo_pe', None, 0)/Et
         xnew = np.copy(x)
         xnew[3*k:3*k+3] += (np.random.rand(3)-0.5)*dpos
+        xnew[3*k:3*k+3] += box
         xnew[3*k:3*k+3] -= np.floor(xnew[3*k:3*k+3]/box)*box
         lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
         lmps.command('run 0')
