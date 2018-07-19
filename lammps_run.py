@@ -10,7 +10,7 @@ import subprocess
 
 verbose = True
 
-nworker = 12  # 16
+nworker = 16  # 16
 nthread = 1
 
 name = 'test'  # 'remcmc01'
