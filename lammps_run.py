@@ -39,9 +39,9 @@ htemp = 2.5
 cutoff = 32  # 1024
 nsmpl = 32  # 1024
 mod = 32  # 128
-ppos = 0.0  # 0.015625
+ppos = 0.015625
 pvol = 0.25
-nstps = 16
+nstps = 8
 
 cmd_args = ['--nworker', str(nworker),
             '--nthread', str(nthread),

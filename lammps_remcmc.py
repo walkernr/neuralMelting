@@ -150,7 +150,7 @@ if '--nstps' in sys.argv:
     i = sys.argv.index('--nstps')
     nstps = int(sys.argv[i+1])
 else:
-    nstps = 16
+    nstps = 8
 
 # set random seed
 seed = 256
