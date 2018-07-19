@@ -8,8 +8,10 @@ Created on Thu Jul 12 21:38:03 2018
 from __future__ import division, print_function
 import subprocess
 
-verbose = True  # False
-noprocesses = False
+if '--verbose' in sys.argv:
+    verbose = True
+else:
+    verbose = False
 
 nworker = 16
 nthread = 1
@@ -18,7 +20,7 @@ name = 'test'  # 'remcmc01'
 el = 'LJ'
 sz = 4
 
-npress = 4
+npress = 8
 lpress = 1
 hpress = 8
 
@@ -50,8 +52,6 @@ cmd_args = ['--nworker', str(nworker),
             '--nstps', str(nstps)]
 if verbose:
     cmd_args = cmd_args+['--verbose']
-if noprocesses:
-    cmd_args = cmd_args+['--noprocesses']
 
 subprocess.call(['python', 'lammps_remcmc.py']+cmd_args)
 for i in xrange(npress):

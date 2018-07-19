@@ -597,6 +597,44 @@ def getSample(x, v, box, el, units, lat, sz, mass, P, dt,
     # return lammps object, tries/acceptation counts, and mc params
     return natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
     
+    
+def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
+                  Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
+                  dpos, dbox, T, mod, thermo, traj, verbose):
+    ''' performs monte carlo in parallel for all configurations to generate new samples '''
+    npress, ntemp = Pf.shape
+    operations = [delayed(getSample)(x[i, j], v[i, j], box[i, j], el, units, lat, sz, mass, P[i], dt[i, j], 
+                                     Et[i, j], Pf[i, j], ppos, pvol, phmc, 
+                                     ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
+                                     dpos[i, j], dbox[i, j], T[j], mod) for i in xrange(npress) for j in xrange(ntemp)]
+    futures = client.compute(operations)
+    if verbose:
+        progress(futures)
+    results = client.gather(futures)
+    # client.cancel(futures)
+    k = 0
+    for i in xrange(npress):
+        for j in xrange(ntemp):
+            dat = results[k]
+            k += 1
+            natoms[i, j], x[i, j], v[i, j] = dat[:3]
+            temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
+            ntrypos[i, j], naccpos[i, j] = dat[9:11]
+            ntryvol[i, j], naccvol[i, j] = dat[11:13]
+            ntryhmc[i, j], nacchmc[i, j] = dat[13:15]
+            dpos[i, j], dbox[i, j], dt[i, j] = dat[15:18]
+    # write to data storage files
+    for i in xrange(npress):
+        for j in xrange(ntemp):
+            with np.errstate(invalid='ignore'):
+                accpos = np.nan_to_num(np.float64(naccpos[i, j])/np.float64(ntrypos[i, j]))
+                accvol = np.nan_to_num(np.float64(naccvol[i, j])/np.float64(ntryvol[i, j]))
+                acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
+            writeThermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
+            writeTraj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
+    # return lammps object, tries/acceptation counts, and mc params
+    return natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
+    
 def getSamples(x, v, box, el, units, lat, sz, mass, P, dt,
                Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
                dpos, dbox, T, mod, thermo, traj, verbose):
@@ -620,43 +658,6 @@ def getSamples(x, v, box, el, units, lat, sz, mass, P, dt,
     # write to data storage files
     if verbose:
         print('\n')
-    for i in xrange(npress):
-        for j in xrange(ntemp):
-            with np.errstate(invalid='ignore'):
-                accpos = np.nan_to_num(np.float64(naccpos[i, j])/np.float64(ntrypos[i, j]))
-                accvol = np.nan_to_num(np.float64(naccvol[i, j])/np.float64(ntryvol[i, j]))
-                acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
-            writeThermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
-            writeTraj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
-    # return lammps object, tries/acceptation counts, and mc params
-    return natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
-    
-def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
-                  Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
-                  dpos, dbox, T, mod, thermo, traj, verbose):
-    ''' performs monte carlo in parallel for all configurations to generate new samples '''
-    npress, ntemp = Pf.shape
-    operations = [delayed(getSample)(x[i, j], v[i, j], box[i, j], el, units, lat, sz, mass, P[i], dt[i, j], 
-                                     Et[i, j], Pf[i, j], ppos, pvol, phmc, 
-                                     ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
-                                     dpos[i, j], dbox[i, j], T[j], mod) for i in xrange(npress) for j in xrange(ntemp)]
-    futures = client.compute(operations)
-    if verbose:
-        progress(futures)
-    results = client.gather(futures)
-    client.cancel(futures)
-    k = 0
-    for i in xrange(npress):
-        for j in xrange(ntemp):
-            dat = results[k]
-            k += 1
-            natoms[i, j], x[i, j], v[i, j] = dat[:3]
-            temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
-            ntrypos[i, j], naccpos[i, j] = dat[9:11]
-            ntryvol[i, j], naccvol[i, j] = dat[11:13]
-            ntryhmc[i, j], nacchmc[i, j] = dat[13:15]
-            dpos[i, j], dbox[i, j], dt[i, j] = dat[15:18]
-    # write to data storage files
     for i in xrange(npress):
         for j in xrange(ntemp):
             with np.errstate(invalid='ignore'):
