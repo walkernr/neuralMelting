@@ -245,17 +245,17 @@ if el == 'LJ':
     littemp1 = np.array([0.7, 0.8, 0.9, 1.0, 1.2])
     litslp0, litint0 = linregress(littemp0, litpress0)[:2]
     litslp1, litint1 = linregress(littemp1, litpress1)[:2]
-    ax2.scatter(littemp0, litpress0, color=cm(0.125), label=r'$\mathrm{Literature\enspace (full\enspace potential)}$')
-    ax2.plot(littemp0, litslp0*littemp0+litint0, color=cm(0.125))
-    ax2.scatter(littemp1, litpress1, color=cm(0.25), label=r'$\mathrm{Literature\enspace} (r_c = 2.5)$')
-    ax2.plot(littemp1, litslp1*littemp1+litint1, color=cm(0.25))
-ax2.errorbar(neurtrans[:, 0], msP[:, 0], xerr=neurtrans[:, 1], yerr=msP[:, 1], color=cm(0.375), fmt='o', label=r'$\mathrm{Keras\enspace CNN-1D}$')
+    ax2.scatter(littemp0, litpress0, color=cm(0.25), s=240, edgecolors='none', marker='*', label=r'$\mathrm{Literature\enspace (full\enspace potential)}$')
+    ax2.plot(littemp0, litslp0*littemp0+litint0, color=cm(0.25))
+    ax2.scatter(littemp1, litpress1, color=cm(0.375), s=240, edgecolors='none', marker='*', label=r'$\mathrm{Literature\enspace} (r_c = 2.5)$')
+    ax2.plot(littemp1, litslp1*littemp1+litint1, color=cm(0.375))
+ax2.errorbar(neurtrans[:, 0], msP[:, 0], xerr=neurtrans[:, 1], yerr=msP[:, 1], color=cm(0.5), fmt='o', label=r'$\mathrm{Keras\enspace CNN-1D}$')
 neurslp, neurint = linregress(neurtrans[:, 0], msP[:, 0])[:2]
-ax2.plot(neurtrans[:, 0], neurslp*neurtrans[:, 0]+neurint, color=cm(0.375))
+ax2.plot(neurtrans[:, 0], neurslp*neurtrans[:, 0]+neurint, color=cm(0.5))
 if tsne:
-    ax2.errorbar(tsnetrans[:, 0], msP[:, 0], xerr=tsnetrans[:, 1], yerr=msP[:, 1], color=cm(0.5), fmt='o', label=r'$\mathrm{t-SNE\enspace Spectral}$')
+    ax2.errorbar(tsnetrans[:, 0], msP[:, 0], xerr=tsnetrans[:, 1], yerr=msP[:, 1], color=cm(0.625), fmt='o', label=r'$\mathrm{t-SNE\enspace Spectral}$')
     tsneslp, tsneint = linregress(tsnetrans[:, 0], msP[:, 0])[:2]
-    ax2.plot(tsnetrans[:, 0], tsneslp*tsnetrans[:, 0]+tsneint, color=cm(0.375))
+    ax2.plot(tsnetrans[:, 0], tsneslp*tsnetrans[:, 0]+tsneint, color=cm(0.625))
 ax2.set_xlabel(r'$T$')
 ax2.set_ylabel(r'$P$')
 ax2.legend(loc='upper left')
