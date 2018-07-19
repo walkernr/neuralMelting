@@ -642,12 +642,12 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
         print('%d calculations pending' % pending)
         print('%d calculations lost' % lost)
         print('%d calculations errored' % errored)
-    # if 'error' in statuses:
-        # client.recreate_error_locally(futures)
-        # statusesnew = np.array([f.status for f in futures])
-        # errorednew = np.count_nonzero(statusesnew == 'error')
-        # if verbose:
-            # print('%d errors resolved' % (errored-errorednew))
+    if 'error' in statuses:
+        client.recreate_error_locally(futures)
+        statusesnew = np.array([f.status for f in futures])
+        errorednew = np.count_nonzero(statusesnew == 'error')
+        if verbose:
+            print('%d errors resolved' % (errored-errorednew))
     results = client.gather(futures, errors='raise')
     k = 0
     for i in xrange(npress):
