@@ -28,9 +28,9 @@ ntemp = 12  # 48
 ltemp = 0.25
 htemp = 2.5
 
-cutoff = 256  # 1024
-nsmpl = 256  # 1024
-mod = 32  # 128
+cutoff = 16  # 1024
+nsmpl = 16  # 1024
+mod = 16  # 128
 ppos = 0.015625
 pvol = 0.25
 nstps = 16
