@@ -22,13 +22,13 @@ npress = 4
 lpress = 1
 hpress = 8
 
-ntemp = 4  # 48
+ntemp = 48
 ltemp = 0.25
 htemp = 2.5
 
-cutoff = 4  # 1024
-nsmpl = 4  # 1024
-mod = 4  # 128
+cutoff = 1024
+nsmpl = 1024
+mod = 128
 ppos = 0.015625
 pvol = 0.25
 nstps = 16
