@@ -24,7 +24,7 @@ else:
     verbose = False       
 
 # boolean for controlling parallel run
-if '--noparallel' in sys.argv:
+if '--serial' in sys.argv:
     parallel = False
 else:
     parallel = True
@@ -34,8 +34,8 @@ if '--distributed' in sys.argv:
     path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 else:
     distributed = False 
-# boolean for choosing whether to use processes
-if '--noprocesses' in sys.argv:
+# boolean for choosing whether to use multithreading
+if '--threading' in sys.argv:
     processes = False
 else:
     processes = True     
@@ -403,9 +403,9 @@ def writeTraj(traj, natoms, box, x):
 # monte carlo moves
 # -----------------
 
-def positionMC(lmps, Et, ntrypos, naccpos, dpos):
+def bulkPositionMC(lmps, Et, ntrypos, naccpos, dpos):
     ''' classic position monte carlo 
-        loops through nudging atoms
+        simultaneous random displacement of atoms
         accepts/rejects based on energy metropolis criterion '''
     ntrypos += 1
     x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
@@ -425,35 +425,42 @@ def positionMC(lmps, Et, ntrypos, naccpos, dpos):
         # revert physical properties
         lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
         lmps.command('run 0')
-    # # get number of atoms
-    # natoms = lmps.extract_global('natoms', 0)
-    # boxmin = lmps.extract_global('boxlo', 1)
-    # boxmax = lmps.extract_global('boxhi', 1)
-    # box = boxmax-boxmin
-    # # loop through atoms
-    # for k in xrange(natoms):
-        # # update position tries
-        # ntrypos += 1
-        # # save current physical properties
-        # x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
-        # pe = lmps.extract_compute('thermo_pe', None, 0)/Et
-        # xnew = np.copy(x)
-        # xnew[3*k:3*k+3] += (np.random.rand(3)-0.5)*dpos
-        # xnew[3*k:3*k+3] -= np.floor(xnew[3*k:3*k+3]/box)*box
-        # lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
-        # lmps.command('run 0')
-        # penew = lmps.extract_compute('thermo_pe', None, 0)/Et
-        # dE = penew-pe
-        # if np.random.rand() <= np.min([1, np.exp(-dE)]):
-            # # update pos acceptations
-            # naccpos += 1
-            # # save new physical properties
-            # x = xnew
-            # pe = penew
-        # else:
-            # # revert physical properties
-            # lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
-            # lmps.command('run 0')
+    # return lammps object and tries/acceptations
+    return lmps, ntrypos, naccpos
+    
+def iterPositionMC(lmps, Et, ntrypos, naccpos, dpos):
+    ''' classic position monte carlo 
+        iterative random displacement of atoms
+        accepts/rejects based on energy metropolis criterion '''
+    # get number of atoms
+    natoms = lmps.extract_global('natoms', 0)
+    boxmin = lmps.extract_global('boxlo', 1)
+    boxmax = lmps.extract_global('boxhi', 1)
+    box = boxmax-boxmin
+    # loop through atoms
+    for k in xrange(natoms):
+        # update position tries
+        ntrypos += 1
+        # save current physical properties
+        x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
+        pe = lmps.extract_compute('thermo_pe', None, 0)/Et
+        xnew = np.copy(x)
+        xnew[3*k:3*k+3] += (np.random.rand(3)-0.5)*dpos
+        xnew[3*k:3*k+3] -= np.floor(xnew[3*k:3*k+3]/box)*box
+        lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
+        lmps.command('run 0')
+        penew = lmps.extract_compute('thermo_pe', None, 0)/Et
+        dE = penew-pe
+        if np.random.rand() <= np.min([1, np.exp(-dE)]):
+            # update pos acceptations
+            naccpos += 1
+            # save new physical properties
+            x = xnew
+            pe = penew
+        else:
+            # revert physical properties
+            lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
+            lmps.command('run 0')
     # return lammps object and tries/acceptations
     return lmps, ntrypos, naccpos
     
@@ -577,7 +584,8 @@ def moveMC(lmps, Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, n
     roll = np.random.rand()
     # position monte carlo
     if roll <= ppos:
-        lmps, ntrypos, naccpos = positionMC(lmps, Et, ntrypos, naccpos, dpos)
+        lmps, ntrypos, naccpos = bulkPositionMC(lmps, Et, ntrypos, naccpos, dpos)
+        # lmps, ntrypos, naccpos = iterPositionMC(lmps, Et, ntrypos, naccpos, dpos)
     # volume monte carlo
     elif roll <= (ppos+pvol):
         lmps, ntryvol, naccvol = volumeMC(lmps, Et, Pf, ntryvol, naccvol, dbox)
@@ -625,13 +633,17 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
                   dpos, dbox, T, mod, thermo, traj, verbose):
     ''' performs monte carlo in parallel for all configurations to generate new samples '''
     npress, ntemp = Pf.shape
+    # list of delayed operations
     operations = [delayed(getSample)(x[i, j], v[i, j], box[i, j], el, units, lat, sz, mass, P[i], dt[i, j], 
                                      Et[i, j], Pf[i, j], ppos, pvol, phmc, 
                                      ntrypos[i, j], naccpos[i, j], ntryvol[i, j], naccvol[i, j], ntryhmc[i, j], nacchmc[i, j],
                                      dpos[i, j], dbox[i, j], T[j], mod) for i in xrange(npress) for j in xrange(ntemp)]
+    # submit futures to client
     futures = client.compute(operations)
+    # progress bar
     if verbose:
         progress(futures)
+    # track future statuses
     statuses = np.array([f.status for f in futures])
     finished = np.count_nonzero(statuses == 'finished')
     pending = np.count_nonzero(statuses == 'pending')
@@ -642,13 +654,16 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
         print('%d calculations pending' % pending)
         print('%d calculations lost' % lost)
         print('%d calculations errored' % errored)
+    # error tracing
     if 'error' in statuses:
         client.recreate_error_locally(futures)
         statusesnew = np.array([f.status for f in futures])
         errorednew = np.count_nonzero(statusesnew == 'error')
         if verbose:
             print('%d errors resolved' % (errored-errorednew))
+    # gather results from workers
     results = client.gather(futures, errors='raise')
+    # update system properties and monte carlo parameters
     k = 0
     for i in xrange(npress):
         for j in xrange(ntemp):
@@ -669,8 +684,9 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
                 acchmc = np.nan_to_num(np.float64(nacchmc[i, j])/np.float64(ntryhmc[i, j]))
             writeThermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos, accvol, acchmc, verbose)
             writeTraj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
-    # return lammps object, tries/acceptation counts, and mc params
+    # clear worker memory
     client.cancel(futures)
+    # return lammps object, tries/acceptation counts, and mc params
     return client, natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, dpos, dbox, dt
     
 def getSamples(x, v, box, el, units, lat, sz, mass, P, dt,
@@ -716,7 +732,7 @@ def repExch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf, verbose):
         accepts/rejects based on enthalpy metropolis criterion '''
     # simulation set shape
     npress, ntemp = Pf.shape
-    # flatten lammps objects and constants
+    # flatten system properties and constants
     natoms = natoms.reshape(-1)
     x = x.reshape(-1)
     v = v.reshape(-1)
@@ -754,6 +770,7 @@ def repExch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf, verbose):
                 vol[j], vol[i] = vol[i], vol[j]
     if verbose:
         print('%d replica exchanges performed: ' % swaps, ' '.join(pairs))
+    # reshape system properties and constants
     natoms = natoms.reshape((npress, ntemp))
     x = x.reshape((npress, ntemp))
     v = v.reshape((npress, ntemp))
@@ -763,7 +780,7 @@ def repExch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf, verbose):
     virial = virial.reshape((npress, ntemp))
     box = box.reshape((npress, ntemp))
     vol = vol.reshape((npress, ntemp))
-    # return list of lammps objects
+    # return system properties and constants
     return natoms, x, v, temp, pe, ke, virial, box, vol
 
 # -----------

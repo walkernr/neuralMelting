@@ -18,15 +18,20 @@ if '--verbose' in sys.argv:
     verbose = True
 else:
     verbose = False
-    
+
+# boolean for controlling parallel run
+if '--serial' in sys.argv:
+    parallel = False
+else:
+    parallel = True
 # boolean for choosing distributed or local cluster
 if '--distributed' in sys.argv:
     distributed = True
     path = os.getcwd()+'/scheduler.json'  # path for scheduler file
 else:
-    distributed = False 
-# boolean for choosing whether to use processes
-if '--noprocesses' in sys.argv:
+    distributed = False
+# boolean for choosing whether to use multithreading
+if '--threading' in sys.argv:
     processes = False
 else:
     processes = True
@@ -177,33 +182,37 @@ def calculateRDF(box, pos, R, r, gs):
 # get spatial properties
 natoms, box, pos, R, r, dr, nrho, dni, gs = calculateSpatial()
 # calculate radial distribution for each sample in parallel
-operations = [delayed(calculateRDF)(box[j], pos[j, :], R, r, gs[j, :]) for j in xrange(len(natoms))]
-if distributed:
-    # construct scheduler with mpi
-    schedInit(system, nworker, path)
-    # start client with scheduler file
-    client = Client(scheduler=path)
+if parallel:
+    operations = [delayed(calculateRDF)(box[j], pos[j, :], R, r, gs[j, :]) for j in xrange(len(natoms))]
+    if distributed:
+        # construct scheduler with mpi
+        schedInit(system, nworker, path)
+        # start client with scheduler file
+        client = Client(scheduler=path)
+    else:
+        # construct local cluster
+        cluster = LocalCluster(n_workers=nworker, threads_per_worker=nthread, processes=processes)
+        # start client with local cluster
+        client = Client(cluster)
+    if verbose:
+        # display client information
+        print(client.scheduler_info)
+        print('calculating data for %s at pressure %f' % (el.lower(), P[pressind]))
+        futures = client.compute(operations)
+        progress(futures)
+        results = client.gather(futures)
+        print('assigning rdfs')
+        for j in tqdm(xrange(len(natoms))):
+            gs[j, :] = results[j]
+    else:
+        futures = client.compute(operations)
+        results = client.gather(futures)
+        for j in xrange(len(natoms)):
+            gs[j, :] = results[j]
+    client.close()
 else:
-    # construct local cluster
-    cluster = LocalCluster(n_workers=nworker, threads_per_worker=nthread, processes=processes)
-    # start client with local cluster
-    client = Client(cluster)
-if verbose:
-    # display client information
-    print(client.scheduler_info)
-    print('calculating data for %s at pressure %f' % (el.lower(), P[pressind]))
-    futures = client.compute(operations)
-    progress(futures)
-    results = client.gather(futures)
-    print('assigning rdfs')
-    for j in tqdm(xrange(len(natoms))):
-        gs[j, :] = results[j]
-else:
-    futures = client.compute(operations)
-    results = client.gather(futures)
     for j in xrange(len(natoms)):
-        gs[j, :] = results[j]
-client.close()
+        gs[j, :] = calculateRDF(box[j], pos[j, :], R, r, gs[j, :])
 
 # adjust rdf by atom count and atoms contained by shells
 g = np.divide(gs, natoms[0]*dni)
