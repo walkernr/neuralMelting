@@ -846,7 +846,7 @@ if parallel:
         # construct distributed cluster
         cluster = PBSCluster(queue=queue, project=alloc, resource_spec='nodes=%d:ppn=%d' % (nodes, ppn), walltime='%d:00:00' % walltime,
                              processes=nworker, cores=nthread*nworker, memory=str(mem)+'GB')
-        cluster.scale(1)
+        cluster.start_workers(1)
         # start client with distributed cluster
         client = Client(cluster)
     else:
