@@ -649,6 +649,7 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
         if verbose:
             print('%d errors resolved' % (errored-errorednew))
     results = client.gather(futures, errors='raise')
+    client.cancel(futures)
     k = 0
     for i in xrange(npress):
         for j in xrange(ntemp):
