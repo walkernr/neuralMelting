@@ -24,41 +24,63 @@ if '--serial' in sys.argv:
     parallel = False
 else:
     parallel = True
-# boolean for choosing distributed or local cluster
-if '--distributed' in sys.argv:
-    distributed = True
-    path = os.getcwd()+'/scheduler.json'  # path for scheduler file
-else:
-    distributed = False
-# boolean for choosing whether to use multithreading
-if '--threading' in sys.argv:
-    processes = False
-else:
-    processes = True
-
-# switch for mpirun or aprun
-if '--ap' is sys.argv:
-    system = 'ap'
-else:
-    system = 'mpi'
-# number of processors
-if '--nworker' in sys.argv:
-    i = sys.argv.index('--nworker')
-    nworker = int(sys.argv[i+1])
-else:
-    if processes:
-        nworker = 16
+    os.environ['DASK_ALLOWED_FAILURES'] = '4'
+    from distributed import Client, LocalCluster, progress
+    from dask import delayed
+if parallel:
+    # boolean for choosing distributed or local cluster
+    if '--distributed' in sys.argv:
+        distributed = True
+        from dask_jobqueue import PBSCluster
+        if '--queue' in sys.argv:
+            i = sys.argv.index('--queue')
+            # #PBS -q jobqueue
+            queue = sys.argv[i+1]
+        else:
+            queue = 'jobqueue'
+        if '--allocation' in sys.argv:
+            i = sys.argv.index('--allocation')
+            # #PBS ex: -A startup
+            alloc = sys.argv[i+1]
+        else:
+            alloc = 'startup'
+        if '--resource' in sys.argv:
+            i = sys.argv.index('--resource')
+            # #PBS -l nodes=1:ppn=16
+            resource = sys.argv[i+1]
+        else:
+            resource = 'nodes=1:ppn=16'
+        if '--walltime' in sys.argv:
+            i = sys.argv.index('--walltime')
+            # #PBS -l walltime=24:00:00
+            walltime = sys.argv[i+1]
+        else:
+            walltime = '24:00:00'
     else:
-        nworker = 1
-# threads per worker
-if '--nthread' in sys.argv:
-    i = sys.argv.index('--nthread')
-    nthread = int(sys.argv[i+1])
-else:
-    if processes:
-        nthread = 1
+        distributed = False 
+    # boolean for choosing whether to use multithreading
+    if '--threading' in sys.argv:
+        processes = False
     else:
-        nthread = 16
+        processes = True
+    # number of processors
+    if '--nworker' in sys.argv:
+        i = sys.argv.index('--nworker')
+        nworker = int(sys.argv[i+1])
+    else:
+        if processes:
+            nworker = 16
+        else:
+            nworker = 1
+    # threads per worker
+    if '--nthread' in sys.argv:
+        i = sys.argv.index('--nthread')
+        nthread = int(sys.argv[i+1])
+    else:
+        if processes:
+            nthread = 1
+        else:
+            nthread = 16
     
 # simulation name
 if '--name' in sys.argv:
@@ -185,10 +207,10 @@ natoms, box, pos, R, r, dr, nrho, dni, gs = calculateSpatial()
 if parallel:
     operations = [delayed(calculateRDF)(box[j], pos[j, :], R, r, gs[j, :]) for j in xrange(len(natoms))]
     if distributed:
-        # construct scheduler with mpi
-        schedInit(system, nworker, path)
-        # start client with scheduler file
-        client = Client(scheduler=path)
+        # construct distributed cluster
+        cluster = PBSCluster(queue=queue, project=alloc, resource_spec=resource, walltime=walltime, extra=['-N %s' % name, '-o pbs.%s.out' %name])
+        # start client with distributed cluster
+        client = Client(cluster)
     else:
         # construct local cluster
         cluster = LocalCluster(n_workers=nworker, threads_per_worker=nthread, processes=processes)
