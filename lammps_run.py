@@ -47,7 +47,7 @@ npress = 8
 lpress = 1
 hpress = 8
 # temperatures
-ntemp = 48
+ntemp = 96
 ltemp = 0.25
 htemp = 2.5
 # monte carlo parameters
