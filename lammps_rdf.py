@@ -34,28 +34,34 @@ if parallel:
         from dask_jobqueue import PBSCluster
         if '--queue' in sys.argv:
             i = sys.argv.index('--queue')
-            # #PBS -q jobqueue
             queue = sys.argv[i+1]
         else:
             queue = 'jobqueue'
         if '--allocation' in sys.argv:
             i = sys.argv.index('--allocation')
-            # #PBS ex: -A startup
             alloc = sys.argv[i+1]
         else:
             alloc = 'startup'
-        if '--resource' in sys.argv:
-            i = sys.argv.index('--resource')
-            # #PBS -l nodes=1:ppn=16
-            resource = sys.argv[i+1]
+        if '--nodes' in sys.argv:
+            i = sys.argv.index('--nodes')
+            nodes = int(sys.argv[i+1])
         else:
-            resource = 'nodes=1:ppn=16'
+            nodes = 1
+        if '--ppn' in sys.argv:
+            i = sys.argv.index('--ppn')
+            ppn = int(sys.argv[i+1])
+        else:
+            ppn = 16
+        if '--memory' in sys.argv:
+            i = sys.argv.index('--memory')
+            mem = int(sys.argv[i+1])
+        else:
+            mem = 32
         if '--walltime' in sys.argv:
             i = sys.argv.index('--walltime')
-            # #PBS -l walltime=24:00:00
-            walltime = sys.argv[i+1]
+            walltime = int(sys.argv[i+1])
         else:
-            walltime = '24:00:00'
+            walltime = 24
     else:
         distributed = False 
     # boolean for choosing whether to use multithreading
@@ -128,16 +134,6 @@ lat = {'Ti': 'bcc',
 # file prefix
 prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[pressind]))
 
-def schedInit(system, nproc, path):
-    ''' creates scheduler file using dask-mpi binary, network is initialized with mpi4py '''
-    # for use on most systems
-    if system == 'mpi':
-        subprocess.call(['mpirun', '--np', str(nproc), 'dask-mpi', '--scheduler-file', path])
-    # for use on cray systems
-    if system == 'ap':
-        subprocess.call(['aprun', '-n', str(nproc), 'dask-mpi', '--scheduler-file', path])
-    return
-
 def loadData():
     ''' load atom count, box dimension, and atom positions '''
     # load pickles
@@ -208,7 +204,9 @@ if parallel:
     operations = [delayed(calculateRDF)(box[j], pos[j, :], R, r, gs[j, :]) for j in xrange(len(natoms))]
     if distributed:
         # construct distributed cluster
-        cluster = PBSCluster(queue=queue, project=alloc, resource_spec=resource, walltime=walltime, extra=['-N %s' % name, '-o pbs.%s.out' %name])
+        cluster = PBSCluster(queue=queue, project=alloc, resource_spec='nodes=%d:ppn=%d' % (nodes, ppn), walltime='%d:00:00' % walltime,
+                             processes=nworker, cores=nthread*nworker, memory=str(mem)+'GB')
+        cluster.scale(1)
         # start client with distributed cluster
         client = Client(cluster)
     else:
