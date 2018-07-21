@@ -554,6 +554,8 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     # progress bar
     if verbose:
         progress(futures)
+    while all([f.status != 'finished' for f in futures]):
+        time.sleep(0.1)
     # track future statuses
     statuses = np.array([f.status for f in futures])
     finished = np.count_nonzero(statuses == 'finished')
@@ -593,10 +595,14 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     futures = client.compute(operations)
     if verbose:
         progress(futures)
+    while all([f.status != 'finished' for f in futures]):
+        time.sleep(0.1)
     operations = [delayed(writeTraj)(traj[i, j], natoms[i, j], box[i, j], x[i, j]) for i in xrange(npress) for j in xrange(ntemp)]
     futures = client.compute(operations)
     if verbose:
         progress(futures)
+    while all([f.status != 'finished' for f in futures]):
+        time.sleep(0.1)
     if verbose:
         print('\n')
         for i in xrange(npress):
@@ -763,11 +769,23 @@ if parallel:
 if verbose:
     print('initializing samples')
 if parallel:
+    operations = [delayed(defineConstants)(units[el], P[i], T[j]) for i in xrange(npress) for j in xrange(ntemp)]
+    futures = client.compute(operations)
+    if verbose:
+        progress(futures)
+    while all([f.status != 'finished' for f in futures]):
+        time.sleep(0.1)
+    results = client.gather(futures)
+    for i in xrange(npress):
+        for j in xrange(ntemp):
+            Et[i, j], Pf[i, j] = results[k]
     operations = [delayed(sampleInit)(i, j, el, units[el], lat[el], sz, mass[el],
                                       P[i], dpos[i, j], dt[i, j]) for i in xrange(npress) for j in xrange(ntemp)]
     futures = client.compute(operations)
     if verbose:
         progress(futures)
+    while all([f.status != 'finished' for f in futures]):
+        time.sleep(0.1)
     results = client.gather(futures)
     k = 0
     for i in xrange(npress):
@@ -782,7 +800,11 @@ if parallel:
                                         P[i], T[j], dt[i, j], dpos[i, j], dbox[i, j]) for i in xrange(npress) for j in xrange(ntemp)]
     futures = client.compute(operations)
     if verbose:
-        progress(futures)    
+        progress(futures)
+    while all([f.status != 'finished' for f in futures]):
+        time.sleep(0.1)
+    del futures
+    del results
 else:
     # loop through pressures
     for i in xrange(npress):
