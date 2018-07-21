@@ -6,7 +6,7 @@ Created on Thu Jun 07 04:20:00 2018
 """
 
 from __future__ import division, print_function
-import sys, os
+import argparse, os
 import numpy as np
 from lammps import lammps
 
@@ -14,169 +14,67 @@ from lammps import lammps
 # run parameters
 # --------------
 
-# boolean for controlling verbosity
-if '--verbose' in sys.argv:
-    verbose = True
-else:
-    verbose = False       
+parser = argparse.ArgumentParser()
+parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
+parser.add_argument('-p', '--parallel', help='parallel run', action='store_true')
+parser.add_argument('-d', '--distributed', help='distributed run', action='store_true')
+parser.add_argument('-q', '--queue', help='submission queue', type=str, nargs=1, default='lasigma')
+parser.add_argument('-a', '--allocation', help='submission allocation', type=str, nargs=1, default='hpc_lasigma01')
+parser.add_argument('-nn', '--nodes', help='number of nodes', type=int, nargs=1, default=1)
+parser.add_argument('-np', '--procs_per_node', help='number of processors per node', type=int, nargs=1, default=16)
+parser.add_argument('-w', '--walltime', help='job walltime', type=int, nargs=1, default=72)
+parser.add_argument('-m', '--memory', help='total job memory', type=int, nargs=1, default=32)
+parser.add_argument('-nw', '--workers', help='total job worker count', type=int, nargs=1, default=16)
+parser.add_argument('-nt', '--threads', help='threads per worker', type=int, nargs=1, default=1)
+parser.add_argument('-n', '--name', help='name of simulation', type=str, nargs=1, default='remcmc')
+parser.add_argument('-e', '--element', help='element choice', type=str, nargs=1, default='LJ')
+parser.add_argument('-ss', '--supercell_size', help='supercell size', type=int, nargs=1, default=4)
+parser.add_argument('-pn', '--pressure_number', help='number of pressures', type=int, nargs=1, default=4)
+parser.add_argument('-pr', '--pressure_range', help='pressure range', type=float, nargs=2, default=[2, 8])
+parser.add_argument('-tn', '--temperature_number', help='number of temperatures', type=int, nargs=1, default=96)
+parser.add_argument('-tr', '--temperature_range', help='temperature range', type=float, nargs=2, default=[2, 8])
+parser.add_argument('-sc', '--sample_cutoff', help='sample cutoff', type=int, nargs=1, default=4)
+parser.add_argument('-sn', '--sample_number', help='sample number', type=int, nargs=1, default=4)
+parser.add_argument('-sm', '--sample_mod', help='sample record modulo', type=int, nargs=1, default=4)
+parser.add_argument('-pm', '--position_move', help='position monte carlo move probability', type=float, nargs=1, default=0.015625)
+parser.add_argument('-vm', '--volume_move', help='volume monte carlo move probability', type=float, nargs=1, default=0.25)
+parser.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps', type=int, nargs=1, default=8)
 
-# boolean for controlling parallel run
-if '--serial' in sys.argv:
-    parallel = False
-else:
-    parallel = True
+args = parser.parse_args()
+
+verbose = args.verbose
+parallel = args.parallel
+if parallel:
     os.environ['DASK_ALLOWED_FAILURES'] = '4'
     from distributed import Client, LocalCluster, progress
     from dask import delayed
-if parallel:
-    # boolean for choosing distributed or local cluster
-    if '--distributed' in sys.argv:
-        distributed = True
-        import time
-        from dask_jobqueue import PBSCluster
-        if '--queue' in sys.argv:
-            i = sys.argv.index('--queue')
-            queue = sys.argv[i+1]
-        else:
-            queue = 'jobqueue'
-        if '--allocation' in sys.argv:
-            i = sys.argv.index('--allocation')
-            alloc = sys.argv[i+1]
-        else:
-            alloc = 'startup'
-        if '--nodes' in sys.argv:
-            i = sys.argv.index('--nodes')
-            nodes = int(sys.argv[i+1])
-        else:
-            nodes = 1
-        if '--ppn' in sys.argv:
-            i = sys.argv.index('--ppn')
-            ppn = int(sys.argv[i+1])
-        else:
-            ppn = 16
-        if '--memory' in sys.argv:
-            i = sys.argv.index('--memory')
-            mem = int(sys.argv[i+1])
-        else:
-            mem = 32
-        if '--walltime' in sys.argv:
-            i = sys.argv.index('--walltime')
-            walltime = int(sys.argv[i+1])
-        else:
-            walltime = 24
-    else:
-        distributed = False 
-    # boolean for choosing whether to use multithreading
-    if '--threading' in sys.argv:
-        processes = False
-    else:
-        processes = True
-    # number of processors
-    if '--nworker' in sys.argv:
-        i = sys.argv.index('--nworker')
-        nworker = int(sys.argv[i+1])
-    else:
-        if processes:
-            nworker = 16
-        else:
-            nworker = 1
-    # threads per worker
-    if '--nthread' in sys.argv:
-        i = sys.argv.index('--nthread')
-        nthread = int(sys.argv[i+1])
-    else:
-        if processes:
-            nthread = 1
-        else:
-            nthread = 16
-
-# simulation name
-if '--name' in sys.argv:
-    i = sys.argv.index('--name')
-    name = sys.argv[i+1]
-else:
-    name = 'remcmc'
-# element choice
-if '--element' in sys.argv:
-    i = sys.argv.index('--element')
-    el = sys.argv[i+1]
-else:
-    el = 'LJ'
-if '--size' in sys.argv:
-    i = sys.argv.index('--size')
-    sz = int(sys.argv[i+1])
-else:
-    sz = 4
-
-# pressure and temeprature parameters
-# number of pressure sets
-if '--npress' in sys.argv:
-    i = sys.argv.index('--npress')
-    npress = int(sys.argv[i+1])
-else:
-    npress = 8
-# pressure range
-if '--rpress' in sys.argv:
-    i = sys.argv.index('--rpress')
-    lpress = float(sys.argv[i+1])
-    hpress = float(sys.argv[i+2])
-else:
-    lpress = 1.0
-    hpress = 8.0
-# number of temperature sets
-if '--ntemp' in sys.argv:
-    i = sys.argv.index('--ntemp')
-    ntemp = int(sys.argv[i+1])
-else:
-    ntemp = 48
-# temperature range
-if '--rtemp' in sys.argv:
-    i = sys.argv.index('--rtemp')
-    ltemp = float(sys.argv[i+1])
-    htemp = float(sys.argv[i+2])
-else:
-    ltemp = 0.25
-    htemp = 2.5
-
-# monte carlo parameters
-# sample cutoff
-if '--cutoff' in sys.argv:
-    i = sys.argv.index('--cutoff')
-    cutoff = int(sys.argv[i+1])
-else:
-    cutoff = 1024
-# number of samples
-if '--nsmpl' in sys.argv:
-    i = sys.argv.index('--nsmpl')
-    nsmpl = cutoff+int(sys.argv[i+1])
-else:
-    nsmpl = cutoff+1024
-# frequency of data storage
-if '--mod' in sys.argv:
-    i = sys.argv.index('--mod')
-    mod = int(sys.argv[i+1])
-else:
-    mod = 128
-nswps = nsmpl*mod  # total mc sweeps
-# probability of pos move
-if '--ppos' in sys.argv:
-    i = sys.argv.index('--ppos')
-    ppos = float(sys.argv[i+1])
-else:
-    ppos = 0.015625
-# probability of vol move
-if '--pvol' in sys.argv:
-    i = sys.argv.index('--pvol')
-    pvol = float(sys.argv[i+1])
-else:
-    pvol = 0.25
-phmc = 1-ppos-pvol  # probability of hmc move
-# md steps during hmc
-if '--nstps' in sys.argv:
-    i = sys.argv.index('--nstps')
-    nstps = int(sys.argv[i+1])
-else:
-    nstps = 8
+distributed = args.distributed
+if distributed:
+    import time
+    from dask_jobqueue import PBSCluster
+queue = args.queue
+alloc = args.allocation
+nodes = args.nodes
+ppn = args.procs_per_node
+walltime = args.walltime
+mem = args.memory
+nworker = args.workers
+nthread = args.threads
+name = args.name
+el = args.element
+sz = args.supercell_size
+npress = args.pressure_number
+lpress, hpress = args.pressure_range
+ntemp = args.temperature_number
+ltemp, htemp = args.temperature_range
+cutoff = args.sample_cutoff
+nsmpl = cutoff+args.sample_number
+mod = args.sample_mod
+nswps = nsmpl*mod
+ppos = args.position_move
+pvol = args.volume_move
+phmc = 1-ppos-pvol
+nstps = args.timesteps
 
 # set random seed
 seed = 256
@@ -832,8 +730,8 @@ for i in xrange(npress):
         thermo[i, j], traj[i, j] = dat[9:11]
         # write thermo file header
         thermoHeader(thermo[i, j], nsmpl, cutoff, mod, nswps, ppos, pvol, phmc,
-                      nstps, seed, el, units[el], lat[el], sz, mass[el],
-                      P[i], T[j], dt[i, j], dpos[i, j], dbox[i, j])
+                     nstps, seed, el, units[el], lat[el], sz, mass[el],
+                     P[i], T[j], dt[i, j], dpos[i, j], dbox[i, j])
 
 # -----------                      
 # monte carlo
@@ -845,12 +743,13 @@ if parallel:
         cluster = PBSCluster(queue=queue, project=alloc, resource_spec='nodes=%d:ppn=%d' % (nodes, ppn), walltime='%d:00:00' % walltime,
                              processes=nworker, cores=nthread*nworker, memory=str(mem)+'GB')
         cluster.start_workers(1)
-        time.sleep(15)
         # start client with distributed cluster
         client = Client(cluster)
+        while 'processes=0 cores=0' in client.scheduler_info:
+            time.sleep(5)
     else:
         # construct local cluster
-        cluster = LocalCluster(n_workers=nworker, threads_per_worker=nthread, processes=processes)
+        cluster = LocalCluster(n_workers=nworker, threads_per_worker=nthread)
         # start client with local cluster
         client = Client(cluster)
     # display client information

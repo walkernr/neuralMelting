@@ -6,122 +6,53 @@ Created on Tue Jun 12 20:11:57 2018
 """
 
 from __future__ import division, print_function
-import os, sys, pickle
+import argparse, os, pickle
 import numpy as np
 import numba as nb
-from distributed import Client, LocalCluster, progress
-from dask import delayed
 
-# boolean for controlling verbosity
-if '--verbose' in sys.argv:
-    from tqdm import tqdm
-    verbose = True
-else:
-    verbose = False
+parser = argparse.ArgumentParser()
+parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
+parser.add_argument('-p', '--parallel', help='parallel run', action='store_true')
+parser.add_argument('-d', '--distributed', help='distributed run', action='store_true')
+parser.add_argument('-q', '--queue', help='submission queue', type=str, nargs=1, default='jobqueue')
+parser.add_argument('-a', '--allocation', help='submission allocation', type=str, nargs=1, default='startup')
+parser.add_argument('-nn', '--nodes', help='number of nodes', type=int, nargs=1, default=1)
+parser.add_argument('-np', '--procs_per_node', help='number of processors per node', type=int, nargs=1, default=16)
+parser.add_argument('-w', '--walltime', help='job walltime', type=int, nargs=1, default=24)
+parser.add_argument('-m', '--memory', help='total job memory', type=int, nargs=1, default=32)
+parser.add_argument('-nw', '--workers', help='total job worker count', type=int, nargs=1, default=16)
+parser.add_argument('-nt', '--threads', help='threads per worker', type=int, nargs=1, default=1)
+parser.add_argument('-n', '--name', help='name of simulation', type=str, nargs=1, default='test')
+parser.add_argument('-e', '--element', help='element choice', type=str, nargs=1, default='LJ')
+parser.add_argument('-pn', '--pressure_number', help='number of pressures', type=int, nargs=1, default=4)
+parser.add_argument('-pr', '--pressure_range', help='pressure range', type=float, nargs=2, default=[2, 8])
+parser.add_argument('-i', '--pressure_index', help='pressure index', type=int, nargs=1, default=0)
 
-# boolean for controlling parallel run
-if '--serial' in sys.argv:
-    parallel = False
-else:
-    parallel = True
+args = parser.parse_args()
+
+verbose = args.verbose
+parallel = args.parallel
+if parallel:
     os.environ['DASK_ALLOWED_FAILURES'] = '4'
     from distributed import Client, LocalCluster, progress
     from dask import delayed
-if parallel:
-    # boolean for choosing distributed or local cluster
-    if '--distributed' in sys.argv:
-        distributed = True
-        from dask_jobqueue import PBSCluster
-        if '--queue' in sys.argv:
-            i = sys.argv.index('--queue')
-            queue = sys.argv[i+1]
-        else:
-            queue = 'jobqueue'
-        if '--allocation' in sys.argv:
-            i = sys.argv.index('--allocation')
-            alloc = sys.argv[i+1]
-        else:
-            alloc = 'startup'
-        if '--nodes' in sys.argv:
-            i = sys.argv.index('--nodes')
-            nodes = int(sys.argv[i+1])
-        else:
-            nodes = 1
-        if '--ppn' in sys.argv:
-            i = sys.argv.index('--ppn')
-            ppn = int(sys.argv[i+1])
-        else:
-            ppn = 16
-        if '--memory' in sys.argv:
-            i = sys.argv.index('--memory')
-            mem = int(sys.argv[i+1])
-        else:
-            mem = 32
-        if '--walltime' in sys.argv:
-            i = sys.argv.index('--walltime')
-            walltime = int(sys.argv[i+1])
-        else:
-            walltime = 24
-    else:
-        distributed = False 
-    # boolean for choosing whether to use multithreading
-    if '--threading' in sys.argv:
-        processes = False
-    else:
-        processes = True
-    # number of processors
-    if '--nworker' in sys.argv:
-        i = sys.argv.index('--nworker')
-        nworker = int(sys.argv[i+1])
-    else:
-        if processes:
-            nworker = 16
-        else:
-            nworker = 1
-    # threads per worker
-    if '--nthread' in sys.argv:
-        i = sys.argv.index('--nthread')
-        nthread = int(sys.argv[i+1])
-    else:
-        if processes:
-            nthread = 1
-        else:
-            nthread = 16
-    
-# simulation name
-if '--name' in sys.argv:
-    i = sys.argv.index('--name')
-    name = sys.argv[i+1]
-else:
-    name = 'remcmc'
-
-# element
-if '--element' in sys.argv:
-    i = sys.argv.index('--element')
-    el = sys.argv[i+1]
-else:
-    el = 'LJ'
-    
-# number of pressure sets
-if '--npress' in sys.argv:
-    i = sys.argv.index('--npress')
-    npress = int(sys.argv[i+1])
-else:
-    npress = 8
-# pressure range
-if '--rpress' in sys.argv:
-    i = sys.argv.index('--rpress')
-    lpress = float(sys.argv[i+1])
-    hpress = float(sys.argv[i+2])
-else:
-    lpress = 1.0
-    hpress = 8.0
-# pressure index
-if '--pressindex' in sys.argv:
-    i = sys.argv.index('--pressindex')
-    pressind = int(sys.argv[i+1])
-else:
-    pressind = 0
+distributed = args.distributed
+if distributed:
+    import time
+    from dask_jobqueue import PBSCluster
+queue = args.queue
+alloc = args.allocation
+nodes = args.nodes
+ppn = args.procs_per_node
+walltime = args.walltime
+mem = args.memory
+nworker = args.workers
+nthread = args.threads
+name = args.name
+el = args.element
+npress = args.pressure_number
+lpress, hpress = args.pressure_range
+pressind = args.pressure_index
 
 # pressure
 P = np.linspace(lpress, hpress, npress, dtype=np.float64)
@@ -209,26 +140,20 @@ if parallel:
         cluster.start_workers(1)
         # start client with distributed cluster
         client = Client(cluster)
+        while 'processes=0 cores=0' in client.scheduler_info:
+            time.sleep(5)
     else:
         # construct local cluster
-        cluster = LocalCluster(n_workers=nworker, threads_per_worker=nthread, processes=processes)
+        cluster = LocalCluster(n_workers=nworker, threads_per_worker=nthread)
         # start client with local cluster
         client = Client(cluster)
+    futures = client.compute(operations)
     if verbose:
-        # display client information
-        print(client.scheduler_info)
-        print('calculating data for %s at pressure %f' % (el.lower(), P[pressind]))
-        futures = client.compute(operations)
+        print('calculating rdfs for %s at pressure %f' % (el.lower(), P[pressind]))
         progress(futures)
-        results = client.gather(futures)
-        print('assigning rdfs')
-        for j in tqdm(xrange(len(natoms))):
-            gs[j, :] = results[j]
-    else:
-        futures = client.compute(operations)
-        results = client.gather(futures)
-        for j in xrange(len(natoms)):
-            gs[j, :] = results[j]
+    results = client.gather(futures)
+    for j in xrange(len(natoms)):
+        gs[j, :] = results[j]
     client.close()
 else:
     for j in xrange(len(natoms)):
