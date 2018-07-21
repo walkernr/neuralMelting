@@ -20,19 +20,17 @@ Requirements
 Python
 ------
 
-I recommend using Anaconda since the only additional libraries needed are LAMMPS, MPI4Py, Multicore-TSNE, Keras, and tqdm.
+I recommend using Anaconda since the only additional libraries needed are LAMMPS, Multicore-TSNE, and Keras.
 
 - LAMMPS
 - NumPy
 - SciPy
 - Dask
-- MPI4Py (for distributed clusters)
 - Numba
 - Scikit-Learn
 - Multicore-TSNE
 - Keras
 - MatPlotLib
-- tqdm (for verbose output)
 
 LAMMPS Libraries
 ----------------
@@ -59,8 +57,6 @@ General user-controlled parameters include the verbosity, parallel modes, number
 
 Two output files are written to during the data collection cycles, one containing general thermodynamic properties and simulation details, and another containing the atom trajectories.
 
-NOTE: not confirmed to work on a distributed cluster environment yet.
-
 lammps_parse.py
 ---------------
 
@@ -70,8 +66,6 @@ lammps_rdf.py
 -------------------------
 
 This program calculates the radial distributions, structure factors, and entropic fingerprints, and densities alongside the domains for each structural function for each sample using the pickled trajectory information from the parsing script. The calculations can be run in parallel using a multiprocessing or multithreading approach on local or distributed clusters. The parallelism is implemented with the Dask Distributed library. Since Dask uses Bokeh, multiprocessing runs may be monitored at localhost:8787/status assuming the default Bokeh TCP port is used. The rdf calculations are also optimized using a combination of vectorized code by way of NumPy alongside a JIT compiler by way of Numba.
-
-NOTE: not confirmed to work on a distributed cluster environment yet.
 
 lammps_run.py
 -------------
@@ -111,11 +105,11 @@ This program classifies samples as either solids or liquids by passing structura
 - Richard: generalized logistic function, (not recommended: too many fitting parameters)
 
 ### Plans for the future
-- Refine neural network structures and hyperparameters (learning rate, weights, iterations, grid searching, etc.)
+- Refine neural network structures and hyperparameters with grid searching
 - Refine data preparation techniques (more appropriate scaling, data reorientation, etc.)
 - Refine data analysis techniques (better curve fitting, alternate approaches to transition etimation, etc.)
 
-Since the structural functions, scalers, reducers, networks, and fitting functions are all embedded in libraries, the user may feel free to add their own features.
+Since the structural functions, scalers, reducers, networks, and fitting functions are all embedded in dictionaries, the user may feel free to add their own features.
 
 lammps_cluster.py
 -----------------
@@ -143,7 +137,7 @@ Since the scalers and clustering methods are embedded in libraries, the user may
 lammps_post.py
 --------------
 
-This program does post-processing on the transition predictions at multiple different pressures to extract a melting curve in addition to plots of the potential energies and pressures as a function of temperature for each pressure.
+This program does post-processing on the transition predictions at multiple different pressures to extract the melting curve in addition to plots of the potential energies and pressures as functions of temperature.
 
 TanhScaler.py
 -------------
