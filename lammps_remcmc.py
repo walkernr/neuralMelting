@@ -23,7 +23,7 @@ parser.add_argument('-q', '--queue', help='submission queue', type=str, default=
 parser.add_argument('-a', '--allocation', help='submission allocation', type=str, default='hpc_lasigma01')
 parser.add_argument('-nn', '--nodes', help='number of nodes', type=int, default=1)
 parser.add_argument('-np', '--procs_per_node', help='number of processors per node', type=int, default=16)
-parser.add_argument('-w', '--walltime', help='job walltime', type=int, default=72)
+parser.add_argument('-w', '--walltime', help='job walltime', type=int, default=24)
 parser.add_argument('-m', '--memory', help='total job memory', type=int, default=32)
 parser.add_argument('-nw', '--workers', help='total job worker count', type=int, default=4)
 parser.add_argument('-nt', '--threads', help='threads per worker', type=int, default=1)
