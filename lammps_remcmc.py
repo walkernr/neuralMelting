@@ -8,6 +8,7 @@ Created on Thu Jun 07 04:20:00 2018
 from __future__ import division, print_function
 import argparse, os
 import numpy as np
+import numba as nb
 from lammps import lammps
 
 # --------------
@@ -31,11 +32,11 @@ parser.add_argument('-e', '--element', help='element choice', type=str, default=
 parser.add_argument('-ss', '--supercell_size', help='supercell size', type=int, default=4)
 parser.add_argument('-pn', '--pressure_number', help='number of pressures', type=int, default=4)
 parser.add_argument('-pr', '--pressure_range', help='pressure range', type=float, nargs=2, default=[2, 8])
-parser.add_argument('-tn', '--temperature_number', help='number of temperatures', type=int, default=4)
+parser.add_argument('-tn', '--temperature_number', help='number of temperatures', type=int, default=32)
 parser.add_argument('-tr', '--temperature_range', help='temperature range', type=float, nargs=2, default=[0.25, 2.5])
-parser.add_argument('-sc', '--sample_cutoff', help='sample cutoff', type=int, default=4)
+parser.add_argument('-sc', '--sample_cutoff', help='sample cutoff', type=int, default=0)
 parser.add_argument('-sn', '--sample_number', help='sample number', type=int, default=4)
-parser.add_argument('-sm', '--sample_mod', help='sample record modulo', type=int, default=4)
+parser.add_argument('-sm', '--sample_mod', help='sample record modulo', type=int, default=32)
 parser.add_argument('-pm', '--position_move', help='position monte carlo move probability', type=float, default=0.015625)
 parser.add_argument('-vm', '--volume_move', help='volume monte carlo move probability', type=float, default=0.25)
 parser.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps', type=int, default=8)
@@ -553,7 +554,7 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     futures = client.compute(operations)
     # progress bar
     if verbose:
-        print('\nperforming monte carlo')
+        print('performing monte carlo')
         progress(futures)
     # gather results from workers
     results = client.gather(futures, errors='raise')
@@ -582,12 +583,12 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     if verbose:
         print('\nwriting traj data')
         progress(futures)
-    if verbose:
-        print('\n')
-        for i in xrange(npress):
-            for j in xrange(ntemp):
-                therm_args = (temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos[i, j], accvol[i, j], acchmc[i, j])
-                print('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E' % therm_args)
+    # if verbose:
+        # print('\n')
+        # for i in xrange(npress):
+            # for j in xrange(ntemp):
+                # therm_args = (temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos[i, j], accvol[i, j], acchmc[i, j])
+                # print('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E' % therm_args)
     # return lammps object, tries/acceptation counts, and mc params
     return client, natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, accpos, accvol, acchmc, dpos, dbox, dt
     
@@ -617,9 +618,9 @@ def getSamples(x, v, box, el, units, lat, sz, mass, P, dt,
     # write to data storage files
     for i in xrange(npress):
         for j in xrange(ntemp):
-            if verbose:
-                therm_args = (temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos[i, j], accvol[i, j], acchmc[i, j])
-                print('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E' % therm_args)
+            # if verbose:
+                # therm_args = (temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos[i, j], accvol[i, j], acchmc[i, j])
+                # print('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E' % therm_args)
             writeThermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos[i, j], accvol[i, j], acchmc[i, j])
             writeTraj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
     # return lammps object, tries/acceptation counts, and mc params
@@ -671,7 +672,7 @@ def repExch(natoms, x, v, temp, pe, ke, virial, box, vol, Et, Pf, verbose):
                 box[j], box[i] = box[i], box[j]
                 vol[j], vol[i] = vol[i], vol[j]
     if verbose:
-        print('%d replica exchanges performed: ' % swaps, ' '.join(pairs))
+        print('\n%d replica exchanges performed' % swaps)
     # reshape system properties and constants
     natoms = natoms.reshape((npress, ntemp))
     x = x.reshape((npress, ntemp))
@@ -745,13 +746,11 @@ if parallel:
 # initialize samples
 #-------------------
 
-if verbose:
-    print('initializing samples')
 if parallel:
     operations = [delayed(defineConstants)(units[el], P[i], T[j]) for i in xrange(npress) for j in xrange(ntemp)]
     futures = client.compute(operations)
     if verbose:
-        print('setting constant')
+        print('setting constants')
         progress(futures)
     results = client.gather(futures)
     k = 0
@@ -779,7 +778,7 @@ if parallel:
                                         P[i], T[j], dt[i, j], dpos[i, j], dbox[i, j]) for i in xrange(npress) for j in xrange(ntemp)]
     futures = client.compute(operations)
     if verbose:
-        print('\nwriting file headers')
+        print('\nwriting thermo headers')
         progress(futures)
     del futures
     del results
