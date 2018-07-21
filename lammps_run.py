@@ -18,11 +18,11 @@ if '--serial' in sys.argv:
     parallel = False
 else:
     parallel = True
-    # multithreading
-    if '--threading' in sys.argv:
-        processes = False
-    else:
-        processes = True
+# multithreading
+if '--threading' in sys.argv:
+    processes = False
+else:
+    processes = True
 # turn off simulation
 if '--nosim' in sys.argv:
     sim = False
