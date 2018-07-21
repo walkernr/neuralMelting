@@ -32,6 +32,7 @@ if parallel:
     # boolean for choosing distributed or local cluster
     if '--distributed' in sys.argv:
         distributed = True
+        import time
         from dask_jobqueue import PBSCluster
         if '--queue' in sys.argv:
             i = sys.argv.index('--queue')
@@ -844,6 +845,7 @@ if parallel:
         cluster = PBSCluster(queue=queue, project=alloc, resource_spec='nodes=%d:ppn=%d' % (nodes, ppn), walltime='%d:00:00' % walltime,
                              processes=nworker, cores=nthread*nworker, memory=str(mem)+'GB')
         cluster.start_workers(1)
+        time.sleep(15)
         # start client with distributed cluster
         client = Client(cluster)
     else:
