@@ -776,9 +776,11 @@ if parallel:
     while all([f.status != 'finished' for f in futures]):
         time.sleep(0.1)
     results = client.gather(futures)
+    k = 0
     for i in xrange(npress):
         for j in xrange(ntemp):
             Et[i, j], Pf[i, j] = results[k]
+            k += 1
     operations = [delayed(sampleInit)(i, j, el, units[el], lat[el], sz, mass[el],
                                       P[i], dpos[i, j], dt[i, j]) for i in xrange(npress) for j in xrange(ntemp)]
     futures = client.compute(operations)
