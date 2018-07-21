@@ -169,7 +169,7 @@ s = 1+4*np.pi*nrho[:, np.newaxis]*np.divide(ftg, q)
 with np.errstate(divide='ignore', invalid='ignore'):
     i = np.multiply(np.nan_to_num(np.multiply(g, np.log(g)))-g+1, np.square(r[:]))
 if verbose:
-    print('calculations finalized')
+    print('\ncalculations finalized')
 
 # pickle data
 pickle.dump(nrho, open(prefix+'.nrho.pickle', 'wb'))

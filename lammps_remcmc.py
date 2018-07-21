@@ -590,10 +590,14 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     # write to data storage files
     operations = [delayed(writeThermo)(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j],
                                        accpos[i, j], accvol[i, j], acchmc[i, j]) for i in xrange(npress) for j in xrange(ntemp)]
-    operations = operations+[delayed(writeTraj)(traj[i, j], natoms[i, j], box[i, j], x[i, j]) for i in xrange(npress) for j in xrange(ntemp)]
     futures = client.compute(operations)
     if verbose:
         progress(futures)
+    operations = [delayed(writeTraj)(traj[i, j], natoms[i, j], box[i, j], x[i, j]) for i in xrange(npress) for j in xrange(ntemp)]
+    futures = client.compute(operations)
+    if verbose:
+        progress(futures)
+    if verbose:
         print('\n')
         for i in xrange(npress):
             for j in xrange(ntemp):
@@ -801,7 +805,7 @@ else:
 # -----------
 
 if verbose:
-    print('starting monte carlo')
+    print('\nstarting monte carlo')
 # loop through to number of samples that need to be collected
 for i in xrange(nsmpl):
     if verbose:
