@@ -609,7 +609,7 @@ def getSample(x, v, box, el, units, lat, sz, mass, P, dt,
               Et, Pf, ppos, pvol, phmc, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc,
               dpos, dbox, T, mod):
     ''' performs enough monte carlo moves to generate a sample (determined by mod) '''    
-    initialize lammps object
+    # initialize lammps object
     lmps = lammpsInit(x, v, box, el, units, lat, sz, mass, P, dt)
     # loop through monte carlo moves
     for i in xrange(mod):
