@@ -8,12 +8,13 @@ Created on Thu Jun 07 04:20:00 2018
 from __future__ import division, print_function
 import argparse, os
 import numpy as np
-import numba as nb
 from lammps import lammps
 
 # --------------
 # run parameters
 # --------------
+
+# parse command line (help option generated automatically)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
@@ -43,29 +44,42 @@ parser.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps
 
 args = parser.parse_args()
 
+# booleans for run type
 verbose = args.verbose
 parallel = args.parallel
 distributed = args.distributed
+# arguments for distributed run using pbs
 queue = args.queue
 alloc = args.allocation
 nodes = args.nodes
 ppn = args.procs_per_node
 walltime = args.walltime
 mem = args.memory
+# arguments for parallel run
 nworker = args.workers
 nthread = args.threads
+# simulation name
 name = args.name
+# element choice
 el = args.element
+# supercell size in lattice parameters
 sz = args.supercell_size
+# pressure parameters
 npress = args.pressure_number
 lpress, hpress = args.pressure_range
+# temperature parameters
 ntemp = args.temperature_number
 ltemp, htemp = args.temperature_range
+# sample cutoff
 cutoff = args.sample_cutoff
+# number of recording samples
 nsmpl = args.sample_number
+# record frequency
 mod = args.sample_mod
+# monte carlo probabilities
 ppos = args.position_move
 pvol = args.volume_move
+# number of hamiltonian monte carlo timesteps
 nstps = args.timesteps
 
 if parallel:
@@ -76,8 +90,11 @@ if distributed:
     import time
     from dask_jobqueue import PBSCluster
 
+# adjust total samples by cutoff
 nsmpl = cutoff+nsmpl
+# total number of monte carlo sweeps
 nswps = nsmpl*mod
+# hamiltonian monte carlo probability
 phmc = 1-ppos-pvol
 
 # set random seed
@@ -583,12 +600,6 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     if verbose:
         print('\nwriting traj data')
         progress(futures)
-    # if verbose:
-        # print('\n')
-        # for i in xrange(npress):
-            # for j in xrange(ntemp):
-                # therm_args = (temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos[i, j], accvol[i, j], acchmc[i, j])
-                # print('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E' % therm_args)
     # return lammps object, tries/acceptation counts, and mc params
     return client, natoms, x, v, temp, pe, ke, virial, box, vol, ntrypos, naccpos, ntryvol, naccvol, ntryhmc, nacchmc, accpos, accvol, acchmc, dpos, dbox, dt
     
@@ -618,9 +629,6 @@ def getSamples(x, v, box, el, units, lat, sz, mass, P, dt,
     # write to data storage files
     for i in xrange(npress):
         for j in xrange(ntemp):
-            # if verbose:
-                # therm_args = (temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos[i, j], accvol[i, j], acchmc[i, j])
-                # print('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E' % therm_args)
             writeThermo(thermo[i, j], temp[i, j], pe[i, j], ke[i, j], virial[i, j], vol[i, j], accpos[i, j], accvol[i, j], acchmc[i, j])
             writeTraj(traj[i, j], natoms[i, j], box[i, j], x[i, j])
     # return lammps object, tries/acceptation counts, and mc params
