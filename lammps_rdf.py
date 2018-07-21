@@ -140,7 +140,7 @@ if parallel:
         cluster.start_workers(1)
         # start client with distributed cluster
         client = Client(cluster)
-        while 'processes=0 cores=0' in client.scheduler_info:
+        while 'processes=0 cores=0' in str(client.scheduler_info):
             time.sleep(5)
     else:
         # construct local cluster
