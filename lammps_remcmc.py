@@ -531,12 +531,12 @@ def getSample(x, v, box, el, units, lat, sz, mass, P, dt,
     lmps = lammpsInit(x, v, box, el, units, lat, sz, mass, P, dt)
     # loop through monte carlo moves
     for i in xrange(mod):
-        dat =  moveMC(lmps, Et, Pf,
-                      ppos, pvol, phmc,
-                      ntrypos, naccpos,
-                      ntryvol, naccvol,
-                      ntryhmc, nacchmc,
-                      dpos, dbox, T, dt)
+        dat = moveMC(lmps, Et, Pf,
+                     ppos, pvol, phmc,
+                     ntrypos, naccpos,
+                     ntryvol, naccvol,
+                     ntryhmc, nacchmc,
+                     dpos, dbox, T, dt)
         lmps = dat[0]
         ntrypos, naccpos = dat[1:3]
         ntryvol, naccvol = dat[3:5]
