@@ -55,11 +55,11 @@ el = 'LJ'
 sz = 4
 npress = 4
 lpress, hpress = (2.0, 8.0)
-ntemp = 96
+ntemp = 16
 ltemp, htemp = (0.25, 2.5)
-cutoff = 1024
-nsmpl = 1024
-mod = 128
+cutoff = 16
+nsmpl = 16
+mod = 16
 ppos = 0.015625
 pvol = 0.25
 nstps = 8
@@ -76,7 +76,7 @@ if parallel:
                              '-m', str(mem)]
     if sim:
         sim_args = sim_args+par_args
-    if rdfs:
+    if rdf:
         rdf_args = rdf_args+par_args
 
 id_args = ['-n', name,
@@ -84,7 +84,7 @@ id_args = ['-n', name,
            '-pn', str(npress),
            '-pr', str(lpress), str(hpress)]
 if sim:
-    sim_args = sim_args+id_args+['-ss', sz,
+    sim_args = sim_args+id_args+['-ss', str(sz),
                                  '-tn', str(ntemp),
                                  '-tr', str(ltemp), str(htemp),
                                  '-sc', str(cutoff),

@@ -14,19 +14,19 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
 parser.add_argument('-p', '--parallel', help='parallel run', action='store_true')
 parser.add_argument('-d', '--distributed', help='distributed run', action='store_true')
-parser.add_argument('-q', '--queue', help='submission queue', type=str, nargs=1, default='jobqueue')
-parser.add_argument('-a', '--allocation', help='submission allocation', type=str, nargs=1, default='startup')
-parser.add_argument('-nn', '--nodes', help='number of nodes', type=int, nargs=1, default=1)
-parser.add_argument('-np', '--procs_per_node', help='number of processors per node', type=int, nargs=1, default=16)
-parser.add_argument('-w', '--walltime', help='job walltime', type=int, nargs=1, default=24)
-parser.add_argument('-m', '--memory', help='total job memory', type=int, nargs=1, default=32)
-parser.add_argument('-nw', '--workers', help='total job worker count', type=int, nargs=1, default=16)
-parser.add_argument('-nt', '--threads', help='threads per worker', type=int, nargs=1, default=1)
-parser.add_argument('-n', '--name', help='name of simulation', type=str, nargs=1, default='test')
-parser.add_argument('-e', '--element', help='element choice', type=str, nargs=1, default='LJ')
-parser.add_argument('-pn', '--pressure_number', help='number of pressures', type=int, nargs=1, default=4)
+parser.add_argument('-q', '--queue', help='submission queue', type=str, default='jobqueue')
+parser.add_argument('-a', '--allocation', help='submission allocation', type=str, default='startup')
+parser.add_argument('-nn', '--nodes', help='number of nodes', type=int, default=1)
+parser.add_argument('-np', '--procs_per_node', help='number of processors per node', type=int, default=16)
+parser.add_argument('-w', '--walltime', help='job walltime', type=int, default=24)
+parser.add_argument('-m', '--memory', help='total job memory', type=int, default=32)
+parser.add_argument('-nw', '--workers', help='total job worker count', type=int, default=16)
+parser.add_argument('-nt', '--threads', help='threads per worker', type=int, default=1)
+parser.add_argument('-n', '--name', help='name of simulation', type=str, default='test')
+parser.add_argument('-e', '--element', help='element choice', type=str, default='LJ')
+parser.add_argument('-pn', '--pressure_number', help='number of pressures', type=int, default=4)
 parser.add_argument('-pr', '--pressure_range', help='pressure range', type=float, nargs=2, default=[2, 8])
-parser.add_argument('-i', '--pressure_index', help='pressure index', type=int, nargs=1, default=0)
+parser.add_argument('-i', '--pressure_index', help='pressure index', type=int, default=0)
 
 args = parser.parse_args()
 
@@ -63,7 +63,7 @@ lat = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # file prefix
-prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[pressind]))
+prefix = os.getcwd()+'/'+'%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[pressind]))
 
 def loadData():
     ''' load atom count, box dimension, and atom positions '''
@@ -158,7 +158,6 @@ if parallel:
 else:
     for j in xrange(len(natoms)):
         gs[j, :] = calculateRDF(box[j], pos[j, :], R, r, gs[j, :])
-
 # adjust rdf by atom count and atoms contained by shells
 g = np.divide(gs, natoms[0]*dni)
 # calculate domain for structure factor
@@ -169,6 +168,8 @@ ftg = -np.imag(dr*np.exp(-complex(0, 1)*q*r[0])*np.fft.fft(r[np.newaxis, :]*(g-1
 s = 1+4*np.pi*nrho[:, np.newaxis]*np.divide(ftg, q)
 with np.errstate(divide='ignore', invalid='ignore'):
     i = np.multiply(np.nan_to_num(np.multiply(g, np.log(g)))-g+1, np.square(r[:]))
+if verbose:
+    print('calculations finalized')
 
 # pickle data
 pickle.dump(nrho, open(prefix+'.nrho.pickle', 'wb'))
@@ -178,3 +179,6 @@ pickle.dump(g, open(prefix+'.rdf.pickle', 'wb'))
 pickle.dump(q, open(prefix+'.q.pickle', 'wb'))
 pickle.dump(s, open(prefix+'.sf.pickle', 'wb'))
 pickle.dump(i, open(prefix+'.ef.pickle', 'wb'))
+
+if verbose:
+    print('all properties pickled')

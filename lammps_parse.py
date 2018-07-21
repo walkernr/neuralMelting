@@ -11,11 +11,11 @@ import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
-parser.add_argument('-n', '--name', help='name of simulation', type=str, nargs=1, default='test')
-parser.add_argument('-e', '--element', help='element choice', type=str, nargs=1, default='LJ')
-parser.add_argument('-pn', '--pressure_number', help='number of pressures', type=int, nargs=1, default=4)
+parser.add_argument('-n', '--name', help='name of simulation', type=str, default='test')
+parser.add_argument('-e', '--element', help='element choice', type=str, default='LJ')
+parser.add_argument('-pn', '--pressure_number', help='number of pressures', type=int, default=4)
 parser.add_argument('-pr', '--pressure_range', help='pressure range', type=float, nargs=2, default=[2, 8])
-parser.add_argument('-i', '--pressure_index', help='pressure index', type=int, nargs=1, default=0)
+parser.add_argument('-i', '--pressure_index', help='pressure index', type=int, default=0)
 
 args = parser.parse_args()
 
@@ -25,46 +25,6 @@ el = args.element
 npress = args.pressure_number
 lpress, hpress = args.pressure_range
 pressind = args.pressure_index
-
-# # boolean for controlling verbosity
-# if '--verbose' in sys.argv:
-    # verbose = True
-# else:
-    # verbose = False
-
-# # simulation name
-# if '--name' in sys.argv:
-    # i = sys.argv.index('--name')
-    # name = sys.argv[i+1]
-# else:
-    # name = 'remcmc'
-
-# # element
-# if '--element' in sys.argv:
-    # i = sys.argv.index('--element')
-    # el = sys.argv[i+1]
-# else:
-    # el = 'LJ'
-# # number of pressure sets
-# if '--npress' in sys.argv:
-    # i = sys.argv.index('--npress')
-    # npress = int(sys.argv[i+1])
-# else:
-    # npress = 8
-# # pressure range
-# if '--rpress' in sys.argv:
-    # i = sys.argv.index('--rpress')
-    # lpress = float(sys.argv[i+1])
-    # hpress = float(sys.argv[i+2])
-# else:
-    # lpress = 1.0
-    # hpress = 8.0
-# # pressure index
-# if '--pressindex' in sys.argv:
-    # i = sys.argv.index('--pressindex')
-    # pressind = int(sys.argv[i+1])
-# else:
-    # pressind = 0
 
 # pressure
 P = np.linspace(lpress, hpress, npress, dtype=np.float64)
