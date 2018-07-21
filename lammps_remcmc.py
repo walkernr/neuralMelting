@@ -803,8 +803,6 @@ else:
 # monte carlo
 # -----------
 
-if verbose:
-    print('\nstarting monte carlo')
 # loop through to number of samples that need to be collected
 for i in xrange(nsmpl):
     if verbose:
