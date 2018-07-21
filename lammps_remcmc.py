@@ -271,6 +271,8 @@ def sampleInit(i, j, el, units, lat, sz, mass, P, dpos, dt):
     # traj = open(lmpsfilein.replace('.in', '%02d%02d.traj' % (i, j)), 'wb')
     thermo = lmpsfilein.replace('.in', '%02d%02d.thrm' % (i, j))
     traj = lmpsfilein.replace('.in', '%02d%02d.traj' % (i, j))
+    os.remove(thermo)
+    os.remove(traj)
     lmps.close()
     # return system info and data storage files
     return natoms, x, v, temp, pe, ke, virial, box, vol, thermo, traj
