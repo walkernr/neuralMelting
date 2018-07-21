@@ -555,8 +555,6 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     if verbose:
         print('\nperforming monte carlo')
         progress(futures)
-    while all([f.status == 'finished' for f in futures]):
-        time.sleep(0.1)
     # gather results from workers
     results = client.gather(futures, errors='raise')
     # update system properties and monte carlo parameters
@@ -579,15 +577,11 @@ def getSamplesPar(client, x, v, box, el, units, lat, sz, mass, P, dt,
     if verbose:
         print('\nwriting thermo data')
         progress(futures)
-    while all([f.status != 'finished' for f in futures]):
-        time.sleep(0.1)
     operations = [delayed(writeTraj)(traj[i, j], natoms[i, j], box[i, j], x[i, j]) for i in xrange(npress) for j in xrange(ntemp)]
     futures = client.compute(operations)
     if verbose:
         print('\nwriting traj data')
         progress(futures)
-    while all([f.status != 'finished' for f in futures]):
-        time.sleep(0.1)
     if verbose:
         print('\n')
         for i in xrange(npress):
@@ -759,8 +753,6 @@ if parallel:
     if verbose:
         print('setting constant')
         progress(futures)
-    while all([f.status == 'finished' for f in futures]):
-        time.sleep(0.1)
     results = client.gather(futures)
     k = 0
     for i in xrange(npress):
@@ -773,8 +765,6 @@ if parallel:
     if verbose:
         print('\ninitializing samples')
         progress(futures)
-    while all([f.status == 'finished' for f in futures]):
-        time.sleep(0.1)
     results = client.gather(futures)
     k = 0
     for i in xrange(npress):
@@ -791,8 +781,6 @@ if parallel:
     if verbose:
         print('\nwriting file headers')
         progress(futures)
-    while all([f.status == 'finished' for f in futures]):
-        time.sleep(0.1)
     del futures
     del results
 else:
