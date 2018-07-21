@@ -18,11 +18,11 @@ if '--serial' in sys.argv:
     parallel = False
 else:
     parallel = True
-# multithreading
-if '--threading' in sys.argv:
-    processes = False
-else:
-    processes = True
+    # multithreading
+    if '--threading' in sys.argv:
+        processes = False
+    else:
+        processes = True
 # turn off simulation
 if '--nosim' in sys.argv:
     sim = False
@@ -43,11 +43,11 @@ name = 'test'
 el = 'LJ'
 sz = 4
 # pressures
-npress = 8
-lpress = 1
+npress = 4
+lpress = 2
 hpress = 8
 # temperatures
-ntemp = 48
+ntemp = 96
 ltemp = 0.25
 htemp = 2.5
 # monte carlo parameters
@@ -78,8 +78,9 @@ if verbose:
     cmd_args = cmd_args+['--verbose']
 if not parallel:
     cmd_args = cmd_args+['--serial']
-if not processes:
-    cmd_args = cmd_args+['--threading']
+else:
+    if not processes:
+        cmd_args = cmd_args+['--threading']
 # run simulation
 if sim:
     subprocess.call(['python', 'lammps_remcmc.py']+cmd_args)
