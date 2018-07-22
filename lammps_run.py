@@ -68,7 +68,7 @@ NSTPS = 8
 if PARALLEL:
     par_args = ['-nw', str(NWORKER),
                 '-nt', str(NTHREAD)]
-    if distributed:
+    if DISTRIBUTED:
         par_args = par_args+['-q', QUEUE,
                              '-a', ALLOC,
                              '-nn', str(NODES),
