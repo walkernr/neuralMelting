@@ -6,7 +6,9 @@ Created on Wed May 22 08:23:12 2018
 """
 
 from __future__ import division, print_function
-import argparse, os, pickle
+import argparse
+import os
+import pickle
 import numpy as np
 
 parser = argparse.ArgumentParser()
@@ -19,30 +21,30 @@ parser.add_argument('-i', '--pressure_index', help='pressure index', type=int, d
 
 args = parser.parse_args()
 
-verbose = args.verbose
-name = args.name
-el = args.element
-npress = args.pressure_number
-lpress, hpress = args.pressure_range
-pressind = args.pressure_index
+VERBOSE = args.verbose
+NAME = args.name
+EL = args.element
+NPRESS = args.pressure_number
+LPRESS, hpress = args.pressure_range
+PRESSIND = args.pressure_index
 
 # pressure
-P = np.linspace(lpress, hpress, npress, dtype=np.float64)
+P = np.linspace(LPRESS, hpress, NPRESS, dtype=np.float64)
 # lattice type
-lat = {'Ti': 'bcc',
+LAT = {'Ti': 'bcc',
        'Al': 'fcc',
        'Ni': 'fcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # file prefix
-prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(P[pressind]))
+prefix = '%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL], int(P[PRESSIND]))
 # get full directory
-file = os.getcwd()+'/'+prefix
+prefix = os.getcwd()+'/'+prefix
 
-if verbose:
-    print('parsing data for %s at pressure %f' % (el.lower(), P[pressind]))
+if VERBOSE:
+    print('parsing data for %s at pressure %f' % (EL.lower(), P[PRESSIND]))
 # parse thermo file
-with open(file+'.thrm', 'rb') as fi:
+with open(prefix+'.thrm', 'rb') as fi:
     temp = []
     pe = []
     ke = []
@@ -64,12 +66,10 @@ with open(file+'.thrm', 'rb') as fi:
             accpos.append(float(dat[5]))
             accvol.append(float(dat[6]))
             acchmc.append(float(dat[7]))
-    # close file
-    fi.close()
-if verbose:
+if VERBOSE:
     print('%d thermodynamic property steps parsed' % len(temp))
 # parse trajectory file
-with open(file+'.traj', 'rb') as fi:
+with open(prefix+'.traj', 'rb') as fi:
     iters = iter(fi)
     natoms = []
     box = []
@@ -84,9 +84,7 @@ with open(file+'.traj', 'rb') as fi:
                 linb = iters.next()
                 x[j, :] = np.array(linb.split()).astype(float)
             pos.append(x.reshape(x.size))
-    # close file
-    fi.close()
-if verbose:
+if VERBOSE:
     print('%d trajectory steps parsed' % len(natoms))
 
 # pickle data
@@ -102,5 +100,5 @@ pickle.dump(np.array(natoms, dtype=int), open(prefix+'.natoms.pickle', 'wb'))
 pickle.dump(np.array(box, dtype=float), open(prefix+'.box.pickle', 'wb'))
 pickle.dump(np.array(pos, dtype=float), open(prefix+'.pos.pickle', 'wb'))
 
-if verbose:
+if VERBOSE:
     print('all properties pickled')

@@ -6,7 +6,8 @@ Created on Thu Jul 12 21:38:03 2018
 """
 
 from __future__ import division, print_function
-import argparse, subprocess
+import argparse
+import subprocess
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
@@ -17,90 +18,90 @@ parser.add_argument('-r', '--rdf', help='radial distribution run', action='store
 
 args = parser.parse_args()
 
-verbose = args.verbose
-parallel = args.parallel
-distributed = args.distributed
-sim = args.simulation
-rdf = args.rdf
+VERBOSE = args.verbose
+PARALLEL = args.parallel
+DISTRIBUTED = args.distributed
+SIM = args.simulation
+RDF = args.rdf
 
 sim_args = []
 prs_args = []
 rdf_args = []
-if verbose:
-    if sim:
+if VERBOSE:
+    if SIM:
         sim_args.append('-v')
-    if rdf:
+    if RDF:
         prs_args.append('-v')
         rdf_args.append('-v')
-if parallel:
-    if sim:
+if PARALLEL:
+    if SIM:
         sim_args.append('-p')
-        if distributed:
+        if DISTRIBUTED:
             sim_args.append('-d')
-    if rdf:
+    if RDF:
         rdf_args.append('-p')
-        if distributed:
+        if DISTRIBUTED:
             rdf_args.append('-d')
-            
-queue = 'lasigma'
-alloc = 'hpc_lasigma01'
-nodes = 2
-ppn = 16
-walltime = 72
-mem = nodes*32
-nthread = 1
-nworker = nodes*16/nthread
-name = 'test'
-el = 'LJ'
-sz = 4
-npress = 4
-lpress, hpress = (2.0, 8.0)
-ntemp = 32
-ltemp, htemp = (0.25, 2.5)
-cutoff = 0
-nsmpl = 4
-mod = 32
-ppos = 0.015625
-pvol = 0.25
-nstps = 8
 
-if parallel:
-    par_args = ['-nw', str(nworker),
-                '-nt', str(nthread)]
+QUEUE = 'lasigma'
+ALLOC = 'hpc_lasigma01'
+NODES = 2
+PPN = 16
+WALLTIME = 72
+MEM = NODES*32
+NTHREAD = 1
+NWORKER = NODES*16/NTHREAD
+NAME = 'test'
+EL = 'LJ'
+SZ = 4
+NPRESS = 4
+LPRESS, HPRESS = (2.0, 8.0)
+NTEMP = 32
+LTEMP, HTEMP = (0.25, 2.5)
+CUTOFF = 0
+NSMPL = 4
+MOD = 32
+PPOS = 0.015625
+PVOL = 0.25
+NSTPS = 8
+
+if PARALLEL:
+    par_args = ['-nw', str(NWORKER),
+                '-nt', str(NTHREAD)]
     if distributed:
-        par_args = par_args+['-q', queue,
-                             '-a', alloc,
-                             '-nn', str(nodes),
-                             '-np', str(ppn),
-                             '-w', str(walltime),
-                             '-m', str(mem)]
-    if sim:
+        par_args = par_args+['-q', QUEUE,
+                             '-a', ALLOC,
+                             '-nn', str(NODES),
+                             '-np', str(PPN),
+                             '-w', str(WALLTIME),
+                             '-m', str(MEM)]
+    if SIM:
         sim_args = sim_args+par_args
-    if rdf:
+    if RDF:
         rdf_args = rdf_args+par_args
 
-id_args = ['-n', name,
-           '-e', el,
-           '-pn', str(npress),
-           '-pr', str(lpress), str(hpress)]
-if sim:
-    sim_args = sim_args+id_args+['-ss', str(sz),
-                                 '-tn', str(ntemp),
-                                 '-tr', str(ltemp), str(htemp),
-                                 '-sc', str(cutoff),
-                                 '-sn', str(nsmpl),
-                                 '-sm', str(mod),
-                                 '-pm', str(ppos),
-                                 '-vm', str(pvol),
-                                 '-t', str(nstps)]
-if rdf:
+id_args = ['-n', NAME,
+           '-e', EL,
+           '-pn', str(NPRESS),
+           '-pr', str(LPRESS), str(HPRESS)]
+if SIM:
+    sim_args = sim_args+id_args+['-ss', str(SZ),
+                                 '-tn', str(NTEMP),
+                                 '-tr', str(LTEMP), str(HTEMP),
+                                 '-sc', str(CUTOFF),
+                                 '-sn', str(NSMPL),
+                                 '-sm', str(MOD),
+                                 '-pm', str(PPOS),
+                                 '-vm', str(PVOL),
+                                 '-t', str(NSTPS)]
+if RDF:
     rdf_args = rdf_args+id_args
     prs_args = prs_args+id_args
-                         
-if sim:
+
+if SIM:
     subprocess.call(['python', 'lammps_remcmc.py']+sim_args)
-if rdf:
-    for i in xrange(npress):
+if RDF:
+    for i in xrange(NPRESS):
         subprocess.call(['python', 'lammps_parse.py']+prs_args+['-i', str(i)])
-    for i in xrange(npress):
+    for i in xrange(NPRESS):
         subprocess.call(['python', 'lammps_rdf.py']+rdf_args+['-i', str(i)])
