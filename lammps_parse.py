@@ -11,22 +11,22 @@ import os
 import pickle
 import numpy as np
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
-parser.add_argument('-n', '--name', help='name of simulation', type=str, default='test')
-parser.add_argument('-e', '--element', help='element choice', type=str, default='LJ')
-parser.add_argument('-pn', '--pressure_number', help='number of pressures', type=int, default=4)
-parser.add_argument('-pr', '--pressure_range', help='pressure range', type=float, nargs=2, default=[2, 8])
-parser.add_argument('-i', '--pressure_index', help='pressure index', type=int, default=0)
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
+PARSER.add_argument('-n', '--name', help='name of simulation', type=str, default='test')
+PARSER.add_argument('-e', '--element', help='element choice', type=str, default='LJ')
+PARSER.add_argument('-pn', '--pressure_number', help='number of pressures', type=int, default=4)
+PARSER.add_argument('-pr', '--pressure_range', help='pressure range', type=float, nargs=2, default=[2, 8])
+PARSER.add_argument('-i', '--pressure_index', help='pressure index', type=int, default=0)
 
-args = parser.parse_args()
+ARGS = PARSER.parse_args()
 
-VERBOSE = args.verbose
-NAME = args.name
-EL = args.element
-NPRESS = args.pressure_number
-LPRESS, hpress = args.pressure_range
-PRESSIND = args.pressure_index
+VERBOSE = ARGS.verbose
+NAME = ARGS.name
+EL = ARGS.element
+NPRESS = ARGS.pressure_number
+LPRESS, hpress = ARGS.pressure_range
+PRESSIND = ARGS.pressure_index
 
 # pressure
 P = np.linspace(LPRESS, hpress, NPRESS, dtype=np.float64)

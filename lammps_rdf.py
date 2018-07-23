@@ -69,7 +69,7 @@ LAT = {'Ti': 'bcc',
 prefix = os.getcwd()+'/'+'%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL], int(P[PRESSIND]))
 
 
-def loadData():
+def load_data():
     ''' load atom count, box dimension, and atom positions '''
     # load pickles
     natoms = pickle.load(open('.'.join([prefix, 'natoms', 'pickle'])))
@@ -79,10 +79,10 @@ def loadData():
     return natoms, box, pos
 
 
-def calculateSpatial():
+def calculate_spatial():
     ''' calculate spatial properties '''
     # load atom count, box dimensions, and atom positions
-    natoms, box, pos = loadData()
+    natoms, box, pos = load_data()
     # number density of atoms
     nrho = np.divide(natoms, np.power(box, 3))
     # minimum box size in simulation
@@ -122,7 +122,7 @@ def calculateSpatial():
 
 
 @nb.njit
-def calculateRDF(j):
+def calculate_rdf(j):
     ''' calculate rdf for sample j '''
     g = np.copy(gs[j, :])
     # loop through lattice vectors
@@ -136,10 +136,10 @@ def calculateRDF(j):
     return g
 
 # get spatial properties
-natoms, box, pos, R, r, dr, nrho, dni, gs = calculateSpatial()
+natoms, box, pos, R, r, dr, nrho, dni, gs = calculate_spatial()
 # calculate radial distribution for each sample in parallel
 if PARALLEL:
-    operations = [delayed(calculateRDF)(j) for j in xrange(len(natoms))]
+    operations = [delayed(calculate_rdf)(j) for j in xrange(len(natoms))]
     if DISTRIBUTED:
         # construct distributed cluster
         cluster = PBSCluster(queue=QUEUE, project=ALLOC,
@@ -167,7 +167,7 @@ if PARALLEL:
     client.close()
 else:
     for j in xrange(len(natoms)):
-        gs[j, :] = calculateRDF(j)
+        gs[j, :] = calculate_rdf(j)
 
 # adjust rdf by atom count and atoms contained by shells
 g = np.divide(gs, natoms[0]*dni)

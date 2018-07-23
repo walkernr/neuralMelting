@@ -17,71 +17,92 @@ from lammps import lammps
 
 # parse command line (help option generated automatically)
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
-parser.add_argument('-p', '--parallel', help='parallel run', action='store_true')
-parser.add_argument('-d', '--distributed', help='distributed run', action='store_true')
-parser.add_argument('-q', '--queue', help='submission queue', type=str, default='lasigma')
-parser.add_argument('-a', '--allocation', help='submission allocation', type=str, default='hpc_lasigma01')
-parser.add_argument('-nn', '--nodes', help='number of nodes', type=int, default=1)
-parser.add_argument('-np', '--procs_per_node', help='number of processors per node', type=int, default=16)
-parser.add_argument('-w', '--walltime', help='job walltime', type=int, default=24)
-parser.add_argument('-m', '--memory', help='total job memory', type=int, default=32)
-parser.add_argument('-nw', '--workers', help='total job worker count', type=int, default=4)
-parser.add_argument('-nt', '--threads', help='threads per worker', type=int, default=1)
-parser.add_argument('-n', '--name', help='name of simulation', type=str, default='test')
-parser.add_argument('-e', '--element', help='element choice', type=str, default='LJ')
-parser.add_argument('-ss', '--supercell_size', help='supercell size', type=int, default=4)
-parser.add_argument('-pn', '--pressure_number', help='number of pressures', type=int, default=4)
-parser.add_argument('-pr', '--pressure_range', help='pressure range', type=float, nargs=2, default=[2, 8])
-parser.add_argument('-tn', '--temperature_number', help='number of temperatures', type=int, default=4)
-parser.add_argument('-tr', '--temperature_range', help='temperature range', type=float, nargs=2, default=[0.25, 2.5])
-parser.add_argument('-sc', '--sample_cutoff', help='sample cutoff', type=int, default=0)
-parser.add_argument('-sn', '--sample_number', help='sample number', type=int, default=4)
-parser.add_argument('-sm', '--sample_mod', help='sample record modulo', type=int, default=32)
-parser.add_argument('-pm', '--position_move', help='position monte carlo move probability', type=float, default=0.015625)
-parser.add_argument('-vm', '--volume_move', help='volume monte carlo move probability', type=float, default=0.25)
-parser.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps', type=int, default=8)
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
+PARSER.add_argument('-p', '--parallel', help='parallel run', action='store_true')
+PARSER.add_argument('-d', '--distributed', help='distributed run', action='store_true')
+PARSER.add_argument('-q', '--queue', help='submission queue',
+                    type=str, default='lasigma')
+PARSER.add_argument('-a', '--allocation', help='submission allocation',
+                    type=str, default='hpc_lasigma01')
+PARSER.add_argument('-nn', '--nodes', help='number of nodes',
+                    type=int, default=1)
+PARSER.add_argument('-np', '--procs_per_node', help='number of processors per node',
+                    type=int, default=16)
+PARSER.add_argument('-w', '--walltime', help='job walltime',
+                    type=int, default=24)
+PARSER.add_argument('-m', '--memory', help='total job memory',
+                    type=int, default=32)
+PARSER.add_argument('-nw', '--workers', help='total job worker count',
+                    type=int, default=4)
+PARSER.add_argument('-nt', '--threads', help='threads per worker',
+                    type=int, default=1)
+PARSER.add_argument('-n', '--name', help='name of simulation',
+                    type=str, default='test')
+PARSER.add_argument('-e', '--element', help='element choice',
+                    type=str, default='LJ')
+PARSER.add_argument('-ss', '--supercell_size', help='supercell size',
+                    type=int, default=4)
+PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
+                    type=int, default=4)
+PARSER.add_argument('-pr', '--pressure_range', help='pressure range',
+                    type=float, nargs=2, default=[2, 8])
+PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures',
+                    type=int, default=4)
+PARSER.add_argument('-tr', '--temperature_range', help='temperature range',
+                    type=float, nargs=2, default=[0.25, 2.5])
+PARSER.add_argument('-sc', '--sample_cutoff', help='sample cutoff',
+                    type=int, default=0)
+PARSER.add_argument('-sn', '--sample_number', help='sample number',
+                    type=int, default=4)
+PARSER.add_argument('-sm', '--sample_mod', help='sample record modulo',
+                    type=int, default=32)
+PARSER.add_argument('-pm', '--position_move', help='position monte carlo move probability',
+                    type=float, default=0.015625)
+PARSER.add_argument('-vm', '--volume_move', help='volume monte carlo move probability',
+                    type=float, default=0.25)
+PARSER.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps',
+                    type=int, default=8)
 
-args = parser.parse_args()
+ARGS = PARSER.parse_args()
 
 # booleans for run type
-VERBOSE = args.verbose
-PARALLEL = args.parallel
-DISTRIBUTED = args.distributed
+VERBOSE = ARGS.verbose
+PARALLEL = ARGS.parallel
+DISTRIBUTED = ARGS.distributed
 # arguments for distributed run using pbs
-QUEUE = args.queue
-ALLOC = args.allocation
-NODES = args.nodes
-PPN = args.procs_per_node
-WALLTIME = args.walltime
-MEM = args.memory
+QUEUE = ARGS.queue
+ALLOC = ARGS.allocation
+NODES = ARGS.nodes
+PPN = ARGS.procs_per_node
+WALLTIME = ARGS.walltime
+MEM = ARGS.memory
 # arguments for parallel run
-NWORKER = args.workers
-NTHREAD = args.threads
+NWORKER = ARGS.workers
+NTHREAD = ARGS.threads
 # simulation name
-NAME = args.name
+NAME = ARGS.name
 # element choice
-EL = args.element
+EL = ARGS.element
 # supercell size in lattice parameters
-SZ = args.supercell_size
+SZ = ARGS.supercell_size
 # pressure parameters
-NPRESS = args.pressure_number
-LPRESS, HPRESS = args.pressure_range
+NPRESS = ARGS.pressure_number
+LPRESS, HPRESS = ARGS.pressure_range
 # temperature parameters
-NTEMP = args.temperature_number
-LTEMP, HTEMP = args.temperature_range
+NTEMP = ARGS.temperature_number
+LTEMP, HTEMP = ARGS.temperature_range
 # sample cutoff
-CUTOFF = args.sample_cutoff
+CUTOFF = ARGS.sample_cutoff
 # number of recording samples
-NSMPL = args.sample_number
+NSMPL = ARGS.sample_number
 # record frequency
-MOD = args.sample_mod
+MOD = ARGS.sample_mod
 # monte carlo probabilities
-PPOS = args.position_move
-PVOL = args.volume_move
+PPOS = ARGS.position_move
+PVOL = ARGS.volume_move
 # number of hamiltonian monte carlo timesteps
-NSTPS = args.timesteps
+NSTPS = ARGS.timesteps
 
 if PARALLEL:
     os.environ['DASK_ALLOWED_FAILURES'] = '4'
@@ -177,32 +198,32 @@ dt = TIMESTEP[UNITS[EL]]*np.ones((NPRESS, NTEMP), dtype=np.float32)
 if PARALLEL:
     if DISTRIBUTED:
         # construct distributed cluster
-        cluster = PBSCluster(queue=QUEUE, project=ALLOC,
+        CLUSTER = PBSCluster(queue=QUEUE, project=ALLOC,
                              resource_spec='nodes=%d:ppn=%d' % (NODES, PPN),
                              walltime='%d:00:00' % WALLTIME,
                              processes=NWORKER, cores=NTHREAD*NWORKER,
                              memory=str(MEM)+'GB')
-        cluster.start_workers(1)
+        CLUSTER.start_workers(1)
         # start client with distributed cluster
-        client = Client(cluster)
-        while 'processes=0 cores=0' in str(client.scheduler_info):
+        CLIENT = Client(CLUSTER)
+        while 'processes=0 cores=0' in str(CLIENT.scheduler_info):
             time.sleep(5)
             if VERBOSE:
-                print(client.scheduler_info)
+                print(CLIENT.scheduler_info)
     else:
         # construct local cluster
-        cluster = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD)
+        CLUSTER = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD)
         # start client with local cluster
-        client = Client(cluster)
+        CLIENT = Client(CLUSTER)
         # display client information
         if VERBOSE:
-            print(client.scheduler_info)
+            print(CLIENT.scheduler_info)
 
 # ----------------
 # unit definitions
 # ----------------
 
-def defineConstants(i, j):
+def define_constants(i, j):
     ''' sets thermodynamic constants according to chosen unit system '''
     if UNITS[EL] == 'real':
         NA = 6.0221409e23                              # avagadro number [num/mol]
@@ -215,7 +236,7 @@ def defineConstants(i, j):
         ET = KB*T[i]                                   # thermal energy [eV]
         PF = 1e-30*(1e5*P[i])/(1.60218e-19*KB*T[j])    # metropolis prefactor [1/A^3]
     if UNITS[EL] == 'lj':
-        KB = 1.0                                       # boltzmann constant (normalized and unitless)
+        KB = 1.0                                       # boltzmann constant (unitless)
         ET = KB*T[j]                                   # thermal energy [T*]
         PF = P[i]/(KB*T[j])                            # metropolis prefactor [1/r*^3]
     return ET, PF
@@ -225,7 +246,7 @@ def defineConstants(i, j):
 # -----------------------------
 
 
-def thermoHeader(i, j):
+def thermo_header(i, j):
     ''' writes header containing simulation information to thermo file '''
     with open(THERMO[i, j], 'wb') as fo:
         fo.write('#----------------------\n')
@@ -259,7 +280,7 @@ def thermoHeader(i, j):
         fo.write('# ------------------------------------------------------------\n')
 
 
-def writeThermo(i, j):
+def write_thermo(i, j):
     ''' writes thermodynamic properties to thermo file '''
     # write data to file
     therm_args = (temp[i, j], pe[i, j], ke[i, j],
@@ -269,7 +290,7 @@ def writeThermo(i, j):
         fo.write('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E\n' % therm_args)
 
 
-def writeTraj(i, j):
+def write_traj(i, j):
     ''' writes trajectory data to traj file '''
     # write data to file
     with open(TRAJ[i, j], 'ab') as fo:
@@ -278,17 +299,17 @@ def writeTraj(i, j):
             fo.write('%.4E %.4E %.4E\n' % tuple(x[i, j][3*k:3*k+3]))
 
 
-def writeOutput():
+def write_output():
     ''' writes all sample outputs for a monte carlo step '''
     # if PARALLEL:
         # # write to data storage files
-        # operations = [delayed(writeThermo)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
-        # futures = client.compute(operations)
+        # operations = [delayed(write_thermo)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
+        # futures = CLIENT.compute(operations)
         # if VERBOSE:
             # print('\nwriting thermo data')
             # progress(futures)
-        # operations = [delayed(writeTraj)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
-        # futures = client.compute(operations)
+        # operations = [delayed(write_traj)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
+        # futures = CLIENT.compute(operations)
         # if VERBOSE:
             # print('\nwriting traj data')
             # progress(futures)
@@ -298,8 +319,8 @@ def writeOutput():
             # print('writing data')
         # for i in xrange(NPRESS):
             # for j in xrange(NTEMP):
-                # writeThermo(i, j)
-                # writeTraj(i, j)
+                # write_thermo(i, j)
+                # write_traj(i, j)
     # write to data storage files
     if VERBOSE:
         if PARALLEL:
@@ -308,27 +329,27 @@ def writeOutput():
             print('writing data')
     for i in xrange(NPRESS):
         for j in xrange(NTEMP):
-            writeThermo(i, j)
-            writeTraj(i, j)
+            write_thermo(i, j)
+            write_traj(i, j)
 
 # ---------------------------------
 # lammps file/object initialization
 # ---------------------------------
 
 
-def fpref(i):
+def file_prefix(i):
     ''' returns file prefix for simulation '''
     prefix = '%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL][0], int(P[i]))
     return os.getcwd()+'/'+prefix
 
 
-def lammpsInput(i, j):
+def lammps_input(i, j):
     ''' constructs input file for lammps
         takes element name, lattice definitions, size, and simulation name
         returns input file name '''
     lj_param = (1.0, 1.0)
     # convert lattice definition list to strings
-    prefix = fpref(i)
+    prefix = file_prefix(i)
     # set lammps file name
     lmpsfilein = prefix+'.in'
     # open lammps file
@@ -376,7 +397,7 @@ def lammpsInput(i, j):
     return lmpsfilein
 
 
-def lammpsExtract(lmps):
+def lammps_extract(lmps):
     ''' extract system properties from lammps object '''
     # extract all system info
     natoms = lmps.extract_global('natoms', 0)
@@ -394,10 +415,10 @@ def lammpsExtract(lmps):
     return res
 
 
-def sampleInit(i, j):
+def sample_init(i, j):
     ''' initializes system info and data storage files '''
     # generate input file
-    lmpsfilein = lammpsInput(i, j)
+    lmpsfilein = lammps_input(i, j)
     # initialize lammps
     lmps = lammps(cmdargs=['-log', 'none', '-screen', 'none'])
     lmps.file(lmpsfilein)
@@ -408,7 +429,7 @@ def sampleInit(i, j):
     seed = np.random.randint(1, 2**16)
     lmps.command('displace_atoms all random %f %f %f %d' % (3*(dpos[i, j],)+(seed,)))
     # extract all system info
-    natomsinit, xinit, vinit, tempinit, peinit, keinit, virialinit, boxinit, volinit = lammpsExtract(lmps)
+    natomsinit, xinit, vinit, tempinit, peinit, keinit, virialinit, boxinit, volinit = lammps_extract(lmps)
     # data storage files
     thermoinit = lmpsfilein.replace('.in', '%02d%02d.thrm' % (i, j))
     trajinit = lmpsfilein.replace('.in', '%02d%02d.traj' % (i, j))
@@ -422,29 +443,30 @@ def sampleInit(i, j):
         pass
     lmps.close()
     # return system info and data storage files
-    res = natomsinit, xinit, vinit, tempinit, peinit, keinit, virialinit, boxinit, volinit, thermoinit, trajinit
+    res = (natomsinit, xinit, vinit, tempinit, peinit, keinit, virialinit, boxinit, volinit,
+           thermoinit, trajinit)
     return res
 
-def samplesInit():
+def samples_init():
     ''' initializes all samples '''
     if PARALLEL:
-        operations = [delayed(defineConstants)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
-        futures = client.compute(operations)
+        operations = [delayed(define_constants)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
+        futures = CLIENT.compute(operations)
         if VERBOSE:
             print('setting constants')
             progress(futures)
-        results = client.gather(futures)
+        results = CLIENT.gather(futures)
         k = 0
         for i in xrange(NPRESS):
             for j in xrange(NTEMP):
                 ET[i, j], PF[i, j] = results[k]
                 k += 1
-        operations = [delayed(sampleInit)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
-        futures = client.compute(operations)
+        operations = [delayed(sample_init)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
+        futures = CLIENT.compute(operations)
         if VERBOSE:
             print('\ninitializing samples')
             progress(futures)
-        results = client.gather(futures)
+        results = CLIENT.gather(futures)
         k = 0
         for i in xrange(NPRESS):
             for j in xrange(NTEMP):
@@ -453,8 +475,8 @@ def samplesInit():
                 natoms[i, j], x[i, j], v[i, j] = dat[:3]
                 temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
                 THERMO[i, j], TRAJ[i, j] = dat[9:11]
-        operations = [delayed(thermoHeader)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
-        futures = client.compute(operations)
+        operations = [delayed(thermo_header)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
+        futures = CLIENT.compute(operations)
         if VERBOSE:
             print('\nwriting thermo headers')
             progress(futures)
@@ -465,25 +487,26 @@ def samplesInit():
             # loop through temperatures
             for j in xrange(NTEMP):
                 # set thermo constants
-                ET[i, j], PF[i, j] = defineConstants(i, j)
+                ET[i, j], PF[i, j] = define_constants(i, j)
                 # initialize lammps object and data storage files
-                dat = sampleInit(i, j)
+                dat = sample_init(i, j)
                 natoms[i, j], x[i, j], v[i, j] = dat[:3]
                 temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
                 THERMO[i, j], TRAJ[i, j] = dat[9:11]
                 # write thermo file header
-                thermoHeader(i, j)
+                thermo_header(i, j)
 
 
-def lammpsInit(i, j):
+def lammps_init(i, j):
     ''' initializes system info and data storage files '''
     # generate input file
-    lmpsfilein = lammpsInput(i, j)
+    lmpsfilein = lammps_input(i, j)
     # initialize lammps
     lmps = lammps(cmdargs=['-log', 'none', '-screen', 'none'])
     lmps.file(lmpsfilein)
     # set system info
-    lmps.command('change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box' % (3*(box[i, j],)))
+    box_dim = (3*(box[i, j],))
+    lmps.command('change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box' % box_dim)
     lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x[i, j]))
     lmps.scatter_atoms('v', 1, 3, np.ctypeslib.as_ctypes(v[i, j]))
     lmps.command('run 0')
@@ -494,7 +517,7 @@ def lammpsInit(i, j):
 # -----------------
 
 
-def bulkPositionMC(i, j, lmps, ntryposnew, naccposnew):
+def bulk_position_mc(i, j, lmps, ntryposnew, naccposnew):
     ''' classic position monte carlo
         simultaneous random displacement of atoms
         accepts/rejects based on energy metropolis criterion '''
@@ -522,7 +545,7 @@ def bulkPositionMC(i, j, lmps, ntryposnew, naccposnew):
     return res
 
 
-def iterPositionMC(i, j, lmps, ntryposnew, naccposnew):
+def iter_position_mc(i, j, lmps, ntryposnew, naccposnew):
     ''' classic position monte carlo
         iterative random displacement of atoms
         accepts/rejects based on energy metropolis criterion '''
@@ -560,7 +583,7 @@ def iterPositionMC(i, j, lmps, ntryposnew, naccposnew):
     return res
 
 
-def volumeMC(i, j, lmps, ntryvolnew, naccvolnew):
+def volume_mc(i, j, lmps, ntryvolnew, naccvolnew):
     ''' isobaric-isothermal volume monte carlo
         scales box and positions
         accepts/rejects based on enthalpy metropolis criterion '''
@@ -604,7 +627,7 @@ def volumeMC(i, j, lmps, ntryvolnew, naccvolnew):
     return res
 
 
-def hamiltonianMC(i, j, lmps, ntryhmcnew, nacchmcnew):
+def hamiltonian_mc(i, j, lmps, ntryhmcnew, nacchmcnew):
     ''' hamiltionian monte carlo
         short md run at generated velocities for desired temp
         accepts/rejects based on energy metropolis criterion '''
@@ -655,7 +678,7 @@ def hamiltonianMC(i, j, lmps, ntryhmcnew, nacchmcnew):
 # ----------------------------
 
 
-def updateMCParam(i, j):
+def update_mc_param(i, j):
     ''' adaptive update of monte carlo parameters '''
     # update position displacment for pos-mc
     if accpos[i, j] < 0.5:
@@ -681,42 +704,42 @@ def updateMCParam(i, j):
 # ---------------------
 
 
-def moveMC(i, j, lmps, ntryposnew, naccposnew, ntryvolnew, naccvolnew, ntryhmcnew, nacchmcnew):
+def move_mc(i, j, lmps, ntryposnew, naccposnew, ntryvolnew, naccvolnew, ntryhmcnew, nacchmcnew):
     ''' performs monte carlo moves '''
     roll = np.random.rand()
     # position monte carlo
     if roll <= PPOS:
-        lmps, ntryposnew, naccposnew = bulkPositionMC(i, j, lmps, ntryposnew, naccposnew)
-        # lmps, ntryposnew, naccposnew = iterPositionMC(i, j, lmps, ntryposnew, naccposnew)
+        lmps, ntryposnew, naccposnew = bulk_position_mc(i, j, lmps, ntryposnew, naccposnew)
+        # lmps, ntryposnew, naccposnew = iter_position_mc(i, j, lmps, ntryposnew, naccposnew)
     # volume monte carlo
     elif roll <= (PPOS+PVOL):
-        lmps, ntryvolnew, naccvolnew = volumeMC(i, j, lmps, ntryvolnew, naccvolnew)
+        lmps, ntryvolnew, naccvolnew = volume_mc(i, j, lmps, ntryvolnew, naccvolnew)
     # hamiltonian monte carlo
     else:
-        lmps, ntryhmcnew, nacchmcnew = hamiltonianMC(i, j, lmps, ntryhmcnew, nacchmcnew)
+        lmps, ntryhmcnew, nacchmcnew = hamiltonian_mc(i, j, lmps, ntryhmcnew, nacchmcnew)
     res = lmps, ntryposnew, naccposnew, ntryvolnew, naccvolnew, ntryhmcnew, nacchmcnew
     return res
 
 
-def getSample(i, j):
+def get_sample(i, j):
     ''' performs enough monte carlo moves to generate a sample (determined by mod) '''
     # initialize lammps object
-    lmps = lammpsInit(i, j)
+    lmps = lammps_init(i, j)
     ntryposnew, naccposnew, ntryvolnew, naccvolnew, ntryhmcnew, nacchmcnew = (ntrypos[i, j], naccpos[i, j],
                                                                               ntryvol[i, j], naccvol[i, j],
                                                                               ntryhmc[i, j], nacchmc[i, j])
     # loop through monte carlo moves
     for k in xrange(MOD):
-        dat = moveMC(i, j, lmps,
-                     ntryposnew, naccposnew,
-                     ntryvolnew, naccvolnew,
-                     ntryhmcnew, nacchmcnew)
+        dat = move_mc(i, j, lmps,
+                      ntryposnew, naccposnew,
+                      ntryvolnew, naccvolnew,
+                      ntryhmcnew, nacchmcnew)
         lmps = dat[0]
         ntryposnew, naccposnew = dat[1:3]
         ntryvolnew, naccvolnew = dat[3:5]
         ntryhmcnew, nacchmcnew = dat[5:7]
     # extract system properties
-    natomsnew, xnew, vnew, tempnew, penew, kenew, virialnew, boxnew, volnew = lammpsExtract(lmps)
+    natomsnew, xnew, vnew, tempnew, penew, kenew, virialnew, boxnew, volnew = lammps_extract(lmps)
     # close lammps and remove input file
     lmps.close()
     # acceptation ratios
@@ -725,7 +748,7 @@ def getSample(i, j):
         accvolnew = np.nan_to_num(np.float64(naccvolnew)/np.float64(ntryvolnew))
         acchmcnew = np.nan_to_num(np.float64(nacchmcnew)/np.float64(ntryhmcnew))
     # update mc params
-    dposnew, dboxnew, dtnew = updateMCParam(i, j)
+    dposnew, dboxnew, dtnew = update_mc_param(i, j)
     # return lammps object, tries/acceptation counts, and mc params
     res = (natomsnew, xnew, vnew, tempnew, penew, kenew, virialnew, boxnew, volnew,
            ntryposnew, naccposnew, ntryvolnew, naccvolnew, ntryhmcnew, nacchmcnew,
@@ -733,19 +756,19 @@ def getSample(i, j):
     return res
 
 
-def getSamples():
+def get_samples():
     ''' performs monte carlo for all configurations to generate new samples '''
     if PARALLEL:
         # list of delayed operations
-        operations = [delayed(getSample)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
+        operations = [delayed(get_sample)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
         # submit futures to client
-        futures = client.compute(operations)
+        futures = CLIENT.compute(operations)
         # progress bar
         if VERBOSE:
             print('performing monte carlo')
             progress(futures)
         # gather results from workers
-        results = client.gather(futures)
+        results = CLIENT.gather(futures)
         # update system properties and monte carlo parameters
         k = 0
         for i in xrange(NPRESS):
@@ -767,7 +790,7 @@ def getSamples():
             # loop through temperatures
             for j in xrange(NTEMP):
                 # get new sample configuration for press/temp combo
-                dat = getSample(i, j)
+                dat = get_sample(i, j)
                 natoms[i, j], x[i, j], v[i, j] = dat[:3]
                 temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
                 ntrypos[i, j], naccpos[i, j] = dat[9:11]
@@ -782,7 +805,7 @@ def getSamples():
 # -----------------------------------------
 
 
-def repExch():
+def replica_exchange():
     ''' performs parallel tempering acrros all samples
         accepts/rejects based on enthalpy metropolis criterion '''
     # flatten system properties and constants
@@ -841,20 +864,20 @@ def repExch():
 # -----------
 
 # initialize samples
-samplesInit()
+samples_init()
 # loop through to number of samples that need to be collected
 for i in xrange(NSMPL):
     if VERBOSE:
         print('step: %d' % i)
     # collect samples for all configurations
-    getSamples()
+    get_samples()
     # write to output files
-    writeOutput()
+    write_output()
     # perform replica exchange markov chain monte carlo (parallel tempering)
-    repExch()
+    replica_exchange()
 if PARALLEL:
     # terminate client after completion
-    client.close()
+    CLIENT.close()
 
 # ------------------
 # final data storage
@@ -865,7 +888,7 @@ if VERBOSE:
 # loop through pressures
 for i in xrange(NPRESS):
     # get prefix
-    prefix = fpref(i)
+    prefix = file_prefix(i)
     # open collected thermo data file
     with open(prefix+'.thrm', 'wb') as fo:
         # write data to collected thermo file
