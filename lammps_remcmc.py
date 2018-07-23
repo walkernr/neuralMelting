@@ -36,7 +36,7 @@ PARSER.add_argument('-m', '--memory', help='total job memory',
                     type=int, default=32)
 # worker information
 PARSER.add_argument('-nw', '--workers', help='total job worker count',
-                    type=int, default=4)
+                    type=int, default=16)
 PARSER.add_argument('-nt', '--threads', help='threads per worker',
                     type=int, default=1)
 # system information
@@ -53,16 +53,16 @@ PARSER.add_argument('-pr', '--pressure_range', help='pressure range',
                     type=float, nargs=2, default=[2, 8])
 # temperature information
 PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures',
-                    type=int, default=4)
+                    type=int, default=48)
 PARSER.add_argument('-tr', '--temperature_range', help='temperature range',
                     type=float, nargs=2, default=[0.25, 2.5])
 # monte carlo information
 PARSER.add_argument('-sc', '--sample_cutoff', help='sample cutoff',
-                    type=int, default=0)
+                    type=int, default=1024)
 PARSER.add_argument('-sn', '--sample_number', help='sample number',
-                    type=int, default=4)
+                    type=int, default=1024)
 PARSER.add_argument('-sm', '--sample_mod', help='sample record modulo',
-                    type=int, default=32)
+                    type=int, default=128)
 PARSER.add_argument('-pm', '--position_move', help='position monte carlo move probability',
                     type=float, default=0.015625)
 PARSER.add_argument('-vm', '--volume_move', help='volume monte carlo move probability',
