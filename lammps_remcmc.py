@@ -308,11 +308,15 @@ def write_output():
         # if VERBOSE:
             # print('\nwriting thermo data')
             # progress(futures)
+        # del operations
+        # del futures
         # operations = [delayed(write_traj)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
         # futures = CLIENT.compute(operations)
         # if VERBOSE:
             # print('\nwriting traj data')
             # progress(futures)
+        # del operations
+        # del futures
     # else:
         # # write to data storage files
         # if VERBOSE:
@@ -461,6 +465,9 @@ def samples_init():
             for j in xrange(NTEMP):
                 ET[i, j], PF[i, j] = results[k]
                 k += 1
+        del operations
+        del futures
+        del results
         operations = [delayed(sample_init)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
@@ -475,11 +482,16 @@ def samples_init():
                 natoms[i, j], x[i, j], v[i, j] = dat[:3]
                 temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
                 THERMO[i, j], TRAJ[i, j] = dat[9:11]
+        del operations
+        del futures
+        del results
         operations = [delayed(thermo_header)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
             print('\nwriting thermo headers')
             progress(futures)
+        del operations
+        del futures
     else:
         ('initializing constants, samples, and output files')
         # loop through pressures
@@ -782,6 +794,9 @@ def get_samples():
                 ntryhmc[i, j], nacchmc[i, j] = dat[13:15]
                 accpos[i, j], accvol[i, j], acchmc[i, j] = dat[15:18]
                 dpos[i, j], dbox[i, j], dt[i, j] = dat[18:21]
+        del operations
+        del futures
+        del results
     else:
         # loop through pressures
         if VERBOSE:
