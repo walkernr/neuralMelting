@@ -16,11 +16,12 @@ from lammps import lammps
 # --------------
 
 # parse command line (help option generated automatically)
-
 PARSER = argparse.ArgumentParser()
+# boolean flags
 PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
 PARSER.add_argument('-p', '--parallel', help='parallel run', action='store_true')
 PARSER.add_argument('-d', '--distributed', help='distributed run', action='store_true')
+# pbs inputs
 PARSER.add_argument('-q', '--queue', help='submission queue',
                     type=str, default='lasigma')
 PARSER.add_argument('-a', '--allocation', help='submission allocation',
@@ -33,24 +34,29 @@ PARSER.add_argument('-w', '--walltime', help='job walltime',
                     type=int, default=24)
 PARSER.add_argument('-m', '--memory', help='total job memory',
                     type=int, default=32)
+# worker information
 PARSER.add_argument('-nw', '--workers', help='total job worker count',
                     type=int, default=4)
 PARSER.add_argument('-nt', '--threads', help='threads per worker',
                     type=int, default=1)
+# system information
 PARSER.add_argument('-n', '--name', help='name of simulation',
                     type=str, default='test')
 PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
 PARSER.add_argument('-ss', '--supercell_size', help='supercell size',
                     type=int, default=4)
+# pressure information
 PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
                     type=int, default=4)
 PARSER.add_argument('-pr', '--pressure_range', help='pressure range',
                     type=float, nargs=2, default=[2, 8])
+# temperature information
 PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures',
                     type=int, default=4)
 PARSER.add_argument('-tr', '--temperature_range', help='temperature range',
                     type=float, nargs=2, default=[0.25, 2.5])
+# monte carlo information
 PARSER.add_argument('-sc', '--sample_cutoff', help='sample cutoff',
                     type=int, default=0)
 PARSER.add_argument('-sn', '--sample_number', help='sample number',
@@ -63,7 +69,7 @@ PARSER.add_argument('-vm', '--volume_move', help='volume monte carlo move probab
                     type=float, default=0.25)
 PARSER.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps',
                     type=int, default=8)
-
+# parse arguments
 ARGS = PARSER.parse_args()
 
 # booleans for run type
@@ -308,15 +314,11 @@ def write_output():
         # if VERBOSE:
             # print('\nwriting thermo data')
             # progress(futures)
-        # del operations
-        # del futures
         # operations = [delayed(write_traj)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
         # futures = CLIENT.compute(operations)
         # if VERBOSE:
             # print('\nwriting traj data')
             # progress(futures)
-        # del operations
-        # del futures
     # else:
         # # write to data storage files
         # if VERBOSE:
@@ -465,9 +467,6 @@ def samples_init():
             for j in xrange(NTEMP):
                 ET[i, j], PF[i, j] = results[k]
                 k += 1
-        del operations
-        del futures
-        del results
         operations = [delayed(sample_init)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
@@ -482,16 +481,11 @@ def samples_init():
                 natoms[i, j], x[i, j], v[i, j] = dat[:3]
                 temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
                 THERMO[i, j], TRAJ[i, j] = dat[9:11]
-        del operations
-        del futures
-        del results
         operations = [delayed(thermo_header)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
             print('\nwriting thermo headers')
             progress(futures)
-        del operations
-        del futures
     else:
         ('initializing constants, samples, and output files')
         # loop through pressures
@@ -794,9 +788,6 @@ def get_samples():
                 ntryhmc[i, j], nacchmc[i, j] = dat[13:15]
                 accpos[i, j], accvol[i, j], acchmc[i, j] = dat[15:18]
                 dpos[i, j], dbox[i, j], dt[i, j] = dat[18:21]
-        del operations
-        del futures
-        del results
     else:
         # loop through pressures
         if VERBOSE:
@@ -890,6 +881,7 @@ for i in xrange(NSMPL):
     write_output()
     # perform replica exchange markov chain monte carlo (parallel tempering)
     replica_exchange()
+    CLIENT.restart()
 if PARALLEL:
     # terminate client after completion
     CLIENT.close()
