@@ -184,7 +184,7 @@ accpos = np.zeros((NPRESS, NTEMP), dtype=np.float32)
 accvol = np.zeros((NPRESS, NTEMP), dtype=np.float32)
 acchmc = np.zeros((NPRESS, NTEMP), dtype=np.float32)
 # max box adjustment
-dbox = 0.03125*SZ*LAT[EL][1]*np.ones((NPRESS, NTEMP), dtype=np.float32)
+dbox = 0.03125*LAT[EL][1]*np.ones((NPRESS, NTEMP), dtype=np.float32)
 # max pos adjustment
 dpos = 0.03125*LAT[EL][1]*np.ones((NPRESS, NTEMP), dtype=np.float32)
 # hmc timestep
