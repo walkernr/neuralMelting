@@ -29,12 +29,12 @@ ARGS = PARSER.parse_args()
 VERBOSE = ARGS.verbose
 NAME = ARGS.name
 EL = ARGS.element
-NPRESS = ARGS.pressure_number
-LPRESS, hpress = ARGS.pressure_range
-PRESSIND = ARGS.pressure_index
+NP = ARGS.pressure_number
+LP, HP = ARGS.pressure_range
+PI = ARGS.pressure_index
 
 # pressure
-P = np.linspace(LPRESS, hpress, NPRESS, dtype=np.float32)
+P = np.linspace(LP, HP, NP, dtype=np.float32)
 # lattice type
 LAT = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -42,68 +42,46 @@ LAT = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # file prefix
-prefix = '%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL], int(P[PRESSIND]))
-# get full directory
-prefix = os.getcwd()+'/'+prefix
+PREFIX = os.getcwd()+'/'+'%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL], int(P[PI]))
 
 if VERBOSE:
-    print('parsing data for %s at pressure %f' % (EL.lower(), P[PRESSIND]))
+    print('parsing data for %s at pressure %f' % (EL.lower(), P[PI]))
 # parse thermo file
-with open(prefix+'.thrm', 'rb') as fi:
-    temp = []
-    pe = []
-    ke = []
-    virial = []
-    vol = []
-    accpos = []
-    accvol = []
-    acchmc = []
-    iters = iter(fi)
-    for lina in iters:
-        # ignore header
-        if '#' not in lina:
-            dat = lina.split()
-            temp.append(float(dat[0]))
-            pe.append(float(dat[1]))
-            ke.append(float(dat[2]))
-            virial.append(float(dat[3]))
-            vol.append(float(dat[4]))
-            accpos.append(float(dat[5]))
-            accvol.append(float(dat[6]))
-            acchmc.append(float(dat[7]))
+TEMP, PE, KE, VIRIAL, VOL, AP, AV, AH = np.split(np.loadtxt(PREFIX+'.thrm', dtype=np.float32), 8, 1)
+TEMP = TEMP[:, 0]
+PE = PE[:, 0]
+KE = KE[:, 0]
+VIRIAL = VIRIAL[:, 0]
+VOL = VOL[:, 0]
+AP = AP[:, 0]
+AV = AV[:, 0]
+AH = AH[:, 0]
 if VERBOSE:
-    print('%d thermodynamic property steps parsed' % len(temp))
+    print('%d thermodynamic property steps parsed' % len(TEMP))
+
 # parse trajectory file
-with open(prefix+'.traj', 'rb') as fi:
-    iters = iter(fi)
-    natoms = []
-    box = []
-    pos = []
-    for lina in iters:
-        dat = lina.split()
-        if len(dat) == 2:
-            natoms.append(int(dat[0]))
-            box.append(float(dat[1]))
-            x = np.zeros((natoms[-1], 3), dtype=np.float32)
-            for j in xrange(natoms[-1]):
-                linb = iters.next()
-                x[j, :] = np.array(linb.split()).astype(np.float32)
-            pos.append(x.reshape(x.size))
+with open(PREFIX+'.traj', 'rb') as traj_in:
+    DATA = [line.split() for line in traj_in.readlines()]
+    NATOMS, BOX = np.split(np.array([values for values in DATA if len(values) == 2]), 2, 1)
+    NATOMS = NATOMS.astype(np.uint16)[:, 0]
+    BOX = BOX.astype(np.float32)[:, 0]
+    X = [np.array(values).astype(np.float32) for values in DATA if len(values) == 3]
+    X = np.concatenate(tuple(X), 0).reshape(NATOMS.size, 3*NATOMS[0])
 if VERBOSE:
-    print('%d trajectory steps parsed' % len(natoms))
+    print('%d trajectory steps parsed' % len(NATOMS))
 
 # pickle data
-pickle.dump(np.array(temp, dtype=np.float32), open(prefix+'.temp.pickle', 'wb'))
-pickle.dump(np.array(pe, dtype=np.float32), open(prefix+'.pe.pickle', 'wb'))
-pickle.dump(np.array(ke, dtype=np.float32), open(prefix+'.ke.pickle', 'wb'))
-pickle.dump(np.array(virial, dtype=np.float32), open(prefix+'.virial.pickle', 'wb'))
-pickle.dump(np.array(vol, dtype=np.float32), open(prefix+'.vol.pickle', 'wb'))
-pickle.dump(np.array(accpos, dtype=np.float32), open(prefix+'.accpos.pickle', 'wb'))
-pickle.dump(np.array(accvol, dtype=np.float32), open(prefix+'.accvol.pickle', 'wb'))
-pickle.dump(np.array(acchmc, dtype=np.float32), open(prefix+'.acchmc.pickle', 'wb'))
-pickle.dump(np.array(natoms, dtype=np.uint16), open(prefix+'.natoms.pickle', 'wb'))
-pickle.dump(np.array(box, dtype=np.float32), open(prefix+'.box.pickle', 'wb'))
-pickle.dump(np.array(pos, dtype=np.float32), open(prefix+'.pos.pickle', 'wb'))
+pickle.dump(TEMP, open(PREFIX+'.temp.pickle', 'wb'))
+pickle.dump(PE, open(PREFIX+'.pe.pickle', 'wb'))
+pickle.dump(KE, open(PREFIX+'.ke.pickle', 'wb'))
+pickle.dump(VIRIAL, open(PREFIX+'.virial.pickle', 'wb'))
+pickle.dump(VOL, open(PREFIX+'.vol.pickle', 'wb'))
+pickle.dump(AP, open(PREFIX+'.ap.pickle', 'wb'))
+pickle.dump(AV, open(PREFIX+'.av.pickle', 'wb'))
+pickle.dump(AH, open(PREFIX+'.ah.pickle', 'wb'))
+pickle.dump(NATOMS, open(PREFIX+'.natoms.pickle', 'wb'))
+pickle.dump(BOX, open(PREFIX+'.box.pickle', 'wb'))
+pickle.dump(X, open(PREFIX+'.pos.pickle', 'wb'))
 
 if VERBOSE:
     print('all properties pickled')

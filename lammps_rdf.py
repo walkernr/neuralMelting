@@ -12,55 +12,55 @@ import pickle
 import numpy as np
 import numba as nb
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
-parser.add_argument('-p', '--parallel', help='parallel run', action='store_true')
-parser.add_argument('-d', '--distributed', help='distributed run', action='store_true')
-parser.add_argument('-q', '--queue', help='submission queue',
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
+PARSER.add_argument('-p', '--parallel', help='parallel run', action='store_true')
+PARSER.add_argument('-d', '--distributed', help='distributed run', action='store_true')
+PARSER.add_argument('-q', '--queue', help='submission queue',
                     type=str, default='jobqueue')
-parser.add_argument('-a', '--allocation', help='submission allocation',
+PARSER.add_argument('-a', '--allocation', help='submission allocation',
                     type=str, default='startup')
-parser.add_argument('-nn', '--nodes', help='number of nodes',
+PARSER.add_argument('-nn', '--nodes', help='number of nodes',
                     type=int, default=1)
-parser.add_argument('-np', '--procs_per_node', help='number of processors per node',
+PARSER.add_argument('-np', '--procs_per_node', help='number of processors per node',
                     type=int, default=16)
-parser.add_argument('-w', '--walltime', help='job walltime',
+PARSER.add_argument('-w', '--walltime', help='job walltime',
                     type=int, default=24)
-parser.add_argument('-m', '--memory', help='total job memory',
+PARSER.add_argument('-m', '--memory', help='total job memory',
                     type=int, default=32)
-parser.add_argument('-nw', '--workers', help='total job worker count',
+PARSER.add_argument('-nw', '--workers', help='total job worker count',
                     type=int, default=16)
-parser.add_argument('-nt', '--threads', help='threads per worker',
+PARSER.add_argument('-nt', '--threads', help='threads per worker',
                     type=int, default=1)
-parser.add_argument('-n', '--name', help='name of simulation',
+PARSER.add_argument('-n', '--name', help='name of simulation',
                     type=str, default='test')
-parser.add_argument('-e', '--element', help='element choice',
+PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
-parser.add_argument('-pn', '--pressure_number', help='number of pressures',
+PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
                     type=int, default=4)
-parser.add_argument('-pr', '--pressure_range', help='pressure range',
+PARSER.add_argument('-pr', '--pressure_range', help='pressure range',
                     type=float, nargs=2, default=[2, 8])
-parser.add_argument('-i', '--pressure_index', help='pressure index',
+PARSER.add_argument('-i', '--pressure_index', help='pressure index',
                     type=int, default=0)
 
-args = parser.parse_args()
+ARGS = PARSER.parse_args()
 
-VERBOSE = args.verbose
-PARALLEL = args.parallel
-DISTRIBUTED = args.distributed
-QUEUE = args.queue
-ALLOC = args.allocation
-NODES = args.nodes
-PPN = args.procs_per_node
-WALLTIME = args.walltime
-MEM = args.memory
-NWORKER = args.workers
-NTHREAD = args.threads
-NAME = args.name
-EL = args.element
-NPRESS = args.pressure_number
-LPRESS, HPRESS = args.pressure_range
-PRESSIND = args.pressure_index
+VERBOSE = ARGS.verbose
+PARALLEL = ARGS.parallel
+DISTRIBUTED = ARGS.distributed
+QUEUE = ARGS.queue
+ALLOC = ARGS.allocation
+NODES = ARGS.nodes
+PPN = ARGS.procs_per_node
+WALLTIME = ARGS.walltime
+MEM = ARGS.memory
+NWORKER = ARGS.workers
+NTHREAD = ARGS.threads
+NAME = ARGS.name
+EL = ARGS.element
+NP = ARGS.pressure_number
+LP, HP = ARGS.pressure_range
+PI = ARGS.pressure_index
 
 if PARALLEL:
     os.environ['DASK_ALLOWED_FAILURES'] = '4'
@@ -71,7 +71,7 @@ if DISTRIBUTED:
     from dask_jobqueue import PBSCluster
 
 # pressure
-P = np.linspace(LPRESS, HPRESS, NPRESS, dtype=np.float32)
+P = np.linspace(LP, HP, NP, dtype=np.float32)
 # lattice type
 LAT = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -79,15 +79,15 @@ LAT = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # file prefix
-prefix = os.getcwd()+'/'+'%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL], int(P[PRESSIND]))
+PREFIX = os.getcwd()+'/'+'%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL], int(P[PI]))
 
 
 def load_data():
     ''' load atom count, box dimension, and atom positions '''
     # load pickles
-    natoms = pickle.load(open('.'.join([prefix, 'natoms', 'pickle'])))
-    box = pickle.load(open('.'.join([prefix, 'box', 'pickle'])))
-    pos = pickle.load(open('.'.join([prefix, 'pos', 'pickle'])))
+    natoms = pickle.load(open('.'.join([PREFIX, 'natoms', 'pickle'])))
+    box = pickle.load(open('.'.join([PREFIX, 'box', 'pickle'])))
+    pos = pickle.load(open('.'.join([PREFIX, 'pos', 'pickle'])))
     # return data
     return natoms, box, pos
 
@@ -116,93 +116,91 @@ def calculate_spatial():
     dv = dv*l**3
     # differential number of atoms contained by shell at distance r
     dni = np.multiply(nrho[:, np.newaxis], dv[np.newaxis, :])
-    # vector for containing lattice vectors
-    R = []
     # base values for lattice vectors
-    base = [-1, 0, 1]
+    b = [-1, 0, 1]
     # generate lattice vectors for ever direction from base
-    for i in xrange(len(base)):
-        for j in xrange(len(base)):
-            for k in xrange(len(base)):
-                R.append(np.array([base[i], base[j], base[k]], dtype=np.float64))
-    R = np.array(R)
+    br = np.array([[b[i], b[j], b[k]] for i in xrange(3) for j in xrange(3) for k in xrange(3)],
+                  dtype=np.uint32)
     # create vector for rdf
     gs = np.zeros((len(natoms), bins), dtype=np.float64)
     # reshape position vector
     pos = pos.reshape((len(natoms), natoms[0], -1))
     # return properties
-    return natoms, box, pos, R, r, dr, nrho, dni, gs
+    return natoms, box, pos, br, r, dr, nrho, dni, gs
 
 
 @nb.njit
 def calculate_rdf(j):
     ''' calculate rdf for sample j '''
-    g = np.copy(gs[j, :])
+    g = np.copy(GS[j, :])
     # loop through lattice vectors
-    for k in xrange(R.shape[0]):
+    for k in xrange(BR.shape[0]):
         # displacement vector matrix for sample j
-        dvm = pos[j, :]-(pos[j, :]+box[j]*R[k].reshape((1, -1))).reshape((-1, 1, 3))
+        dvm = POS[j, :]-(POS[j, :]+BOX[j]*BR[k].reshape((1, -1))).reshape((-1, 1, 3))
         # vector of displacements between atoms
         d = np.sqrt(np.sum(np.square(dvm), -1))
         # calculate rdf for sample j
-        g[1:] += np.histogram(d, r)[0]
+        g[1:] += np.histogram(d, R)[0]
     return g
 
 # get spatial properties
-natoms, box, pos, R, r, dr, nrho, dni, gs = calculate_spatial()
+NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, GS = calculate_spatial()
 # calculate radial distribution for each sample in parallel
+
 if PARALLEL:
-    operations = [delayed(calculate_rdf)(j) for j in xrange(len(natoms))]
     if DISTRIBUTED:
         # construct distributed cluster
-        cluster = PBSCluster(queue=QUEUE, project=ALLOC,
+        CLUSTER = PBSCluster(queue=QUEUE, project=ALLOC,
                              resource_spec='nodes=%d:ppn=%d' % (NODES, PPN),
                              walltime='%d:00:00' % WALLTIME,
                              processes=NWORKER, cores=NTHREAD*NWORKER, memory=str(MEM)+'GB')
-        cluster.start_workers(1)
+        CLUSTER.start_workers(1)
         # start client with distributed cluster
-        client = Client(cluster)
-        while 'processes=0 cores=0' in str(client.scheduler_info):
+        CLIENT = Client(CLUSTER)
+        while 'processes=0 cores=0' in str(CLIENT.scheduler_info):
             time.sleep(5)
-            print(client.scheduler_info)
+            print(CLIENT.scheduler_info)
     else:
         # construct local cluster
-        cluster = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD)
+        CLUSTER = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD)
         # start client with local cluster
-        client = Client(cluster)
-    futures = client.compute(operations)
+        CLIENT = Client(CLUSTER)
+    OPERATIONS = [delayed(calculate_rdf)(u) for u in xrange(len(NATOMS))]
+    FUTURES = CLIENT.compute(OPERATIONS)
     if VERBOSE:
-        print('calculating rdfs for %s at pressure %f' % (EL.lower(), P[PRESSIND]))
-        progress(futures)
-    results = client.gather(futures)
-    for j in xrange(len(natoms)):
-        gs[j, :] = results[j]
-    client.close()
+        print('calculating rdfs for %s at pressure %f' % (EL.lower(), P[PI]))
+        progress(FUTURES)
+        print('\n')
+    RESULTS = CLIENT.gather(FUTURES)
+    for u in xrange(len(NATOMS)):
+        GS[u, :] = RESULTS[u]
+    CLIENT.close()
 else:
-    for j in xrange(len(natoms)):
-        gs[j, :] = calculate_rdf(j)
+    for u in xrange(len(NATOMS)):
+        GS[u, :] = calculate_rdf(u)
 
 # adjust rdf by atom count and atoms contained by shells
-g = np.divide(gs, natoms[0]*dni)
+G = np.divide(GS, NATOMS[0]*DNI)
 # calculate domain for structure factor
-q = 2*np.pi/dr*np.fft.fftfreq(r.size)[1:int(r.size/2)]
+Q = 2*np.pi/DR*np.fft.fftfreq(R.size)[1:int(R.size/2)]
 # fourier transform of g
-ftg = -np.imag(dr*np.exp(-complex(0, 1)*q*r[0])*np.fft.fft(r[np.newaxis, :]*(g-1))[:, 1:int(r.size/2)])
+PF = DR*np.exp(-complex(0, 1)*Q*R[0])
+FTG = -np.imag(PF*np.fft.fft(R[np.newaxis, :]*(G-1))[:, 1:int(R.size/2)])
 # structure factor
-s = 1+4*np.pi*nrho[:, np.newaxis]*np.divide(ftg, q)
+S = 1+4*np.pi*NRHO[:, np.newaxis]*np.divide(FTG, Q)
 with np.errstate(divide='ignore', invalid='ignore'):
-    i = np.multiply(np.nan_to_num(np.multiply(g, np.log(g)))-g+1, np.square(r[:]))
+    I = np.multiply(np.nan_to_num(np.multiply(G, np.log(G)))-G+1, np.square(R[:]))
 if VERBOSE:
-    print('\ncalculations finalized')
+    print('calculations finalized')
 
 # pickle data
-pickle.dump(nrho, open(prefix+'.nrho.pickle', 'wb'))
-pickle.dump(dni, open(prefix+'.dni.pickle', 'wb'))
-pickle.dump(r, open(prefix+'.r.pickle', 'wb'))
-pickle.dump(g, open(prefix+'.rdf.pickle', 'wb'))
-pickle.dump(q, open(prefix+'.q.pickle', 'wb'))
-pickle.dump(s, open(prefix+'.sf.pickle', 'wb'))
-pickle.dump(i, open(prefix+'.ef.pickle', 'wb'))
+pickle.dump(NRHO, open(PREFIX+'.nrho.pickle', 'wb'))
+pickle.dump(DNI, open(PREFIX+'.dni.pickle', 'wb'))
+pickle.dump(R, open(PREFIX+'.r.pickle', 'wb'))
+pickle.dump(G, open(PREFIX+'.rdf.pickle', 'wb'))
+pickle.dump(Q, open(PREFIX+'.q.pickle', 'wb'))
+pickle.dump(S, open(PREFIX+'.sf.pickle', 'wb'))
+pickle.dump(I, open(PREFIX+'.ef.pickle', 'wb'))
 
 if VERBOSE:
     print('all properties pickled')
