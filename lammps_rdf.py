@@ -68,6 +68,7 @@ LAT = {'Ti': 'bcc',
 # file prefix
 prefix = os.getcwd()+'/'+'%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL], int(P[PRESSIND]))
 
+
 def loadData():
     ''' load atom count, box dimension, and atom positions '''
     # load pickles
@@ -76,6 +77,7 @@ def loadData():
     pos = pickle.load(open('.'.join([prefix, 'pos', 'pickle'])))
     # return data
     return natoms, box, pos
+
 
 def calculateSpatial():
     ''' calculate spatial properties '''
@@ -117,6 +119,7 @@ def calculateSpatial():
     pos = pos.reshape((len(natoms), natoms[0], -1))
     # return properties
     return natoms, box, pos, R, r, dr, nrho, dni, gs
+
 
 @nb.njit
 def calculateRDF(j):
@@ -165,6 +168,7 @@ if PARALLEL:
 else:
     for j in xrange(len(natoms)):
         gs[j, :] = calculateRDF(j)
+
 # adjust rdf by atom count and atoms contained by shells
 g = np.divide(gs, natoms[0]*dni)
 # calculate domain for structure factor

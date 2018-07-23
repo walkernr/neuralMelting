@@ -138,37 +138,37 @@ TIMESTEP = {'real': 4.0,
 # -------------
 
 # thermo constants
-ET = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-PF = np.zeros((NPRESS, NTEMP), dtype=np.float64)
+ET = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+PF = np.zeros((NPRESS, NTEMP), dtype=np.float32)
 # lammps objects and data storage files
 THERMO = np.empty((NPRESS, NTEMP), dtype=object)
 TRAJ = np.empty((NPRESS, NTEMP), dtype=object)
 # system properties
-natoms = np.zeros((NPRESS, NTEMP), dtype=int)
+natoms = np.zeros((NPRESS, NTEMP), dtype=np.uint16)
 x = np.empty((NPRESS, NTEMP), dtype=object)
 v = np.empty((NPRESS, NTEMP), dtype=object)
-temp = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-pe = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-ke = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-virial = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-box = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-vol = np.zeros((NPRESS, NTEMP), dtype=np.float64)
+temp = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+pe = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+ke = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+virial = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+box = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+vol = np.zeros((NPRESS, NTEMP), dtype=np.float32)
 # monte carlo tries/acceptations
-ntrypos = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-naccpos = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-ntryvol = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-naccvol = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-ntryhmc = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-nacchmc = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-accpos = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-accvol = np.zeros((NPRESS, NTEMP), dtype=np.float64)
-acchmc = np.zeros((NPRESS, NTEMP), dtype=np.float64)
+ntrypos = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+naccpos = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+ntryvol = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+naccvol = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+ntryhmc = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+nacchmc = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+accpos = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+accvol = np.zeros((NPRESS, NTEMP), dtype=np.float32)
+acchmc = np.zeros((NPRESS, NTEMP), dtype=np.float32)
 # max box adjustment
-dbox = 0.03125*LAT[EL][1]*np.ones((NPRESS, NTEMP))
+dbox = 0.03125*LAT[EL][1]*np.ones((NPRESS, NTEMP), dtype=np.float32)
 # max pos adjustment
-dpos = 0.03125*LAT[EL][1]*np.ones((NPRESS, NTEMP))
+dpos = 0.03125*LAT[EL][1]*np.ones((NPRESS, NTEMP), dtype=np.float32)
 # hmc timestep
-dt = TIMESTEP[UNITS[EL]]*np.ones((NPRESS, NTEMP))
+dt = TIMESTEP[UNITS[EL]]*np.ones((NPRESS, NTEMP), dtype=np.float32)
 
 # -----------------
 # initialize client
@@ -408,10 +408,10 @@ def sampleInit(i, j):
     seed = np.random.randint(1, 2**16)
     lmps.command('displace_atoms all random %f %f %f %d' % (3*(dpos[i, j],)+(seed,)))
     # extract all system info
-    natoms, x, v, temp, pe, ke, virial, box, vol = lammpsExtract(lmps)
+    natomsinit, xinit, vinit, tempinit, peinit, keinit, virialinit, boxinit, volinit = lammpsExtract(lmps)
     # data storage files
-    thermo = lmpsfilein.replace('.in', '%02d%02d.thrm' % (i, j))
-    traj = lmpsfilein.replace('.in', '%02d%02d.traj' % (i, j))
+    thermoinit = lmpsfilein.replace('.in', '%02d%02d.thrm' % (i, j))
+    trajinit = lmpsfilein.replace('.in', '%02d%02d.traj' % (i, j))
     try:
         os.remove(thermo)
     except:
@@ -422,7 +422,7 @@ def sampleInit(i, j):
         pass
     lmps.close()
     # return system info and data storage files
-    res = natoms, x, v, temp, pe, ke, virial, box, vol, thermo, traj
+    res = natomsinit, xinit, vinit, tempinit, peinit, keinit, virialinit, boxinit, volinit, thermoinit, trajinit
     return res
 
 def samplesInit():
