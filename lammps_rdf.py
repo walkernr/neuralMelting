@@ -58,7 +58,7 @@ if DISTRIBUTED:
     from dask_jobqueue import PBSCluster
 
 # pressure
-P = np.linspace(LPRESS, HPRESS, NPRESS, dtype=np.float64)
+P = np.linspace(LPRESS, HPRESS, NPRESS, dtype=np.float32)
 # lattice type
 LAT = {'Ti': 'bcc',
        'Al': 'fcc',

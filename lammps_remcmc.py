@@ -133,9 +133,9 @@ UNITS = {'Ti': 'metal',
          'Cu': 'metal',
          'LJ': 'lj'}
 # pressure
-P = np.linspace(LPRESS, HPRESS, NPRESS, dtype=np.float64)
+P = np.linspace(LPRESS, HPRESS, NPRESS, dtype=np.float32)
 # temperature
-T = np.linspace(LTEMP, HTEMP, NTEMP, dtype=np.float64)
+T = np.linspace(LTEMP, HTEMP, NTEMP, dtype=np.float32)
 # lattice type and parameter
 LAT = {'Ti': ('bcc', 2.951),
        'Al': ('fcc', 4.046),
@@ -300,37 +300,37 @@ def write_traj(i, j):
 
 def write_output():
     ''' writes all sample outputs for a monte carlo step '''
-    # if PARALLEL:
-        # # write to data storage files
-        # operations = [delayed(write_thermo)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
-        # futures = CLIENT.compute(operations)
-        # if VERBOSE:
-            # print('\nwriting thermo data')
-            # progress(futures)
-        # operations = [delayed(write_traj)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
-        # futures = CLIENT.compute(operations)
-        # if VERBOSE:
-            # print('\nwriting traj data')
-            # progress(futures)
-    # else:
-        # # write to data storage files
-        # if VERBOSE:
-            # print('writing data')
-        # for i in xrange(NPRESS):
-            # for j in xrange(NTEMP):
-                # write_thermo(i, j)
-                # write_traj(i, j)
+    if PARALLEL:
+        # write to data storage files
+        operations = [delayed(write_thermo)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
+        futures = CLIENT.compute(operations)
+        if VERBOSE:
+            print('\nwriting thermo data')
+            progress(futures)
+        operations = [delayed(write_traj)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
+        futures = CLIENT.compute(operations)
+        if VERBOSE:
+            print('\nwriting traj data')
+            progress(futures)
+    else:
+        # write to data storage files
+        if VERBOSE:
+            print('writing data')
+        for i in xrange(NPRESS):
+            for j in xrange(NTEMP):
+                write_thermo(i, j)
+                write_traj(i, j)
 
     # write to data storage files
-    if VERBOSE:
-        if PARALLEL:
-            print('\nwriting data')
-        else:
-            print('writing data')
-    for i in xrange(NPRESS):
-        for j in xrange(NTEMP):
-            write_thermo(i, j)
-            write_traj(i, j)
+    # if VERBOSE:
+        # if PARALLEL:
+            # print('\nwriting data')
+        # else:
+            # print('writing data')
+    # for i in xrange(NPRESS):
+        # for j in xrange(NTEMP):
+            # write_thermo(i, j)
+            # write_traj(i, j)
 
 # ---------------------------------
 # lammps file/object initialization
@@ -367,22 +367,23 @@ def lammps_input(i, j):
         fo.write('create_box 1 box\n')
         fo.write('create_atoms 1 box\n\n')
         # potential definitions
+        pc_pref = 'pair_coeff * *'
         if EL == 'Ti':
             fo.write('pair_style meam/c\n')
             fo.write('mass 1 47.867\n')
-            fo.write('pair_coeff * * library.meam Ti Al TiAl_Kim_Kim_Jung_Lee_2016.meam %s\n\n' % EL)
+            fo.write('%s library.meam Ti Al TiAl_Kim_Kim_Jung_Lee_2016.meam %s\n\n' % (pc_pref, EL))
         if EL == 'Al':
             fo.write('pair_style meam/c\n')
             fo.write('mass 1 %f\n' % MASS[EL])
-            fo.write('pair_coeff * * library.meam Ti Al TiAl_Kim_Kim_Jung_Lee_2016.meam %s\n\n' % EL)
+            fo.write('%s library.meam Ti Al TiAl_Kim_Kim_Jung_Lee_2016.meam %s\n\n' % (pc_pref, EL))
         if EL == 'Ni':
             fo.write('pair_style meam/c\n')
             fo.write('mass 1 %f\n' % MASS[EL])
-            fo.write('pair_coeff * * library.Ni.meam Ni Ni.meam %s\n\n' % EL)
+            fo.write('%s library.Ni.meam Ni Ni.meam %s\n\n' % (pc_pref, EL))
         if EL == 'Cu':
             fo.write('pair_style meam/c\n')
             fo.write('mass 1 %f\n' % MASS[EL])
-            fo.write('pair_coeff * * library.Cu.meam Cu Cu.meam %s\n\n' % EL)
+            fo.write('%s library.Cu.meam Cu Cu.meam %s\n\n' % (pc_pref, EL))
         if EL == 'LJ':
             fo.write('pair_style lj/cut 2.5\n')
             fo.write('mass 1 %f\n' % MASS[EL])
@@ -609,7 +610,7 @@ def volume_mc(i, j, lmps, ntryvolnew, naccvolnew):
     lmps.command('run 0')
     penew = lmps.extract_compute('thermo_pe', None, 0)/ET[i, j]
     # calculate enthalpy criterion
-    dH = (penew-pe)+PF[i, j]*(volnew-vol)-(natoms+1)*np.log(volnew/vol)
+    dH = (penew-pe)+PF[i, j]*(volnew-vol)-natoms*np.log(volnew/vol)
     if np.random.rand() <= np.min([1, np.exp(-dH)]):
         # update volume acceptations
         naccvolnew += 1

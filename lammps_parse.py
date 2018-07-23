@@ -29,7 +29,7 @@ LPRESS, hpress = ARGS.pressure_range
 PRESSIND = ARGS.pressure_index
 
 # pressure
-P = np.linspace(LPRESS, hpress, NPRESS, dtype=np.float64)
+P = np.linspace(LPRESS, hpress, NPRESS, dtype=np.float32)
 # lattice type
 LAT = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -79,26 +79,26 @@ with open(prefix+'.traj', 'rb') as fi:
         if len(dat) == 2:
             natoms.append(int(dat[0]))
             box.append(float(dat[1]))
-            x = np.zeros((natoms[-1], 3), dtype=float)
+            x = np.zeros((natoms[-1], 3), dtype=np.float32)
             for j in xrange(natoms[-1]):
                 linb = iters.next()
-                x[j, :] = np.array(linb.split()).astype(float)
+                x[j, :] = np.array(linb.split()).astype(np.float32)
             pos.append(x.reshape(x.size))
 if VERBOSE:
     print('%d trajectory steps parsed' % len(natoms))
 
 # pickle data
-pickle.dump(np.array(temp, dtype=float), open(prefix+'.temp.pickle', 'wb'))
-pickle.dump(np.array(pe, dtype=float), open(prefix+'.pe.pickle', 'wb'))
-pickle.dump(np.array(ke, dtype=float), open(prefix+'.ke.pickle', 'wb'))
-pickle.dump(np.array(virial, dtype=float), open(prefix+'.virial.pickle', 'wb'))
-pickle.dump(np.array(vol, dtype=float), open(prefix+'.vol.pickle', 'wb'))
-pickle.dump(np.array(accpos, dtype=float), open(prefix+'.accpos.pickle', 'wb'))
-pickle.dump(np.array(accvol, dtype=float), open(prefix+'.accvol.pickle', 'wb'))
-pickle.dump(np.array(acchmc, dtype=float), open(prefix+'.acchmc.pickle', 'wb'))
-pickle.dump(np.array(natoms, dtype=int), open(prefix+'.natoms.pickle', 'wb'))
-pickle.dump(np.array(box, dtype=float), open(prefix+'.box.pickle', 'wb'))
-pickle.dump(np.array(pos, dtype=float), open(prefix+'.pos.pickle', 'wb'))
+pickle.dump(np.array(temp, dtype=np.float32), open(prefix+'.temp.pickle', 'wb'))
+pickle.dump(np.array(pe, dtype=np.float32), open(prefix+'.pe.pickle', 'wb'))
+pickle.dump(np.array(ke, dtype=np.float32), open(prefix+'.ke.pickle', 'wb'))
+pickle.dump(np.array(virial, dtype=np.float32), open(prefix+'.virial.pickle', 'wb'))
+pickle.dump(np.array(vol, dtype=np.float32), open(prefix+'.vol.pickle', 'wb'))
+pickle.dump(np.array(accpos, dtype=np.float32), open(prefix+'.accpos.pickle', 'wb'))
+pickle.dump(np.array(accvol, dtype=np.float32), open(prefix+'.accvol.pickle', 'wb'))
+pickle.dump(np.array(acchmc, dtype=np.float32), open(prefix+'.acchmc.pickle', 'wb'))
+pickle.dump(np.array(natoms, dtype=np.uint16), open(prefix+'.natoms.pickle', 'wb'))
+pickle.dump(np.array(box, dtype=np.float32), open(prefix+'.box.pickle', 'wb'))
+pickle.dump(np.array(pos, dtype=np.float32), open(prefix+'.pos.pickle', 'wb'))
 
 if VERBOSE:
     print('all properties pickled')
