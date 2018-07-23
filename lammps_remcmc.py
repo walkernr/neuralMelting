@@ -17,11 +17,9 @@ from lammps import lammps
 
 # parse command line (help option generated automatically)
 PARSER = argparse.ArgumentParser()
-# boolean flags
 PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
 PARSER.add_argument('-p', '--parallel', help='parallel run', action='store_true')
 PARSER.add_argument('-d', '--distributed', help='distributed run', action='store_true')
-# pbs inputs
 PARSER.add_argument('-q', '--queue', help='submission queue',
                     type=str, default='lasigma')
 PARSER.add_argument('-a', '--allocation', help='submission allocation',
@@ -34,29 +32,24 @@ PARSER.add_argument('-w', '--walltime', help='job walltime',
                     type=int, default=24)
 PARSER.add_argument('-m', '--memory', help='total job memory',
                     type=int, default=32)
-# worker information
 PARSER.add_argument('-nw', '--workers', help='total job worker count',
                     type=int, default=16)
 PARSER.add_argument('-nt', '--threads', help='threads per worker',
                     type=int, default=1)
-# system information
 PARSER.add_argument('-n', '--name', help='name of simulation',
                     type=str, default='test')
 PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
 PARSER.add_argument('-ss', '--supercell_size', help='supercell size',
                     type=int, default=4)
-# pressure information
 PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
                     type=int, default=4)
 PARSER.add_argument('-pr', '--pressure_range', help='pressure range',
                     type=float, nargs=2, default=[2, 8])
-# temperature information
 PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures',
                     type=int, default=48)
 PARSER.add_argument('-tr', '--temperature_range', help='temperature range',
                     type=float, nargs=2, default=[0.25, 2.5])
-# monte carlo information
 PARSER.add_argument('-sc', '--sample_cutoff', help='sample cutoff',
                     type=int, default=1024)
 PARSER.add_argument('-sn', '--sample_number', help='sample number',
@@ -327,6 +320,7 @@ def write_output():
             # for j in xrange(NTEMP):
                 # write_thermo(i, j)
                 # write_traj(i, j)
+
     # write to data storage files
     if VERBOSE:
         if PARALLEL:
@@ -486,6 +480,7 @@ def samples_init():
         if VERBOSE:
             print('\nwriting thermo headers')
             progress(futures)
+            print('\n')
     else:
         ('initializing constants, samples, and output files')
         # loop through pressures
