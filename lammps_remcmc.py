@@ -184,7 +184,7 @@ accpos = np.zeros((NPRESS, NTEMP), dtype=np.float32)
 accvol = np.zeros((NPRESS, NTEMP), dtype=np.float32)
 acchmc = np.zeros((NPRESS, NTEMP), dtype=np.float32)
 # max box adjustment
-dbox = 0.03125*LAT[EL][1]*np.ones((NPRESS, NTEMP), dtype=np.float32)
+dbox = 0.03125*SZ*LAT[EL][1]*np.ones((NPRESS, NTEMP), dtype=np.float32)
 # max pos adjustment
 dpos = 0.03125*LAT[EL][1]*np.ones((NPRESS, NTEMP), dtype=np.float32)
 # hmc timestep
@@ -222,12 +222,12 @@ if PARALLEL:
 # unit definitions
 # ----------------
 
-def define_constants(i, j):
-    ''' sets thermodynamic constants according to chosen unit system '''
+def constant_init(i, j):
+    ''' sets thermodynamic constants for a sample '''
     if UNITS[EL] == 'real':
         NA = 6.0221409e23                              # avagadro number [num/mol]
         KB = 3.29983e-27                               # boltzmann constant [kcal/K]
-        R = kB*NA                                      # gas constant [kcal/(mol K)]
+        R = KB*NA                                      # gas constant [kcal/(mol K)]
         ET = R*T[j]                                    # thermal energy [kcal/mol]
         PF = 1e-30*(1.01325e5*P[i])/(4.184e3*KB*T[j])  # metropolis prefactor [1/A^3]
     if UNITS[EL] == 'metal':
@@ -240,13 +240,80 @@ def define_constants(i, j):
         PF = P[i]/(KB*T[j])                            # metropolis prefactor [1/r*^3]
     return ET, PF
 
+
+def constants_init():
+    ''' sets thermodynamic constants for all samples '''
+    if PARALLEL:
+        operations = [delayed(constant_init)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
+        futures = CLIENT.compute(operations)
+        if VERBOSE:
+            print('initializing constants')
+            progress(futures)
+            print('\n')
+        results = CLIENT.gather(futures)
+        k = 0
+        for i in xrange(NPRESS):
+            for j in xrange(NTEMP):
+                ET[i, j], PF[i, j] = results[k]
+    else:
+        if VERBOSE:
+            print('initializing constants')
+        for i in xrange(NPRESS):
+            for j in xrange(NTEMP):
+                ET[i, j], PF[i, j] = constant_init(i, j)
+
 # -----------------------------
 # output file utility functions
 # -----------------------------
 
 
-def thermo_header(i, j):
-    ''' writes header containing simulation information to thermo file '''
+def file_prefix(i):
+    ''' returns file prefix for simulation '''
+    prefix = '%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL][0], int(P[i]))
+    return os.getcwd()+'/'+prefix
+
+
+def output_init(i, j):
+    ''' initializes output files for a sample '''
+    # data storage files
+    prefix = file_prefix(i)
+    thermoinit = prefix+'%02d%02d.thrm' % (i, j)
+    trajinit = prefix+'%02d%02d.traj' % (i, j)
+    try:
+        os.remove(thermoinit)
+    except:
+        pass
+    try:
+        os.remove(trajinit)
+    except:
+        pass
+    return thermoinit, trajinit
+
+def outputs_init():
+    ''' initializes output files for all samples '''
+    if PARALLEL:
+        operations = [delayed(output_init)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
+        futures = CLIENT.compute(operations)
+        if VERBOSE:
+            print('initializing outputs')
+            progress(futures)
+            print('\n')
+        results = CLIENT.gather(futures)
+        k = 0
+        for i in xrange(NPRESS):
+            for j in xrange(NTEMP):
+                THERMO[i, j], TRAJ[i, j] = results[k]
+                k += 1
+    else:
+        if VERBOSE:
+            print('initializing outputs')
+        for i in xrange(NPRESS):
+            for j in xrange(NTEMP):
+                THERMO[i, j], TRAJ[i, j] = output_init(i, j)
+
+
+def header_init(i, j):
+    ''' writes header for a sample '''
     with open(THERMO[i, j], 'wb') as fo:
         fo.write('#----------------------\n')
         fo.write('# simulation parameters\n')
@@ -279,6 +346,23 @@ def thermo_header(i, j):
         fo.write('# ------------------------------------------------------------\n')
 
 
+def headers_init():
+    ''' writes headers for all samples '''
+    if PARALLEL:
+        operations = [delayed(header_init)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
+        futures = CLIENT.compute(operations)
+        if VERBOSE:
+            print('initializing headers')
+            progress(futures)
+            print('\n')
+    else:
+        if VERBOSE:
+            print('initializing headers')
+        for i in xrange(NPRESS):
+            for j in xrange(NTEMP):
+                header_init(i, j)
+
+
 def write_thermo(i, j):
     ''' writes thermodynamic properties to thermo file '''
     # write data to file
@@ -298,49 +382,30 @@ def write_traj(i, j):
             fo.write('%.4E %.4E %.4E\n' % tuple(x[i, j][3*k:3*k+3]))
 
 
-def write_output():
-    ''' writes all sample outputs for a monte carlo step '''
+def write_output(i, j):
+    ''' writes output for a sample '''
+    write_thermo(i, j)
+    write_traj(i, j)
+
+
+def write_outputs():
+    ''' writes outputs for all samples '''
     if PARALLEL:
-        # write to data storage files
-        operations = [delayed(write_thermo)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
+        operations = [delayed(write_output)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
-            print('\nwriting thermo data')
-            progress(futures)
-        operations = [delayed(write_traj)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
-        futures = CLIENT.compute(operations)
-        if VERBOSE:
-            print('\nwriting traj data')
+            print('writing outputs')
             progress(futures)
     else:
-        # write to data storage files
         if VERBOSE:
-            print('writing data')
+            print('writing outputs')
         for i in xrange(NPRESS):
             for j in xrange(NTEMP):
-                write_thermo(i, j)
-                write_traj(i, j)
-
-    # write to data storage files
-    # if VERBOSE:
-        # if PARALLEL:
-            # print('\nwriting data')
-        # else:
-            # print('writing data')
-    # for i in xrange(NPRESS):
-        # for j in xrange(NTEMP):
-            # write_thermo(i, j)
-            # write_traj(i, j)
+                write_output(i, j)
 
 # ---------------------------------
 # lammps file/object initialization
 # ---------------------------------
-
-
-def file_prefix(i):
-    ''' returns file prefix for simulation '''
-    prefix = '%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL][0], int(P[i]))
-    return os.getcwd()+'/'+prefix
 
 
 def lammps_input(i, j):
@@ -430,73 +495,39 @@ def sample_init(i, j):
     seed = np.random.randint(1, 2**16)
     lmps.command('displace_atoms all random %f %f %f %d' % (3*(dpos[i, j],)+(seed,)))
     # extract all system info
-    natomsinit, xinit, vinit, tempinit, peinit, keinit, virialinit, boxinit, volinit = lammps_extract(lmps)
-    # data storage files
-    thermoinit = lmpsfilein.replace('.in', '%02d%02d.thrm' % (i, j))
-    trajinit = lmpsfilein.replace('.in', '%02d%02d.traj' % (i, j))
-    try:
-        os.remove(thermo)
-    except:
-        pass
-    try:
-        os.remove(traj)
-    except:
-        pass
+    natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
     # return system info and data storage files
-    res = (natomsinit, xinit, vinit, tempinit, peinit, keinit, virialinit, boxinit, volinit,
-           thermoinit, trajinit)
+    res = natoms, x, v, temp, pe, ke, virial, box, vol
     return res
 
 def samples_init():
     ''' initializes all samples '''
     if PARALLEL:
-        operations = [delayed(define_constants)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
-        futures = CLIENT.compute(operations)
-        if VERBOSE:
-            print('setting constants')
-            progress(futures)
-        results = CLIENT.gather(futures)
-        k = 0
-        for i in xrange(NPRESS):
-            for j in xrange(NTEMP):
-                ET[i, j], PF[i, j] = results[k]
-                k += 1
         operations = [delayed(sample_init)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
-            print('\ninitializing samples')
+            print('initializing samples')
             progress(futures)
+            print('\n')
         results = CLIENT.gather(futures)
         k = 0
         for i in xrange(NPRESS):
             for j in xrange(NTEMP):
-                dat = results[k]
+                natoms[i, j], x[i, j], v[i, j] = results[k][:3]
+                temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = results[k][3:9]
                 k += 1
-                natoms[i, j], x[i, j], v[i, j] = dat[:3]
-                temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
-                THERMO[i, j], TRAJ[i, j] = dat[9:11]
-        operations = [delayed(thermo_header)(i, j) for i in xrange(NPRESS) for j in xrange(NTEMP)]
-        futures = CLIENT.compute(operations)
-        if VERBOSE:
-            print('\nwriting thermo headers')
-            progress(futures)
-            print('\n')
     else:
-        ('initializing constants, samples, and output files')
+        if VERBOSE:
+            print('initializing samples')
         # loop through pressures
         for i in xrange(NPRESS):
             # loop through temperatures
             for j in xrange(NTEMP):
                 # set thermo constants
-                ET[i, j], PF[i, j] = define_constants(i, j)
-                # initialize lammps object and data storage files
                 dat = sample_init(i, j)
                 natoms[i, j], x[i, j], v[i, j] = dat[:3]
                 temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
-                THERMO[i, j], TRAJ[i, j] = dat[9:11]
-                # write thermo file header
-                thermo_header(i, j)
 
 
 def lammps_init(i, j):
@@ -769,21 +800,21 @@ def get_samples():
         if VERBOSE:
             print('performing monte carlo')
             progress(futures)
+            print('\n')
         # gather results from workers
         results = CLIENT.gather(futures)
         # update system properties and monte carlo parameters
         k = 0
         for i in xrange(NPRESS):
             for j in xrange(NTEMP):
-                dat = results[k]
+                natoms[i, j], x[i, j], v[i, j] = results[k][:3]
+                temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = results[k][3:9]
+                ntrypos[i, j], naccpos[i, j] = results[k][9:11]
+                ntryvol[i, j], naccvol[i, j] = results[k][11:13]
+                ntryhmc[i, j], nacchmc[i, j] = results[k][13:15]
+                accpos[i, j], accvol[i, j], acchmc[i, j] = results[k][15:18]
+                dpos[i, j], dbox[i, j], dt[i, j] = results[k][18:21]
                 k += 1
-                natoms[i, j], x[i, j], v[i, j] = dat[:3]
-                temp[i, j], pe[i, j], ke[i, j], virial[i, j], box[i, j], vol[i, j] = dat[3:9]
-                ntrypos[i, j], naccpos[i, j] = dat[9:11]
-                ntryvol[i, j], naccvol[i, j] = dat[11:13]
-                ntryhmc[i, j], nacchmc[i, j] = dat[13:15]
-                accpos[i, j], accvol[i, j], acchmc[i, j] = dat[15:18]
-                dpos[i, j], dbox[i, j], dt[i, j] = dat[18:21]
     else:
         # loop through pressures
         if VERBOSE:
@@ -845,10 +876,6 @@ def replica_exchange():
                 boxf[j], boxf[i] = boxf[i], boxf[j]
                 volf[j], volf[i] = volf[i], volf[j]
     if VERBOSE:
-        # if PARALLEL:
-            # print('\n%d replica exchanges performed' % swaps)
-        # else:
-            # print('%d replica exchanges performed' % swaps)
         print('%d replica exchanges performed' % swaps)
     # reshape system properties and constants
     natoms[:, :] = natomsf.reshape((NPRESS, NTEMP))
@@ -866,6 +893,9 @@ def replica_exchange():
 # -----------
 
 # initialize samples
+constants_init()
+outputs_init()
+headers_init()
 samples_init()
 # loop through to number of samples that need to be collected
 for i in xrange(NSMPL):
@@ -874,10 +904,9 @@ for i in xrange(NSMPL):
     # collect samples for all configurations
     get_samples()
     # write to output files
-    write_output()
+    write_outputs()
     # perform replica exchange markov chain monte carlo (parallel tempering)
-    replica_exchange()
-    CLIENT.restart()
+    # replica_exchange()
 if PARALLEL:
     # terminate client after completion
     CLIENT.close()

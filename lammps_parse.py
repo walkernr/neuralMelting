@@ -13,11 +13,16 @@ import numpy as np
 
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
-PARSER.add_argument('-n', '--name', help='name of simulation', type=str, default='test')
-PARSER.add_argument('-e', '--element', help='element choice', type=str, default='LJ')
-PARSER.add_argument('-pn', '--pressure_number', help='number of pressures', type=int, default=4)
-PARSER.add_argument('-pr', '--pressure_range', help='pressure range', type=float, nargs=2, default=[2, 8])
-PARSER.add_argument('-i', '--pressure_index', help='pressure index', type=int, default=0)
+PARSER.add_argument('-n', '--name', help='name of simulation',
+                    type=str, default='test')
+PARSER.add_argument('-e', '--element', help='element choice',
+                    type=str, default='LJ')
+PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
+                    type=int, default=4)
+PARSER.add_argument('-pr', '--pressure_range', help='pressure range',
+                    type=float, nargs=2, default=[2, 8])
+PARSER.add_argument('-i', '--pressure_index', help='pressure index',
+                    type=int, default=0)
 
 ARGS = PARSER.parse_args()
 
