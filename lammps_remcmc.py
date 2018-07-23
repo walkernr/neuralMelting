@@ -906,7 +906,7 @@ for i in xrange(NSMPL):
     # write to output files
     write_outputs()
     # perform replica exchange markov chain monte carlo (parallel tempering)
-    # replica_exchange()
+    replica_exchange()
 if PARALLEL:
     # terminate client after completion
     CLIENT.close()
