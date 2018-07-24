@@ -71,7 +71,7 @@ LAT = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # file prefix
-PREFIX = os.getcwd()+'/'+'%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL], PI)
+PREFIX = os.getcwd()+'/'+'%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL], PI)
 
 
 def load_data():
