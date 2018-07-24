@@ -452,9 +452,9 @@ def plot_ftrs():
         plabels = [r'$\mathrm{Trained\enspace %s\enspace Phase}$' % labels[j],
                    r'$\mathrm{Classified\enspace %s\enspace Phase}$' % labels[j]]
         ax.plot(FDOM[FTR], np.mean(UTDATA[TC.reshape(-1) == j], axis=0),
-                color=CM(SCALE(MTEMP[0, i])), alpha=1.00, label=plabels[0])
+                color=CM(SCALE(MTEMP[0, j])), alpha=1.00, label=plabels[0])
         ax.plot(FDOM[FTR], np.mean(UCDATA[CC.reshape(-1) == j], axis=0),
-                color=CM(SCALE(MTEMP[1, i])), alpha=1.00, linestyle='--', label=plabels[1])
+                color=CM(SCALE(MTEMP[1, j])), alpha=1.00, linestyle='--', label=plabels[1])
     ax.legend()
     if property == 'radial_distribution':
         ax.set_xlabel(r'$\mathrm{Distance}$')
