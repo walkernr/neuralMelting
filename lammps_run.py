@@ -82,11 +82,11 @@ if PARALLEL:
         rdf_args = rdf_args+par_args
 
 id_args = ['-n', NAME,
-           '-e', EL,
-           '-pn', str(NPRESS),
-           '-pr', str(LPRESS), str(HPRESS)]
+           '-e', EL]
 if SIM:
     sim_args = sim_args+id_args+['-ss', str(SZ),
+                                 '-pn', str(NPRESS),
+                                 '-pr', str(LPRESS), str(HPRESS),
                                  '-tn', str(NTEMP),
                                  '-tr', str(LTEMP), str(HTEMP),
                                  '-sc', str(CUTOFF),
