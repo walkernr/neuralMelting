@@ -160,7 +160,7 @@ if PARALLEL:
     OPERATIONS = [delayed(calculate_rdf)(u) for u in xrange(len(NATOMS))]
     FUTURES = CLIENT.compute(OPERATIONS)
     if VERBOSE:
-        print('calculating rdfs for %s at pressure %f' % (EL.lower(), P[PI]))
+        print('calculating rdfs for %s at pressure %f' % (EL.lower(), PI))
         progress(FUTURES)
         print('\n')
     RESULTS = CLIENT.gather(FUTURES)
