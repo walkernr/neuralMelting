@@ -17,10 +17,6 @@ PARSER.add_argument('-n', '--name', help='name of simulation',
                     type=str, default='test')
 PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
-PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
-                    type=int, default=4)
-PARSER.add_argument('-pr', '--pressure_range', help='pressure range',
-                    type=float, nargs=2, default=[2, 8])
 PARSER.add_argument('-i', '--pressure_index', help='pressure index',
                     type=int, default=0)
 
@@ -29,12 +25,8 @@ ARGS = PARSER.parse_args()
 VERBOSE = ARGS.verbose
 NAME = ARGS.name
 EL = ARGS.element
-NP = ARGS.pressure_number
-LP, HP = ARGS.pressure_range
 PI = ARGS.pressure_index
 
-# pressure
-P = np.linspace(LP, HP, NP, dtype=np.float32)
 # lattice type
 LAT = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -42,10 +34,10 @@ LAT = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # file prefix
-PREFIX = os.getcwd()+'/'+'%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL], int(P[PI]))
+PREFIX = os.getcwd()+'/'+'%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL], PI)
 
 if VERBOSE:
-    print('parsing data for %s at pressure %f' % (EL.lower(), P[PI]))
+    print('parsing data for %s at pressure index %f' % (EL.lower(), PI))
 # parse thermo file
 TEMP, PE, KE, VIRIAL, VOL, AP, AV, AH = np.split(np.loadtxt(PREFIX+'.thrm', dtype=np.float32), 8, 1)
 TEMP = TEMP[:, 0]

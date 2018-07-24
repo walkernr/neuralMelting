@@ -36,10 +36,6 @@ PARSER.add_argument('-n', '--name', help='name of simulation',
                     type=str, default='test')
 PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
-PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
-                    type=int, default=4)
-PARSER.add_argument('-pr', '--pressure_range', help='pressure range',
-                    type=float, nargs=2, default=[2, 8])
 PARSER.add_argument('-i', '--pressure_index', help='pressure index',
                     type=int, default=0)
 
@@ -58,8 +54,6 @@ NWORKER = ARGS.workers
 NTHREAD = ARGS.threads
 NAME = ARGS.name
 EL = ARGS.element
-NP = ARGS.pressure_number
-LP, HP = ARGS.pressure_range
 PI = ARGS.pressure_index
 
 if PARALLEL:
@@ -70,8 +64,6 @@ if DISTRIBUTED:
     import time
     from dask_jobqueue import PBSCluster
 
-# pressure
-P = np.linspace(LP, HP, NP, dtype=np.float32)
 # lattice type
 LAT = {'Ti': 'bcc',
        'Al': 'fcc',
@@ -79,7 +71,7 @@ LAT = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # file prefix
-PREFIX = os.getcwd()+'/'+'%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL], int(P[PI]))
+PREFIX = os.getcwd()+'/'+'%s.%s.%s.%d.lammps' % (NAME, EL.lower(), LAT[EL], PI)
 
 
 def load_data():
