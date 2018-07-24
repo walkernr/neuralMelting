@@ -151,12 +151,15 @@ if PARALLEL:
         CLIENT = Client(CLUSTER)
         while 'processes=0 cores=0' in str(CLIENT.scheduler_info):
             time.sleep(5)
-            print(CLIENT.scheduler_info)
+            if VERBOSE:
+                print(CLIENT.scheduler_info)
     else:
         # construct local cluster
         CLUSTER = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD)
         # start client with local cluster
         CLIENT = Client(CLUSTER)
+        if VERBOSE:
+            print(CLIENT.scheduler_info)
     OPERATIONS = [delayed(calculate_rdf)(u) for u in xrange(len(NATOMS))]
     FUTURES = CLIENT.compute(OPERATIONS)
     if VERBOSE:

@@ -6,500 +6,475 @@ Created on Wed May 22 13:31:27 2018
 """
 
 from __future__ import division, print_function
-import os, sys, pickle
+import argparse
+import os
+import pickle
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA, KernelPCA
 from sklearn.manifold import Isomap, LocallyLinearEmbedding
-from scipy.odr import ODR, Model, Data, RealData
-import matplotlib as mpl
-mpl.use('Agg')
-import matplotlib.pyplot as plt
+from scipy.odr import ODR, Model, RealData
 
-seed = 256
-np.random.seed(seed)
+# parse command line
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
+PARSER.add_argument('-p', '--parallel', help='parallel run', action='store_true')
+PARSER.add_argument('-pt', '--plot', help='plot results', action='store_true')
+PARSER.add_argument('-nt', '--threads', help='number of threads',
+                    type=int, default=16)
+PARSER.add_argument('-b', '--backend', help='keras backend',
+                    type=str, default='tensorflow')
+PARSER.add_argument('-n', '--name', help='name of simulation',
+                    type=str, default='test')
+PARSER.add_argument('-e', '--element', help='element choice',
+                    type=str, default='LJ')
+PARSER.add_argument('-i', '--pressure_index', help='pressure index',
+                    type=int, default=0)
+PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures',
+                    type=int, default=48)
+PARSER.add_argument('-sn', '--sample_number', help='sample number per temperature',
+                    type=int, default=1024)
+PARSER.add_argument('-ln', '--learning_number', help='number of samples to learn per temperature',
+                    type=int, default=1024)
+PARSER.add_argument('-ts', '--training_sets', help='number of training sets per phase',
+                    type=int, default=8)
+PARSER.add_argument('-f', '--feature', help='feature to learn',
+                    type=str, default='entropic_fingerprint')
+PARSER.add_argument('-s', '--scaler', help='feature scaler',
+                    type=str, default='tanh')
+PARSER.add_argument('-r', '--reduction', help='dimension reduction method',
+                    type=str, default='pca')
+PARSER.add_argument('-nn', '--neural_network', help='neural network',
+                    type=str, default='cnn1d')
+PARSER.add_argument('-ff', '--fit_function', help='fitting function',
+                    type=str, default='logistic')
 
-# number of threads
-if '--nthreads' in sys.argv:
-    i = sys.argv.index('--nthreads')
-    nthreads = int(sys.argv[i+1])
-else:
-    nthreads = 16
-
-# keras backend
-if '--theano' in sys.argv:
-    os.environ['KERAS_BACKEND'] = 'theano'
-else:
-    os.environ['KERAS_BACKEND'] = 'tensorflow'
+# parse arguments
+ARGS = PARSER.parse_args()
+# run specifications
+VERBOSE = ARGS.verbose
+PARALLEL = ARGS.parallel
+PLOT = ARGS.plot
+THREADS = ARGS.threads
+BACKEND = ARGS.backend
+# random seed
+SEED = 256
+np.random.seed(SEED)
+# environment variables
+os.environ['KERAS_BACKEND'] = BACKEND
+if BACKEND == 'tensorflow':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     from tensorflow import set_random_seed
-    set_random_seed(seed)
-# multithreading
-os.environ['MKL_NUM_THREADS'] = str(nthreads)
-os.environ['GOTO_NUM_THREADS'] = str(nthreads)
-os.environ['OMP_NUM_THREADS'] = str(nthreads)
-os.environ['openmp'] = 'True'
+    set_random_seed(SEED)
+if PARALLEL:
+    os.environ['MKL_NUM_THREADS'] = str(THREADS)
+    os.environ['GOTO_NUM_THREADS'] = str(THREADS)
+    os.environ['OMP_NUM_THREADS'] = str(THREADS)
+    os.environ['openmp'] = 'True'
 
 from keras.models import Sequential
-from keras.layers import Input, Conv1D, MaxPooling1D, GlobalAveragePooling1D, Dropout, Dense
-from keras.optimizers import SGD, Nadam
+from keras.layers import Conv1D, MaxPooling1D, GlobalAveragePooling1D, Dropout, Dense
+from keras.optimizers import Nadam
 from keras.wrappers.scikit_learn import KerasClassifier
 from keras.utils import plot_model
 
-# plotting parameters
-# plt.rc('text', usetex=True)
-plt.rc('font', family='sans-serif')
-ftsz = 48
-params = {'figure.figsize': (26, 20),
-          'lines.linewidth': 4.0,
-          'legend.fontsize': ftsz,
-          'axes.labelsize': ftsz,
-          'axes.titlesize': ftsz,
-          'axes.linewidth': 2.0,
-          'xtick.labelsize': ftsz,
-          'xtick.major.size': 20,
-          'xtick.major.width': 2.0,
-          'ytick.labelsize': ftsz,
-          'ytick.major.size': 20,
-          'ytick.major.width': 2.0,
-          'font.size': ftsz}
-          # 'text.latex.preamble': r'\usepackage{amsmath}'r'\boldmath'}
-plt.rcParams.update(params)
+if PLOT:
+    import matplotlib as mpl
+    mpl.use('Agg')
+    import matplotlib.pyplot as plt
+    plt.rc('font', family='sans-serif')
+    FTSZ = 48
+    PPARAMS = {'figure.figsize': (26, 20),
+               'lines.linewidth': 4.0,
+               'legend.fontsize': FTSZ,
+               'axes.labelsize': FTSZ,
+               'axes.titlesize': FTSZ,
+               'axes.linewidth': 2.0,
+               'xtick.labelsize': FTSZ,
+               'xtick.major.size': 20,
+               'xtick.major.width': 2.0,
+               'ytick.labelsize': FTSZ,
+               'ytick.major.size': 20,
+               'ytick.major.width': 2.0,
+               'font.size': FTSZ}
+    plt.rcParams.update(PPARAMS)
 
-# simulation name
-if '--name' in sys.argv:
-    i = sys.argv.index('--name')
-    name = sys.argv[i+1]
-else:
-    name = 'remcmc'
-# run details
-# element
-if '--element' in sys.argv:
-    i = sys.argv.index('--element')
-    el = sys.argv[i+1]
-else:
-    el = 'LJ'
-# number of pressure datasets
-if '--npress' in sys.argv:
-    i = sys.argv.index('--npress')
-    npress = int(sys.argv[i+1])
-else:
-    npress = 8
-# pressure range
-if '--rpress' in sys.argv:
-    i = sys.argv.index('--rpress')
-    lpress = float(sys.argv[i+1])
-    hpress = float(sys.argv[i+2])
-else:
-    lpress = 1.0
-    hpress = 8.0
-# pressure index
-if '--pressindex' in sys.argv:
-    i = sys.argv.index('--pressindex')
-    pressind = int(sys.argv[i+1])
-else:
-    pressind = 0
-# number of temperature datasets
-if '--ntemp' in sys.argv:
-    i = sys.argv.index('--ntemp')
-    ntemp  = int(sys.argv[i+1])
-else:
-    ntemp = 48
-# property for classification
-if '--property' in sys.argv:
-    i = sys.argv.index('--property')
-    property = sys.argv[i+1]
-else:
-    property = 'entropic_fingerprint'
-# number of samples from each set
-if '--nsmpl' in sys.argv:
-    i = sys.argv.index('--nsmpl')
-    nsmpl = int(sys.argv[i+1])
-else:
-    nsmpl = 1024
-# number of training sets
-if '--ntrain' in sys.argv:
-    i = sys.argv.index('--ntrain')
-    ntrain = int(sys.argv[i+1])
-else:
-    ntrain = 8
-# data scaling method
-if '--scaler' in sys.argv:
-    i = sys.argv.index('--scaler')
-    scaler = sys.argv[i+1]
-else:
-    scaler = 'tanh'
-# reduction type
-if '--reduction' in sys.argv:
-    i = sys.argv.index('--reduction')
-    reduc = sys.argv[i+1]
-else:
-    reduc = 'pca'
-# neural network type
-if '--network' in sys.argv:
-    i = sys.argv.index('--network')
-    network = sys.argv[i+1]
-else:
-    network = 'keras_cnn1d'
-# fitting function
-if '--fitfunc' in sys.argv:
-    i = sys.argv.index('--fitfunc')
-    fitfunc = sys.argv[i+1]
-else:
-    fitfunc = 'logistic'
+# simulation identifiers
+NAME = ARGS.name
+EL = ARGS.element
+PI = ARGS.pressure_index
+NT = ARGS.temperature_number
+NS = ARGS.sample_number
+# data preparation parameters
+LN = ARGS.learning_number
+TS = ARGS.training_sets
+FTR = ARGS.feature
+SCLR = ARGS.scaler
+RDCN = ARGS.reduction
+# data analysis parameters
+NN = ARGS.neural_network
+FF = ARGS.fit_function
+# training and classification sample counts
+TST = 2*TS
+CS = NT-TST
+SN = NT*LN
+TSN = TS*LN
+TSTN = TST*LN
+CSN = CS*LN
+# training indices
+TI = np.arange(-TS, TS)
 
-
-# pressure
-press = np.linspace(lpress, hpress, npress, dtype=np.float64)
 # lattice type
-lat = {'Ti': 'bcc',
+LAT = {'Ti': 'bcc',
        'Al': 'fcc',
        'Ni': 'fcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 
 # file prefix
-prefix = '%s.%s.%s.%d.lammps' % (name, el.lower(), lat[el], int(press[pressind]))
+PREFIX = '%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL], PI)
 # summary of input
-print('------------------------------------------------------------')
-print('input summary')
-print('------------------------------------------------------------')
-print('potential:                 %s' % el.lower())
-print('pressure:                  %f' % press[pressind])  
-print('number of temps:           %d' % ntemp)
-print('property:                  %s' % property)
-print('number of samples:         %d' % nsmpl)
-print('training sets (per phase): %d' % ntrain)
-print('scaler:                    %s' % scaler)
-print('reduction:                 %s' % reduc)
-print('network:                   %s' % network)
-print('fitting function:          %s' % fitfunc)
-print('------------------------------------------------------------')
+if VERBOSE:
+    print('------------------------------------------------------------')
+    print('input summary')
+    print('------------------------------------------------------------')
+    print('potential:                 %s' % EL.lower())
+    print('pressure index:            %d' % PI)
+    print('number of temps:           %d' % NT)
+    print('feature:                   %s' % FTR)
+    print('number of samples:         %d' % LN)
+    print('training sets (per phase): %d' % TS)
+    print('scaler:                    %s' % SCLR)
+    print('reduction:                 %s' % RDCN)
+    print('network:                   %s' % NN)
+    print('fitting function:          %s' % FF)
+    print('------------------------------------------------------------')
+
 
 # fitting functions
-# the confidence interval for transition temps is best with logistic
 def logistic(beta, t):
+    ''' returns logistic sigmoid '''
     a = 0.0
     k = 1.0
     b, m = beta
     return a+np.divide(k, 1+np.exp(-b*(t-m)))
+
+
 def gompertz(beta, t):
+    ''' returns gompertz sigmoid '''
     a = 1.0
     b, c = beta
     return a*np.exp(-b*np.exp(-c*t))
-def richard(beta, t):
-    a, k, b, nu, q, m, c = beta
-    return a+np.divide(k-a, np.power(c+q*np.exp(-b*(t-m)), 1./nu))
-# initial fitting parameters
-log_guess = [1.0, 0.5]
-gomp_guess = [1.0, 1.0]
-rich_guess = [0.0, 1.0, 3.0, 0.5, 0.5, 0.0, 1.0]
-# fitting dictionaries
-fitfuncs = {'logistic':logistic, 'gompertz':gompertz, 'richard':richard}
-fit_guess = {'logistic':log_guess, 'gompertz':gomp_guess, 'richard':rich_guess}
-print('fitting function defined')
-print('------------------------------------------------------------')
+
+# fit function dictionary
+FFS = {'logistic': logistic,
+       'gompertz': gompertz}
+# initial fit parameter dictionary
+FGS = {'logistic': [1.0, 0.5],
+       'gompertz': [1.0, 1.0]}
+if VERBOSE:
+    print('fitting function defined')
+    print('------------------------------------------------------------')
 
 # load simulation data
-N = pickle.load(open(prefix+'.natoms.pickle'))
-O = np.concatenate(tuple([i*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
+NATOMS = pickle.load(open(PREFIX+'.natoms.pickle')).reshape(NT, NS)
 # load potential data
-trU = pickle.load(open(prefix+'.pe.pickle'))
-U = np.concatenate(tuple([np.mean(trU[O == i])*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
-stU = np.concatenate(tuple([np.std(trU[O == i])*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
+PE = pickle.load(open(PREFIX+'.pe.pickle')).reshape(NT, NS)
 # load pressure data
-trP = pickle.load(open(prefix+'.virial.pickle'))
-P = np.concatenate(tuple([np.mean(trP[O == i])*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
-stP = np.concatenate(tuple([np.std(trP[O == i])*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
+VIRIAL = pickle.load(open(PREFIX+'.virial.pickle')).reshape(NT, NS)
 # load temperature data
-trT = pickle.load(open(prefix+'.temp.pickle'))
-T = np.concatenate(tuple([np.mean(trT[O == i])*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
-stT = np.concatenate(tuple([np.std(trT[O == i])*np.ones(int(len(N)/ntemp), dtype=int) for i in xrange(ntemp)]), 0)
+TEMP = pickle.load(open(PREFIX+'.temp.pickle')).reshape(NT, NS)
 # load structure domains
-R = pickle.load(open(prefix+'.r.pickle'))[:]
-Q = pickle.load(open(prefix+'.q.pickle'))[:]
+R = pickle.load(open(PREFIX+'.r.pickle'))
+Q = pickle.load(open(PREFIX+'.q.pickle'))
 # load structure data
-G = pickle.load(open(prefix+'.rdf.pickle'))
-S = pickle.load(open(prefix+'.sf.pickle'))
-I = pickle.load(open(prefix+'.ef.pickle'))
+G = pickle.load(open(PREFIX+'.rdf.pickle')).reshape(NT, NS, -1)
+S = pickle.load(open(PREFIX+'.sf.pickle')).reshape(NT, NS, -1)
+I = pickle.load(open(PREFIX+'.ef.pickle')).reshape(NT, NS, -1)
 # sample space reduction for improving performance
-smplspc = np.concatenate(tuple([np.arange((i+1)*int(len(N)/ntemp)-nsmpl, (i+1)*int(len(N)/ntemp)) for i in xrange(ntemp)]))
-N = N[smplspc]
-O = O[smplspc]
-trU = trU[smplspc]
-U = U[smplspc]
-stU = stU[smplspc]
-trP = trP[smplspc]
-P = P[smplspc]
-stP = stP[smplspc]
-trT = trT[smplspc]
-T = T[smplspc]
-stT = stT[smplspc]
-G = G[smplspc]
-S = S[smplspc]
-I = I[smplspc]
-print('data loaded')
-print('------------------------------------------------------------')
+NATOMS = NATOMS[:, -LN:]
+PE = PE[:, -LN:]
+VIRIAL = VIRIAL[:, -LN:]
+TEMP = TEMP[:, -LN:]
+G = G[:, -LN:, :]
+S = S[:, -LN:, :]
+I = I[:, -LN:, :]
+if VERBOSE:
+    print('data loaded')
+    print('------------------------------------------------------------')
 
 # property dictionary
-propdom = {'radial_distribution':R, 'entropic_fingerprint':R, 'structure_factor':Q}
-properties = {'radial_distribution':G, 'entropic_fingerprint':I, 'structure_factor':S}
+FDOM = {'radial_distribution': R,
+        'entropic_fingerprint': R,
+        'structure_factor': Q}
+FTRS = {'radial_distribution': G,
+        'entropic_fingerprint': I,
+        'structure_factor': S}
 
-# scaler dict
-scalers = {'standard':StandardScaler(), 'minmax':MinMaxScaler(feature_range=(0,1)), 'robust':RobustScaler(), 'tanh':TanhScaler()}
-# pca initialization
-npcacomp = properties[property].shape[1]
-pca = PCA(n_components=npcacomp)
-kpca = KernelPCA(n_components=npcacomp, n_jobs=nthreads)
-isomap = Isomap(n_components=npcacomp, n_jobs=nthreads)
-lle = LocallyLinearEmbedding(n_components=npcacomp, n_jobs=nthreads)
-reducers = {'pca':pca, 'kpca':kpca, 'isomap':isomap, 'lle':lle}
-print('scaler and reduction initialized')
-print('------------------------------------------------------------')
-
-# bounds for training data
-lb = 0+ntrain
-ub = ntemp-(ntrain+1)
-
-# indices for partitioning data
-sind = (O < lb)               # solid training indices
-lind = (O > ub)               # liquid training indices
-tind = (O < lb) | (O > ub)    # training indices
-cind = (O >= lb) & (O <= ub)  # classification indices
+# scaler dictionary
+SCLRS = {'standard':StandardScaler(),
+         'minmax':MinMaxScaler(feature_range=(0, 1)),
+         'robust':RobustScaler(),
+         'tanh':TanhScaler()}
+# reducers dictionary
+NPCA = FTRS[FTR].shape[-1]
+RDCNS = {'pca':PCA(n_components=NPCA),
+         'kpca':KernelPCA(n_components=NPCA, n_jobs=THREADS),
+         'isomap':Isomap(n_components=NPCA, n_jobs=THREADS),
+         'lle':LocallyLinearEmbedding(n_components=NPCA, n_jobs=THREADS)}
+if VERBOSE:
+    print('scaler and reduction initialized')
+    print('------------------------------------------------------------')
 
 # initialize data
-data = properties[property]              # extract data from dictionary
-scalers[scaler].fit(data[tind])          # fit scaler to training data
-sdata = scalers[scaler].transform(data)  # transform data with scaler
+DATA = FTRS[FTR]                                     # extract data from dictionary
+SCLRS[SCLR].fit(DATA[TI].reshape(TSTN, -1))          # fit scaler to training data
+SDATA = SCLRS[SCLR].transform(DATA.reshape(SN, -1))  # transform data with scaler
 print('data scaled')
 print('------------------------------------------------------------')
 
 # apply reduction and extract training/classification data
-if reduc != 'none':
-    reducers[reduc].fit(sdata[tind])                  # pca fit to training data
-    tdata = reducers[reduc].transform(sdata[tind])    # pca transform training data
-    cdata = reducers[reduc].transform(sdata[cind])    # pca transform classification data
+if RDCN != 'none':
+    RDCNS[RDCN].fit(SDATA.reshape(NT, NS, -1)[TI].reshape(TSTN, -1))  # pca fit to training data
+    RDATA = RDCNS[RDCN].transform(SDATA)                              # pca transform training data
     # display reduction information
-    print('data reduced')
-    print('------------------------------------------------------------')
-    if reduc == 'pca':
-        evar = pca.explained_variance_ratio_  # pca explained variance ratio
-        print('pca fit information')
+    if VERBOSE:
+        print('data reduced')
         print('------------------------------------------------------------')
-        print('principal components:     %d' % len(evar))
-        print('explained variances:      %s' % ', '.join(evar[:3].astype('|S32'))+', ...')
-        print('total explained variance: %f' % np.sum(evar))
-        print('------------------------------------------------------------')
+        if RDCN == 'pca':
+            EVAR = RDCNS[RDCN].explained_variance_ratio_  # pca explained variance ratio
+            print('pca fit information')
+            print('------------------------------------------------------------')
+            print('principal components:     %d' % len(EVAR))
+            print('explained variances:      %f %f %f ...' % tuple(EVAR[:3]))
+            print('total explained variance: %f' % np.sum(EVAR))
+            print('------------------------------------------------------------')
 else:
-    tdata = sdata[tind]  # extract training data
-    cdata = sdata[cind]  # extract classification data
+    RDATA = SDATA
+# training and classification data
+TDATA = RDATA.reshape(NT, NS, -1)[TI].reshape(TSTN, -1)
+CDATA = RDATA.reshape(NT, NS, -1)[TS:-TS].reshape(CSN, -1)
+TTEMP = TEMP[TI].reshape(TSTN)
+CTEMP = TEMP[TS:-TS].reshape(CSN)
 
-tT = T[tind]  # training temperatures
-cT = T[cind]  # classification temperatures
 # reshape data for cnn1d
-if 'cnn1d' in network:
-    tdata = tdata[:, :, np.newaxis]
-    cdata = cdata[:, :, np.newaxis]
+if 'cnn1d' in NN:
+    TDATA = TDATA[:, :, np.newaxis]
+    CDATA = CDATA[:, :, np.newaxis]
 
-ustdata = data[tind]  # unscaled training data
-uscdata = data[cind]  # unscaled classification data
-tshape = np.shape(tdata)
-cshape = np.shape(cdata)
+UTDATA = DATA[TI].reshape(TSTN, -1)     # unscaled training data
+UCDATA = DATA[TS:-TS].reshape(CSN, -1)  # unscaled classification data
+TSHP = TDATA.shape
+CSHP = CDATA.shape
 # classification indices
-tclass = np.array(np.count_nonzero(sind)*[0]+np.count_nonzero(lind)*[1], dtype=int)
+TC = np.concatenate((np.ones(TSN, dtype=int), np.zeros(TSN, dtype=int)), 0)
+
 
 # neural network construction
-# keras - dense
 def build_keras_dense():
-    model = Sequential([Dense(units=64, activation='relu', input_dim=tshape[1]),
+    ''' builds dense neural network '''
+    model = Sequential([Dense(units=64, activation='relu', input_dim=TSHP[1]),
                         Dropout(rate=0.5),
                         Dense(units=64, activation='relu'),
                         Dropout(rate=0.5),
                         Dense(units=1, activation='softmax')])
-    nadam = Nadam(lr=0.00024414062, beta_1=0.9375, beta_2=0.9990234375, epsilon=None, schedule_decay=0.00390625)
+    nadam = Nadam(lr=0.00024414062, beta_1=0.9375, beta_2=0.9990234375,
+                  epsilon=None, schedule_decay=0.00390625)
     model.compile(loss='binary_crossentropy', optimizer=nadam, metrics=['accuracy'])
     return model
-    
-# keras - 1d cnn
-def build_keras_cnn1d():    
-    model = Sequential([Conv1D(filters=64, kernel_size=4, activation='relu', padding='causal', strides=1, input_shape=tshape[1:]),
-                        Conv1D(filters=64, kernel_size=4, activation='relu', padding='causal', strides=1),
+
+
+def build_keras_cnn1d():
+    ''' builds 1-d convolutional neural network '''
+    model = Sequential([Conv1D(filters=64, kernel_size=4, activation='relu',
+                               padding='causal', strides=1, input_shape=TSHP[1:]),
+                        Conv1D(filters=64, kernel_size=4, activation='relu',
+                               padding='causal', strides=1),
                         MaxPooling1D(strides=4),
-                        Conv1D(filters=128, kernel_size=4, activation='relu', padding='causal', strides=1),
-                        Conv1D(filters=128, kernel_size=4, activation='relu', padding='causal', strides=1),
+                        Conv1D(filters=128, kernel_size=4, activation='relu',
+                               padding='causal', strides=1),
+                        Conv1D(filters=128, kernel_size=4, activation='relu',
+                               padding='causal', strides=1),
                         GlobalAveragePooling1D(),
                         Dropout(rate=0.5),
                         Dense(units=1, activation='sigmoid')])
-    nadam = Nadam(lr=0.0009765625, beta_1=0.9375, beta_2=0.9990234375, epsilon=None, schedule_decay=0.00390625)
+    nadam = Nadam(lr=0.0009765625, beta_1=0.9375, beta_2=0.9990234375,
+                  epsilon=None, schedule_decay=0.00390625)
     model.compile(loss='binary_crossentropy', optimizer=nadam, metrics=['accuracy'])
     return model
-    
-keras_dense = KerasClassifier(build_keras_dense, epochs=2, verbose=True)
-keras_cnn1d = KerasClassifier(build_keras_cnn1d, epochs=1, verbose=True)
-networks = {'keras_dense':keras_dense, 'keras_cnn1d':keras_cnn1d}
-print('network initialized')
-print('------------------------------------------------------------')
+
+NNS = {'dense':KerasClassifier(build_keras_dense, epochs=2, verbose=True),
+       'cnn1d':KerasClassifier(build_keras_cnn1d, epochs=1, verbose=True)}
+if VERBOSE:
+    print('network initialized')
+    print('------------------------------------------------------------')
 
 # fit neural network to training data
-networks[network].fit(tdata, tclass)
-print('------------------------------------------------------------')
-print('network fit to training data')
-print('------------------------------------------------------------')
+NNS[NN].fit(TDATA, TC)
+if VERBOSE:
+    print('------------------------------------------------------------')
+    print('network fit to training data')
+    print('------------------------------------------------------------')
 
 # classification of data
-prob = networks[network].predict_proba(cdata)        # prediction probabilities
-pred = prob[:, 1].round()                            # prediction classifications
-print('------------------------------------------------------------')
-print('network predicted classification data')
-print('------------------------------------------------------------')
+PROB = NNS[NN].predict_proba(CDATA)[:, 1]  # prediction probabilities
+CC = PROB.round()                          # prediction classifications
+if VERBOSE:
+    print('------------------------------------------------------------')
+    print('network predicted classification data')
+    print('------------------------------------------------------------')
 
-# extract indices of classes and mean temps
-ind = []
-mtemp = np.zeros((2, 2), dtype=float)
-# loop through classes
-for i in xrange(2):
-    ind.append(np.where(pred == int(i)))    # indices of class i
-    mtemp[0, i] = np.mean(tT[tclass == i])  # mean temp of training class i
-    mtemp[1, i] = np.mean(cT[ind[i]])       # mean temp of class i
+# reshape data
+TTEMP = TTEMP.reshape(TST, LN)
+CTEMP = CTEMP.reshape(CS, LN)
+PROB = PROB.reshape(CS, LN)
+TC = TC.reshape(TST, LN)
+CC = CC.reshape(CS, LN)
+
+# mean temps
+MTEMP = np.array([[np.mean(TTEMP[TC == i]) for i in xrange(2)],
+                  [np.mean(CTEMP[CC == i]) for i in xrange(2)]], dtype=float)
 # colormap and color scaler
-cm = plt.get_cmap('plasma')
-scale = lambda temp: (temp-np.min(T))/np.max(T-np.min(T))
-print('colormap and scale defined')
-print('------------------------------------------------------------')
+CM = plt.get_cmap('plasma')
+SCALE = lambda temp: (temp-np.min(TEMP))/np.max(TEMP-np.min(TEMP))
+if VERBOSE:
+    print('colormap and scale defined')
+    print('------------------------------------------------------------')
 
 # curve fitting and transition temp extraction
-temps = np.unique(cT)                      # temperature domain of classification data
-stemps = np.unique(stT[cind])              # standard error of temperature domain
-mprob = np.zeros(len(temps), dtype=float)  # mean probability array
-sprob = np.zeros(len(temps), dtype=float)  # standard error porbability array
-# loop through temperature domain
-for i in xrange(len(temps)):
-    mprob[i] = np.mean(prob[cT == temps[i], 1])  # mean probability of samples at temp i being liquid
-    sprob[i] = np.std(prob[cT == temps[i], 1])   # standard error of samples at temp i being liquid
+TDOM = np.mean(CTEMP, 1)  # temperature domain of classification data
+TERR = np.std(CTEMP, 1)   # standard error of temperature domain
+MPROB = np.mean(PROB, 1)    # mean probability array
+SPROB = np.std(PROB, 1)     # standard error probability array
 # curve fitting
-odr_data = RealData(temps, mprob, stemps, sprob)
-odr_model = Model(fitfuncs[fitfunc])
-odr = ODR(odr_data, odr_model, fit_guess[fitfunc])
-odr.set_job(fit_type=0)
-fit_out = odr.run()
-popt = fit_out.beta
-perr = fit_out.sd_beta
-if fitfunc == 'logistic':
-	trans = popt[1]
-	cerr = perr[1]
-	tintrvl = trans+cerr*np.array([-1, 1])
-if fitfunc == 'gompertz':
-	trans = -np.log(np.log(2)/popt[0])/popt[1]
-	cerr = np.array([[-perr[0], perr[1]], [perr[0], -perr[1]]], dtype=float)
-	tintrvl = np.divide(-np.log(np.log(2)/(popt[0]+cerr[:, 0])), popt[1]+cerr[:, 1])
-n_dom = 4096
-fitdom = np.linspace(np.min(temps), np.max(temps), n_dom)
-fitrng = fitfuncs[fitfunc](popt, fitdom)
+ODR_DATA = RealData(TDOM, MPROB, TERR, SPROB)
+ODR_MODEL = Model(FFS[FF])
+ODR_ = ODR(ODR_DATA, ODR_MODEL, FGS[FF])
+ODR_.set_job(fit_type=0)
+FIT = ODR_.run()
+POPT = FIT.beta
+PERR = FIT.sd_beta
+if FF == 'logistic':
+    TRANS = POPT[1]
+    CERR = PERR[1]
+    TINT = TRANS+CERR*np.array([-1, 1])
+if FF == 'gompertz':
+    TRANS = -np.log(np.log(2)/POPT[0])/POPT[1]
+    CERR = np.array([[-PERR[0], PERR[1]], [PERR[0], -PERR[1]]], dtype=float)
+    TINT = np.divide(-np.log(np.log(2)/(POPT[0]+CERR[:, 0])), POPT[1]+CERR[:, 1])
+NDOM = 4096
+FITDOM = np.linspace(np.min(TDOM), np.max(TDOM), NDOM)
+FITVAL = FFS[FF](POPT, FITDOM)
 
-print('transition temperature estimated')
-print('------------------------------------------------------------')
-print('transition:       %f, %f' % (trans, cerr))
-print('transition range: %s' % ', '.join(tintrvl.astype('|S32')))
-print('fit parameters:   %s' % ', '.join(popt.astype('|S32')))
-print('parameter error:  %s' % ', '.join(perr.astype('|S32')))
-print('------------------------------------------------------------')
+if VERBOSE:
+    print('transition temperature estimated')
+    print('------------------------------------------------------------')
+    print('transition:       %f %f' % (TRANS, CERR))
+    print('transition range: %s %s' % tuple(TINT))
+    print('fit parameters:   %s %s' % tuple(POPT))
+    print('parameter error:  %s %s' % tuple(PERR))
+    print('------------------------------------------------------------')
 
 # prefix for output files
-out_pref = [prefix, network, property, scaler, reduc, fitfunc]
+OUTPREF = '%s.%s.%s.%s.%s.%s' % (PREFIX, NN, FTR, SCLR, RDCN, FF)
 
 # save data to file
-with open('.'.join(out_pref+[str(nsmpl), 'out']), 'wb') as fo:
-    fo.write('# -------------------------------------------------------------\n')
-    fo.write('# parameters\n')
-    fo.write('# ---------------------------------------------------------------\n')
-    fo.write('# potential:                 %s\n' % el.lower())
-    fo.write('# pressure:                  %f\n' % press[pressind])  
-    fo.write('# number of sets:            %d\n' % ntemp)
-    fo.write('# number of samples:         %d\n' % nsmpl)
-    fo.write('# property:                  %s\n' % property)
-    fo.write('# training sets (per phase): %d\n' % ntrain)
-    fo.write('# scaler:                    %s\n' % scaler)
-    fo.write('# network:                   %s\n' % network)
-    fo.write('# fitting function:          %s\n' % fitfunc)
-    fo.write('# reduction:                 %s\n' % reduc)
-    fo.write('# ------------------------------------------------------------\n')
-    fo.write('# transition | critical error\n')
-    fo.write('%f %f\n' % (trans, cerr))
-    fo.write('# transition interval\n')
-    fo.write('%s\n' % ' '.join(tintrvl.astype('|S32')))
-    fo.write('# optimal fit parameters\n')
-    fo.write('%s\n' % ' '.join(popt.astype('|S32')))
-    fo.write('# fit parameter error\n')
-    fo.write('%s\n' % ' '.join(perr.astype('|S32')))
+with open(OUTPREF+'.out', 'wb') as output:
+    output.write('# -------------------------------------------------------------\n')
+    output.write('# parameters\n')
+    output.write('# ---------------------------------------------------------------\n')
+    output.write('# potential:                 %s\n' % EL.lower())
+    output.write('# pressure index:            %d\n' % PI)
+    output.write('# number of sets:            %d\n' % NT)
+    output.write('# number of samples:         %d\n' % NS)
+    output.write('# property:                  %s\n' % FTR)
+    output.write('# training sets (per phase): %d\n' % TS)
+    output.write('# reduction:                 %s\n' % RDCN)
+    output.write('# scaler:                    %s\n' % SCLR)
+    output.write('# network:                   %s\n' % NN)
+    output.write('# fitting function:          %s\n' % FF)
+    output.write('# ------------------------------------------------------------\n')
+    output.write('# transition | critical error\n')
+    output.write('%f %f\n' % (TRANS, CERR))
+    output.write('# transition interval\n')
+    output.write('%s %s\n' % tuple(TINT))
+    output.write('# optimal fit parameters\n')
+    output.write('%s %s\n' % tuple(POPT))
+    output.write('# fit parameter error\n')
+    output.write('%s %s\n' % tuple(PERR))
 
-# plot of phase probability
-fig0 = plt.figure()
-ax0 = fig0.add_subplot(111)
-ax0.spines['right'].set_visible(False)
-ax0.spines['top'].set_visible(False)
-ax0.xaxis.set_ticks_position('bottom')
-ax0.yaxis.set_ticks_position('left')
-ax0.plot(fitdom, fitrng, color=cm(scale(trans)), label=r'$\mathrm{Phase\enspace Probability\enspace Curve}$')
-ax0.axvline(trans, color=cm(scale(trans)), alpha=0.50)
-if fitfunc == 'gompertz' or fitfunc == 'logistic':
-    for i in xrange(2):
-        # ax0.plot(fitdom, cfitrng[i], color=cm(scale(tintrvl[i])), alpha=0.50, linestyle='--')
-        ax0.axvline(tintrvl[i], color=cm(scale(tintrvl[i])), alpha=0.50, linestyle='--')
-for i in xrange(2):
-    ax0.scatter(cT[pred == i], prob[pred == i, 1], c=cm(scale(mtemp[1, i])), s=120, alpha=0.05, edgecolors='none')
-ax0.scatter(temps, mprob, color=cm(scale(temps)), s=240, edgecolors='none', marker='*')
-if el == 'LJ':
-    ax0.text(trans+2*np.diff(temps)[0], .5, r'$T_{\mathrm{trans}} = %.4f \pm %.4f$' % (trans, cerr))
-else:
-    ax0.text(trans+2*np.diff(temps)[0], .5, r'$T_{\mathrm{trans}} = %4.0f \pm %4.0fK$' % (trans, cerr))
-ax0.set_ylim(0.0, 1.0)
-for tick in ax0.get_xticklabels():
-    tick.set_rotation(16)
-scitxt = ax0.yaxis.get_offset_text()
-scitxt.set_x(.025)
-# ax0.legend(loc='upper left')
-ax0.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
-ax0.set_xlabel(r'$\mathrm{Temperature}$')
-ax0.set_ylabel(r'$\mathrm{Probability}$')
-# ax0.set_title(r'$\mathrm{%s\enspace Phase\enspace Probabilities}$' % el, y=1.015)
 
-# plot of trained and classified rdfs
-labels = ['Solid', 'Liquid']
-fig1 = plt.figure()
-ax1 = fig1.add_subplot(111)
-ax1.spines['right'].set_visible(False)
-ax1.spines['top'].set_visible(False)
-ax1.xaxis.set_ticks_position('bottom')
-ax1.yaxis.set_ticks_position('left')
-for i in xrange(2):
-    plabels = [r'$\mathrm{Trained\enspace %s\enspace Phase}$' % labels[i], r'$\mathrm{Classified\enspace %s\enspace Phase}$' % labels[i]]
-    ax1.plot(propdom[property], np.mean(ustdata[tclass == i], axis=0), color=cm(scale(mtemp[0, i])), alpha=1.00, label=plabels[0])
-    ax1.plot(propdom[property], np.mean(uscdata[pred == i], axis=0), color=cm(scale(mtemp[1, i])), alpha=1.00, linestyle='--', label=plabels[1])
-ax1.legend()
-if property == 'radial_distribution':
-    ax1.set_xlabel(r'$\mathrm{Distance}$')
-    ax1.set_ylabel(r'$\mathrm{Radial Distribution}$')
-    # ax1.set_title(r'$\mathrm{%s\enspace Phase\enspace RDFs}$' % el, y=1.015)
-if property == 'entropic_fingerprint':
-    ax1.set_xlabel(r'$\mathrm{Distance}$')
-    ax1.set_ylabel(r'$\mathrm{Entropic Fingerprint}$')
-    # ax1.set_title(r'$\mathrm{%s\enspace Phase\enspace EFs}$' % el, y=1.015)
-if property == 'structure_factor':
-    ax1.set_xlabel(r'$\mathrm{Wavenumber}$')
-    ax1.set_ylabel(r'$\mathrm{Structure Factor}$')
-    # ax1.set_title(r'$\mathrm{%s\enspace Phase\enspace SFs}$' % el, y=1.015)
+def plot_phase_probs():
+    ''' plot of phase probability '''
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.xaxis.set_ticks_position('bottom')
+    ax.yaxis.set_ticks_position('left')
+    ax.plot(FITDOM, FITVAL, color=CM(SCALE(TRANS)),
+            label=r'$\mathrm{Phase\enspace Probability\enspace Curve}$')
+    ax.axvline(TRANS, color=CM(SCALE(TRANS)), alpha=0.50)
+    for j in xrange(2):
+        ax.axvline(TINT[j], color=CM(SCALE(TINT[j])), alpha=0.50, linestyle='--')
+    for j in xrange(2):
+        ax.scatter(CTEMP[CC == j], PROB[CC == j], c=CM(SCALE(MTEMP[1, j])),
+                   s=120, alpha=0.05, edgecolors='none')
+    ax.scatter(TDOM, MPROB, color=CM(SCALE(TDOM)), s=240, edgecolors='none', marker='*')
+    if EL == 'LJ':
+        ax.text(TRANS+2*np.diff(TDOM)[0], .5,
+                r'$T_{\mathrm{trans}} = %.4f \pm %.4f$' % (TRANS, CERR))
+    else:
+        ax.text(TRANS+2*np.diff(TDOM)[0], .5,
+                r'$T_{\mathrm{trans}} = %4.0f \pm %4.0fK$' % (TRANS, CERR))
+    ax.set_ylim(0.0, 1.0)
+    for tick in ax.get_xticklabels():
+        tick.set_rotation(16)
+    scitxt = ax.yaxis.get_offset_text()
+    scitxt.set_x(.025)
+    ax.ticklabel_format(axis='y', style='sci', scilimits=(-2, 2))
+    ax.set_xlabel(r'$\mathrm{Temperature}$')
+    ax.set_ylabel(r'$\mathrm{Probability}$')
+    fig.savefig(OUTPREF+'.prob.png')
 
-# network graph
-if 'keras' in network:
-    plot_model(networks[network].model, show_shapes=True, show_layer_names=True, to_file='.'.join(out_pref+['mdl', str(nsmpl), 'png']))
+
+def plot_ftrs():
+    ''' plot of trained and classified features '''
+    labels = ['Solid', 'Liquid']
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.xaxis.set_ticks_position('bottom')
+    ax.yaxis.set_ticks_position('left')
+    for j in xrange(2):
+        plabels = [r'$\mathrm{Trained\enspace %s\enspace Phase}$' % labels[j],
+                   r'$\mathrm{Classified\enspace %s\enspace Phase}$' % labels[j]]
+        ax.plot(FDOM[FTR], np.mean(UTDATA[TC.reshape(-1) == j], axis=0),
+                color=CM(SCALE(MTEMP[0, i])), alpha=1.00, label=plabels[0])
+        ax.plot(FDOM[FTR], np.mean(UCDATA[CC.reshape(-1) == j], axis=0),
+                color=CM(SCALE(MTEMP[1, i])), alpha=1.00, linestyle='--', label=plabels[1])
+    ax.legend()
+    if property == 'radial_distribution':
+        ax.set_xlabel(r'$\mathrm{Distance}$')
+        ax.set_ylabel(r'$\mathrm{Radial Distribution}$')
+    if property == 'entropic_fingerprint':
+        ax.set_xlabel(r'$\mathrm{Distance}$')
+        ax.set_ylabel(r'$\mathrm{Entropic Fingerprint}$')
+    if property == 'structure_factor':
+        ax.set_xlabel(r'$\mathrm{Wavenumber}$')
+        ax.set_ylabel(r'$\mathrm{Structure Factor}$')
+    fig.savefig(OUTPREF+'.ftr.png')
 
 # save figures
-fig0.savefig('.'.join(out_pref+['prob', str(nsmpl), 'png']))
-fig1.savefig('.'.join(out_pref+['strf', str(nsmpl), 'png']))
-# close plots
-plt.close('all')
-print('plots saved')
-print('------------------------------------------------------------')
-print('finished')
-print('------------------------------------------------------------')
+if PLOT:
+    plot_model(NNS[NN].model, show_shapes=True, show_layer_names=True, to_file=OUTPREF+'.mdl.png')
+    plot_phase_probs()
+    plot_ftrs()
+    if VERBOSE:
+        print('plots saved')
+        print('------------------------------------------------------------')
+if VERBOSE:
+    print('finished')
+    print('------------------------------------------------------------')
