@@ -809,7 +809,7 @@ for STEP in tqdm(xrange(NSMPL)):
     if PARALLEL:
         # gather results from cluster
         STATE = CLIENT.gather(STATE)
-    if STEP % REFREQ == 0:
+    if STEP % REFREQ == 0 and STEP > 0:
         # save state for restart
         save_restart_samples()
         if PARALLEL:
@@ -827,22 +827,22 @@ if PARALLEL:
 
 if VERBOSE:
     print('consolidating files')
-THRM = [OUTPUT[u][0] for u in xrange(NS)]
-TRAJ = [OUTPUT[u][1] for u in xrange(NS)]
-for u in xrange(NP):
-    with open(file_prefix(u)+'.thrm', 'wb') as thrm_out:
-        for v in xrange(NT):
-            w = np.ravel_multi_index((u, v), (NP, NT), order='C')
-            with open(THRM[w], 'rb') as thrm_in:
-                for line in thrm_in:
-                    thrm_out.write(line)
-for u in xrange(NP):
-    with open(file_prefix(u)+'.traj', 'wb') as traj_out:
-        for v in xrange(NT):
-            w = np.ravel_multi_index((u, v), (NP, NT), order='C')
-            with open(TRAJ[w], 'rb') as traj_in:
-                for line in traj_in:
-                    traj_out.write(line)
+THRM = [OUTPUT[U][0] for U in xrange(NS)]
+TRAJ = [OUTPUT[U][1] for U in xrange(NS)]
+for U in xrange(NP):
+    with open(file_prefix(U)+'.thrm', 'wb') as THRM_OUT:
+        for V in xrange(NT):
+            W = np.ravel_multi_index((U, V), (NP, NT), order='C')
+            with open(THRM[W], 'rb') as THRM_IN:
+                for LINE in THRM_IN:
+                    THRM_OUT.write(LINE)
+for U in xrange(NP):
+    with open(file_prefix(U)+'.traj', 'wb') as TRAJ_OUT:
+        for V in xrange(NT):
+            W = np.ravel_multi_index((U, V), (NP, NT), order='C')
+            with open(TRAJ[W], 'rb') as TRAJ_IN:
+                for LINE in TRAJ_IN:
+                    TRAJ_OUT.write(LINE)
 
 # --------------
 # clean up files
@@ -850,6 +850,6 @@ for u in xrange(NP):
 
 if VERBOSE:
     print('cleaning files')
-for u in xrange(NS):
-    os.remove(THRM[u])
-    os.remove(TRAJ[u])
+for U in xrange(NS):
+    os.remove(THRM[U])
+    os.remove(TRAJ[U])
