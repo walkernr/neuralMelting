@@ -10,8 +10,8 @@ import argparse
 import os
 import pickle
 import numpy as np
-from lammps import lammps
 from tqdm import tqdm
+from lammps import lammps
 
 # --------------
 # run parameters
@@ -319,7 +319,6 @@ def write_outputs():
         if VERBOSE:
             print('writing outputs')
             progress(futures)
-            print('\n')
     else:
         if VERBOSE:
             print('writing outputs')
@@ -432,7 +431,6 @@ def init_samples():
         if VERBOSE:
             print('initializing samples')
             progress(futures)
-            print('\n')
     else:
         if VERBOSE:
             print('initializing samples')
@@ -647,7 +645,6 @@ def gen_samples():
         if VERBOSE:
             print('performing monte carlo')
             progress(futures)
-            print('\n')
     else:
         # loop through pressures
         if VERBOSE:
@@ -735,15 +732,19 @@ def replica_exchange():
 # -------------
 
 
-def init_samples_restart():
+def load_samples_restart():
     ''' initialize samples with restart file '''
+    if VERBOSE:
+        print('loading samples from previous dump')
     refile = os.getcwd()+'/'+'%s.%s.%s.lammps.rsrt.%d.pickle' % (NAME, EL.lower(),
                                                                  LAT[EL][0], RESTEP)
     return pickle.load(open(refile, 'rb'))
 
 
-def save_restart_samples():
+def dump_samples_restart():
     ''' save restart state '''
+    if VERBOSE:
+        print('dumping samples')
     refile = os.getcwd()+'/'+'%s.%s.%s.lammps.rsrtt.%d.pickle' % (NAME, EL.lower(),
                                                                   LAT[EL][0], STEP)
     pickle.dump(STATE, open(refile, 'wb'))
@@ -791,7 +792,7 @@ OUTPUT = init_outputs()
 init_headers()
 # initialize simulation
 if RESTART:
-    STATE = init_restart_samples()
+    STATE = load_samples_restart()
 else:
     if PARALLEL:
         STATE = CLIENT.gather(init_samples())
@@ -811,7 +812,7 @@ for STEP in tqdm(xrange(NSMPL)):
         STATE = CLIENT.gather(STATE)
     if STEP % REFREQ == 0 and STEP > 0:
         # save state for restart
-        save_restart_samples()
+        dump_samples_restart()
         if PARALLEL:
             # restart client
             CLIENT.restart()
