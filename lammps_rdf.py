@@ -112,9 +112,9 @@ def calculate_spatial():
     b = [-1, 0, 1]
     # generate lattice vectors for ever direction from base
     br = np.array([[b[i], b[j], b[k]] for i in xrange(3) for j in xrange(3) for k in xrange(3)],
-                  dtype=np.uint32)
+                  dtype=np.int8)
     # create vector for rdf
-    g = np.zeros(bins, dtype=np.float64)
+    g = np.zeros(bins, dtype=np.float32)
     # reshape position vector
     pos = pos.reshape((len(natoms), natoms[0], -1))
     # return properties
