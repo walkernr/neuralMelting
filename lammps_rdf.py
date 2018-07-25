@@ -137,8 +137,7 @@ def calculate_rdf(j):
 
 # get spatial properties
 NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, G = calculate_spatial()
-# calculate radial distribution for each sample in parallel
-
+# calculate radial distribution for each sample
 if PARALLEL:
     if DISTRIBUTED:
         # construct distributed cluster
@@ -155,7 +154,11 @@ if PARALLEL:
                 print(CLIENT.scheduler_info)
     else:
         # construct local cluster
-        CLUSTER = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD)
+        if NWORKER == 1:
+            PROC = False
+        else:
+            PROC = True
+        CLUSTER = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD, processes=PROC)
         # start client with local cluster
         CLIENT = Client(CLUSTER)
         if VERBOSE:

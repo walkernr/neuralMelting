@@ -9,20 +9,20 @@ from __future__ import division, print_function
 import argparse
 import subprocess
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
-parser.add_argument('-p', '--parallel', help='parallel run', action='store_true')
-parser.add_argument('-d', '--distributed', help='distributed run', action='store_true')
-parser.add_argument('-s', '--simulation', help='simulation run', action='store_true')
-parser.add_argument('-r', '--rdf', help='radial distribution run', action='store_true')
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
+PARSER.add_argument('-p', '--parallel', help='parallel run', action='store_true')
+PARSER.add_argument('-d', '--distributed', help='distributed run', action='store_true')
+PARSER.add_argument('-s', '--simulation', help='simulation run', action='store_true')
+PARSER.add_argument('-r', '--rdf', help='radial distribution run', action='store_true')
 
-args = parser.parse_args()
+ARGS = PARSER.parse_args()
 
-VERBOSE = args.verbose
-PARALLEL = args.parallel
-DISTRIBUTED = args.distributed
-SIM = args.simulation
-RDF = args.rdf
+VERBOSE = ARGS.verbose
+PARALLEL = ARGS.parallel
+DISTRIBUTED = ARGS.distributed
+SIM = ARGS.simulation
+RDF = ARGS.rdf
 
 SIM_ARGS = []
 PRS_ARGS = []
@@ -71,24 +71,24 @@ PVOL = 0.25
 NSTPS = 8
 
 if PARALLEL:
-    par_args = ['-nw', str(NWORKER),
+    PAR_ARGS = ['-nw', str(NWORKER),
                 '-nt', str(NTHREAD)]
     if DISTRIBUTED:
-        par_args = par_args+['-q', QUEUE,
+        PAR_ARGS = PAR_ARGS+['-q', QUEUE,
                              '-a', ALLOC,
                              '-nn', str(NODES),
                              '-np', str(PPN),
                              '-w', str(WALLTIME),
                              '-m', str(MEM)]
     if SIM:
-        SIM_ARGS = SIM_ARGS+par_args
+        SIM_ARGS = SIM_ARGS+PAR_ARGS
     if RDF:
-        RDF_ARGS = RDF_ARGS+par_args
+        RDF_ARGS = RDF_ARGS+PAR_ARGS
 
-id_args = ['-n', NAME,
+ID_ARGS = ['-n', NAME,
            '-e', EL]
 if SIM:
-    SIM_ARGS = SIM_ARGS+id_args+['-ss', str(SZ),
+    SIM_ARGS = SIM_ARGS+ID_ARGS+['-ss', str(SZ),
                                  '-pn', str(NPRESS),
                                  '-pr', str(LPRESS), str(HPRESS),
                                  '-tn', str(NTEMP),
@@ -100,8 +100,8 @@ if SIM:
                                  '-vm', str(PVOL),
                                  '-t', str(NSTPS)]
 if RDF:
-    RDF_ARGS = RDF_ARGS+id_args
-    PRS_ARGS = PRS_ARGS+id_args
+    RDF_ARGS = RDF_ARGS+ID_ARGS
+    PRS_ARGS = PRS_ARGS+ID_ARGS
 
 if SIM:
     subprocess.call(['python', 'lammps_remcmc.py']+SIM_ARGS)
