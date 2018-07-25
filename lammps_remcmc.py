@@ -743,7 +743,7 @@ if PARALLEL:
                 print(CLIENT.scheduler_info)
     else:
         # construct local cluster
-        CLUSTER = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD)
+        CLUSTER = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD, processes=False)
         # start client with local cluster
         CLIENT = Client(CLUSTER)
         # display client information
