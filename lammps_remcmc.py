@@ -769,7 +769,8 @@ for s in xrange(NSMPL):
     STATE[:] = gen_mc_params()
     if s >= CUTOFF:
         write_outputs()
-    STATE[:] = CLIENT.gather(STATE)
+    if PARALLEL:
+        STATE[:] = CLIENT.gather(STATE)
     replica_exchange()
 if PARALLEL:
     OUTPUT[:] = CLIENT.gather(OUTPUT)
