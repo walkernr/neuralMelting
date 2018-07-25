@@ -166,7 +166,7 @@ TIMESTEP = {'real': 4.0,
 P = np.linspace(LP, HP, NP, dtype=np.float32)
 # temperature
 T = np.linspace(LT, HT, NT, dtype=np.float32)
-# inital position variation
+# inital position variation, volume variation, and timestep
 DX = 0.125*LAT[EL][1]
 DL = 0.03125*SZ*LAT[EL][1]
 DT = TIMESTEP[UNITS[EL]]
@@ -324,6 +324,33 @@ def write_outputs():
             print('writing outputs')
         for k in xrange(NS):
             write_output(OUTPUT[k], STATE[k])
+
+
+def consolidate_outputs():
+    ''' consolidates outputs across samples '''
+    if VERBOSE:
+        print('consolidating outputs')
+    thrm = [OUTPUT[k][0] for k in xrange(NS)]
+    traj = [OUTPUT[k][1] for k in xrange(NS)]
+    for i in xrange(NP):
+        with open(file_prefix(i)+'.thrm', 'wb') as thrm_out:
+            for j in xrange(NT):
+                k = np.ravel_multi_index((i, j), (NP, NT), order='C')
+                with open(thrm[k], 'rb') as thrm_in:
+                    for line in thrm_in:
+                        thrm_out.write(line)
+    for i in xrange(NP):
+        with open(file_prefix(i)+'.traj', 'wb') as traj_out:
+            for j in xrange(NT):
+                k = np.ravel_multi_index((i, j), (NP, NT), order='C')
+                with open(traj[k], 'rb') as traj_in:
+                    for line in traj_in:
+                        traj_out.write(line)
+    if VERBOSE:
+        print('cleaning files')
+    for k in xrange(NS):
+        os.remove(thrm[k])
+        os.remove(thrm[k])
 
 # ---------------------------------
 # lammps file/object initialization
@@ -736,18 +763,16 @@ def load_samples_restart():
     ''' initialize samples with restart file '''
     if VERBOSE:
         print('loading samples from previous dump')
-    refile = os.getcwd()+'/'+'%s.%s.%s.lammps.rsrt.%d.pickle' % (NAME, EL.lower(),
-                                                                 LAT[EL][0], RESTEP)
-    return pickle.load(open(refile, 'rb'))
+    rf = os.getcwd()+'/'+'%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], RESTEP)
+    return pickle.load(open(rf, 'rb'))
 
 
 def dump_samples_restart():
     ''' save restart state '''
     if VERBOSE:
         print('dumping samples')
-    refile = os.getcwd()+'/'+'%s.%s.%s.lammps.rsrtt.%d.pickle' % (NAME, EL.lower(),
-                                                                  LAT[EL][0], STEP)
-    pickle.dump(STATE, open(refile, 'wb'))
+    rf = os.getcwd()+'/'+'%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], STEP)
+    pickle.dump(STATE, open(rf, 'wb'))
 
 # -----------------
 # initialize client
@@ -815,42 +840,12 @@ for STEP in tqdm(xrange(NSMPL)):
         dump_samples_restart()
         if PARALLEL:
             # restart client
+            if VERBOSE:
+                print('restarting client')
             CLIENT.restart()
     # replica exchange markov chain mc
     replica_exchange()
 if PARALLEL:
     # terminate client after completion
     CLIENT.close()
-
-# ------------------
-# final data storage
-# ------------------
-
-if VERBOSE:
-    print('consolidating files')
-THRM = [OUTPUT[U][0] for U in xrange(NS)]
-TRAJ = [OUTPUT[U][1] for U in xrange(NS)]
-for U in xrange(NP):
-    with open(file_prefix(U)+'.thrm', 'wb') as THRM_OUT:
-        for V in xrange(NT):
-            W = np.ravel_multi_index((U, V), (NP, NT), order='C')
-            with open(THRM[W], 'rb') as THRM_IN:
-                for LINE in THRM_IN:
-                    THRM_OUT.write(LINE)
-for U in xrange(NP):
-    with open(file_prefix(U)+'.traj', 'wb') as TRAJ_OUT:
-        for V in xrange(NT):
-            W = np.ravel_multi_index((U, V), (NP, NT), order='C')
-            with open(TRAJ[W], 'rb') as TRAJ_IN:
-                for LINE in TRAJ_IN:
-                    TRAJ_OUT.write(LINE)
-
-# --------------
-# clean up files
-# --------------
-
-if VERBOSE:
-    print('cleaning files')
-for U in xrange(NS):
-    os.remove(THRM[U])
-    os.remove(TRAJ[U])
+consolidate_outputs()
