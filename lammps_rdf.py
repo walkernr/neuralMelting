@@ -57,7 +57,7 @@ EL = ARGS.element
 PI = ARGS.pressure_index
 
 if PARALLEL:
-    os.environ['DASK_ALLOWED_FAILURES'] = '4'
+    os.environ['DASK_ALLOWED_FAILURES'] = '16'
     from distributed import Client, LocalCluster, progress
     from dask import delayed
 if DISTRIBUTED:
@@ -117,6 +117,8 @@ def calculate_spatial():
     g = np.zeros(bins, dtype=np.float64)
     # reshape position vector
     pos = pos.reshape((len(natoms), natoms[0], -1))
+    if PARALLEL:
+        pos = CLIENT.scatter([pos[i] for i in xrange(len(natoms))])
     # return properties
     return natoms, box, pos, br, r, dr, nrho, dni, g
 
@@ -128,16 +130,14 @@ def calculate_rdf(j):
     # loop through lattice vectors
     for k in xrange(BR.shape[0]):
         # displacement vector matrix for sample j
-        dvm = POS[j, :]-(POS[j, :]+BOX[j]*BR[k].reshape((1, -1))).reshape((-1, 1, 3))
+        dvm = POS[j]-(POS[j]+BOX[j]*BR[k].reshape((1, -1))).reshape((-1, 1, 3))
         # vector of displacements between atoms
         d = np.sqrt(np.sum(np.square(dvm), -1))
         # calculate rdf for sample j
         g[1:] += np.histogram(d, R)[0]
     return g
 
-# get spatial properties
-NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, G = calculate_spatial()
-# calculate radial distribution for each sample
+# client initialization
 if PARALLEL:
     if DISTRIBUTED:
         # construct distributed cluster
@@ -163,10 +163,17 @@ if PARALLEL:
         CLIENT = Client(CLUSTER)
         if VERBOSE:
             print(CLIENT.scheduler_info)
+
+# get spatial properties
+NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, G = calculate_spatial() 
+# calculate radial distributions           
+if PARALLEL:
+    if VERBOSE:
+        print('data loaded')
     OPERATIONS = [delayed(calculate_rdf)(u) for u in xrange(len(NATOMS))]
     FUTURES = CLIENT.compute(OPERATIONS)
     if VERBOSE:
-        print('calculating rdfs for %s at pressure %f' % (EL.lower(), PI))
+        print('calculating rdfs for %s %s samples at pressure %f' % (len(NATOMS), EL.lower(), PI))
         progress(FUTURES)
         print('\n')
     GS = np.array(CLIENT.gather(FUTURES), dtype=np.float32)

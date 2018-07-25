@@ -104,7 +104,7 @@ PVOL = ARGS.volume_move
 NSTPS = ARGS.timesteps
 
 if PARALLEL:
-    os.environ['DASK_ALLOWED_FAILURES'] = '4'
+    os.environ['DASK_ALLOWED_FAILURES'] = '16'
     from distributed import Client, LocalCluster, progress
     from dask import delayed
 if DISTRIBUTED:
