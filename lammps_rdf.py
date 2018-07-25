@@ -11,7 +11,6 @@ import os
 import pickle
 import numpy as np
 import numba as nb
-from tqdm import tqdm
 
 
 PARSER = argparse.ArgumentParser()
@@ -58,8 +57,10 @@ NAME = ARGS.name
 EL = ARGS.element
 PI = ARGS.pressure_index
 
+if VERBOSE:
+    from tqdm import tqdm
 if PARALLEL:
-    os.environ['DASK_ALLOWED_FAILURES'] = '16'
+    os.environ['DASK_ALLOWED_FAILURES'] = '4'
     from distributed import Client, LocalCluster, progress
     from dask import delayed
 if DISTRIBUTED:

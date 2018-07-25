@@ -10,6 +10,7 @@ import argparse
 import os
 import numpy as np
 from lammps import lammps
+from tqdm import tqdm
 
 # --------------
 # run parameters
@@ -18,8 +19,13 @@ from lammps import lammps
 # parse command line (help option generated automatically)
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
+PARSER.add_argument('-r', '--restart', help='restart run', action='store_true')
 PARSER.add_argument('-p', '--parallel', help='parallel run', action='store_true')
 PARSER.add_argument('-d', '--distributed', help='distributed run', action='store_true')
+PARSER.add_argument('-rs', '--restart_step', help='restart run step',
+                    type=int, default=256)
+PARSER.add_argument('-rw', '--restart_write', help='restart write frequency',
+                    type=int, default=256)
 PARSER.add_argument('-q', '--queue', help='submission queue',
                     type=str, default='lasigma')
 PARSER.add_argument('-a', '--allocation', help='submission allocation',
@@ -68,7 +74,12 @@ ARGS = PARSER.parse_args()
 # booleans for run type
 VERBOSE = ARGS.verbose
 PARALLEL = ARGS.parallel
+RESTART = ARGS.restart
 DISTRIBUTED = ARGS.distributed
+# restart step
+RESTEP = ARGS.restart_step
+# restart write frequency
+REFREQ = ARGS.restart_write
 # arguments for distributed run using pbs
 QUEUE = ARGS.queue
 ALLOC = ARGS.allocation
@@ -103,10 +114,8 @@ PVOL = ARGS.volume_move
 # number of hamiltonian monte carlo timesteps
 NSTPS = ARGS.timesteps
 
-if VERBOSE:
-    from tqdm import tqdm
 if PARALLEL:
-    os.environ['DASK_ALLOWED_FAILURES'] = '16'
+    os.environ['DASK_ALLOWED_FAILURES'] = '4'
     from distributed import Client, LocalCluster, progress
     from dask import delayed
 if DISTRIBUTED:
@@ -157,8 +166,8 @@ P = np.linspace(LP, HP, NP, dtype=np.float32)
 # temperature
 T = np.linspace(LT, HT, NT, dtype=np.float32)
 # inital position variation
-DX = 0.03125*LAT[EL][1]
-DL = 0.0078125*SZ*LAT[EL][1]
+DX = 0.125*LAT[EL][1]
+DL = 0.03125*SZ*LAT[EL][1]
 DT = TIMESTEP[UNITS[EL]]
 
 # ----------------
@@ -724,6 +733,24 @@ def replica_exchange():
     if VERBOSE:
         print('%d replica exchanges performed' % swaps)
 
+# -------------
+# restart files
+# -------------
+
+
+def init_samples_restart():
+    ''' initialize samples with restart file '''
+    refile = os.getcwd()+'/'+'%s.%s.%s.lammps.rsrt.%d.pickle' % (NAME, EL.lower(),
+                                                                 LAT[EL][0], RESTEP)
+    return pickle.load(open(refile, 'rb'))
+
+
+def save_restart_samples(restep):
+    ''' save restart state '''
+    refile = os.getcwd()+'/'+'%s.%s.%s.lammps.rsrtt.%d.pickle' % (NAME, EL.lower(),
+                                                                  LAT[EL][0], STEP)
+    pickle.dump(STATE, open(refile, 'wb'))
+
 # -----------------
 # initialize client
 # -----------------
@@ -766,27 +793,33 @@ CONST = init_constants()
 OUTPUT = init_outputs()
 init_headers()
 # initialize simulation
-STATE = init_samples()
-if PARALLEL:
-    STATE[:] = CLIENT.gather(STATE)
+if RESTART:
+    STATE = init_restart_samples()
+else:
+    if PARALLEL:
+        STATE = CLIENT.gather(init_samples())
+    else:
+        STATE = init_samples()
 # loop through to number of samples that need to be collected
 if VERBOSE:
-    for s in tqdm(xrange(NSMPL)):
-        STATE[:] = gen_samples()
-        STATE[:] = gen_mc_params()
-        if s >= CUTOFF:
-            write_outputs()
+    for STEP in tqdm(xrange(NSMPL)):
+        # generate samples
+        STATE = gen_samples()
+        # generate mc parameters
+        STATE = gen_mc_params()
         if PARALLEL:
-            STATE[:] = CLIENT.gather(STATE)
-        replica_exchange()
-else:
-    for s in xrange(NSMPL):
-        STATE[:] = gen_samples()
-        STATE[:] = gen_mc_params()
-        if s >= CUTOFF:
+            # gather results from cluster
+            STATE = CLIENT.gather(STATE)
+        if STEP >= CUTOFF:
+            # write data
             write_outputs()
-        if PARALLEL:
-            STATE[:] = CLIENT.gather(STATE)
+        if STEP % REFREQ == 0:
+            # save state for restart
+            save_restart_samples()
+            if PARALLEL:
+                # restart client
+                CLIENT.restart()
+        # replica exchange markov chain mc
         replica_exchange()
 if PARALLEL:
     # terminate client after completion
