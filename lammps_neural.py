@@ -335,13 +335,6 @@ CC = CC.reshape(CS, LN)
 # mean temps
 MTEMP = np.array([[np.mean(TTEMP[TC == i]) for i in xrange(2)],
                   [np.mean(CTEMP[CC == i]) for i in xrange(2)]], dtype=float)
-# colormap and color scaler
-CM = plt.get_cmap('plasma')
-SCALE = lambda temp: (temp-np.min(TEMP))/np.max(TEMP-np.min(TEMP))
-if VERBOSE:
-    print('colormap and scale defined')
-    print('------------------------------------------------------------')
-
 # curve fitting and transition temp extraction
 TDOM = np.mean(CTEMP, 1)  # temperature domain of classification data
 TERR = np.std(CTEMP, 1)   # standard error of temperature domain
@@ -469,6 +462,13 @@ def plot_ftrs():
 
 # save figures
 if PLOT:
+    # colormap and color scaler
+    CM = plt.get_cmap('plasma')
+    SCALE = lambda temp: (temp-np.min(TEMP))/np.max(TEMP-np.min(TEMP))
+    if VERBOSE:
+        print('colormap and scale defined')
+        print('------------------------------------------------------------')
+    # plots
     plot_model(NNS[NN].model, show_shapes=True, show_layer_names=True, to_file=OUTPREF+'.mdl.png')
     plot_phase_probs()
     plot_ftrs()

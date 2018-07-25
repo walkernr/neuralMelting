@@ -11,6 +11,8 @@ import os
 import pickle
 import numpy as np
 import numba as nb
+from tqdm import tqdm
+
 
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
@@ -163,11 +165,11 @@ if PARALLEL:
             print(CLIENT.scheduler_info)
 
 # get spatial properties
-NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, G = calculate_spatial() 
+NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, G = calculate_spatial()
+if VERBOSE:
+    print('data loaded')
 # calculate radial distributions           
 if PARALLEL:
-    if VERBOSE:
-        print('data loaded')
     OPERATIONS = [delayed(calculate_rdf)(u) for u in xrange(len(NATOMS))]
     if VERBOSE:
         print('operations defined')
@@ -179,7 +181,11 @@ if PARALLEL:
     GS = np.array(CLIENT.gather(FUTURES), dtype=np.float32)
     CLIENT.close()
 else:
-    GS = np.array([calculate_rdf(u) for u in xrange(len(NATOMS))], dtype=np.float32)
+    if VERBOSE:
+        print('calculating rdfs for %s %s samples at pressure %f' % (len(NATOMS), EL.lower(), PI))
+        GS = np.array([calculate_rdf(u) for u in tqdm(xrange(len(NATOMS)))], dtype=np.float32)
+    else:
+        GS = np.array([calculate_rdf(u) for u in xrange(len(NATOMS))], dtype=np.float32)
 
 # adjust rdf by atom count and atoms contained by shells
 G = np.divide(GS, NATOMS[0]*DNI)

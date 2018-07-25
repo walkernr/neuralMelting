@@ -103,6 +103,8 @@ PVOL = ARGS.volume_move
 # number of hamiltonian monte carlo timesteps
 NSTPS = ARGS.timesteps
 
+if VERBOSE:
+    from tqdm import tqdm
 if PARALLEL:
     os.environ['DASK_ALLOWED_FAILURES'] = '16'
     from distributed import Client, LocalCluster, progress
@@ -768,18 +770,25 @@ STATE = init_samples()
 if PARALLEL:
     STATE[:] = CLIENT.gather(STATE)
 # loop through to number of samples that need to be collected
-for s in xrange(NSMPL):
-    if VERBOSE:
-        print('step: %d' % s)
-    STATE[:] = gen_samples()
-    STATE[:] = gen_mc_params()
-    if s >= CUTOFF:
-        write_outputs()
-    if PARALLEL:
-        STATE[:] = CLIENT.gather(STATE)
-    replica_exchange()
+if VERBOSE:
+    for s in tqdm(xrange(NSMPL)):
+        STATE[:] = gen_samples()
+        STATE[:] = gen_mc_params()
+        if s >= CUTOFF:
+            write_outputs()
+        if PARALLEL:
+            STATE[:] = CLIENT.gather(STATE)
+        replica_exchange()
+else:
+    for s in xrange(NSMPL):
+        STATE[:] = gen_samples()
+        STATE[:] = gen_mc_params()
+        if s >= CUTOFF:
+            write_outputs()
+        if PARALLEL:
+            STATE[:] = CLIENT.gather(STATE)
+        replica_exchange()
 if PARALLEL:
-    OUTPUT[:] = CLIENT.gather(OUTPUT)
     # terminate client after completion
     CLIENT.close()
 
