@@ -117,8 +117,6 @@ def calculate_spatial():
     g = np.zeros(bins, dtype=np.float64)
     # reshape position vector
     pos = pos.reshape((len(natoms), natoms[0], -1))
-    if PARALLEL:
-        pos = CLIENT.scatter([pos[i] for i in xrange(len(natoms))])
     # return properties
     return natoms, box, pos, br, r, dr, nrho, dni, g
 
@@ -171,6 +169,8 @@ if PARALLEL:
     if VERBOSE:
         print('data loaded')
     OPERATIONS = [delayed(calculate_rdf)(u) for u in xrange(len(NATOMS))]
+    if VERBOSE:
+        print('operations defined')
     FUTURES = CLIENT.compute(OPERATIONS)
     if VERBOSE:
         print('calculating rdfs for %s %s samples at pressure %f' % (len(NATOMS), EL.lower(), PI))
