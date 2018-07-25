@@ -217,14 +217,10 @@ def init_output(k):
     i, j = np.unravel_index(k, dims=(NP, NT), order='C')
     thrm = file_prefix(i)+'.%02d.thrm' % j
     traj = thrm.replace('thrm', 'traj')
-    try:
+    if os.path.isfile(thrm)
         os.remove(thrm)
-    except:
-        pass
-    try:
+    if os.path.isfile(thrm)
         os.remove(traj)
-    except:
-        pass
     return thrm, traj
 
 
@@ -801,26 +797,25 @@ else:
     else:
         STATE = init_samples()
 # loop through to number of samples that need to be collected
-if VERBOSE:
-    for STEP in tqdm(xrange(NSMPL)):
-        # generate samples
-        STATE = gen_samples()
-        # generate mc parameters
-        STATE = gen_mc_params()
+for STEP in tqdm(xrange(NSMPL)):
+    # generate samples
+    STATE = gen_samples()
+    # generate mc parameters
+    STATE = gen_mc_params()
+    if STEP >= CUTOFF:
+        # write data
+        write_outputs()
+    if PARALLEL:
+        # gather results from cluster
+        STATE = CLIENT.gather(STATE)
+    if STEP % REFREQ == 0:
+        # save state for restart
+        save_restart_samples()
         if PARALLEL:
-            # gather results from cluster
-            STATE = CLIENT.gather(STATE)
-        if STEP >= CUTOFF:
-            # write data
-            write_outputs()
-        if STEP % REFREQ == 0:
-            # save state for restart
-            save_restart_samples()
-            if PARALLEL:
-                # restart client
-                CLIENT.restart()
-        # replica exchange markov chain mc
-        replica_exchange()
+            # restart client
+            CLIENT.restart()
+    # replica exchange markov chain mc
+    replica_exchange()
 if PARALLEL:
     # terminate client after completion
     CLIENT.close()
