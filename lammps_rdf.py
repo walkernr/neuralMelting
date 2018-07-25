@@ -114,17 +114,17 @@ def calculate_spatial():
     br = np.array([[b[i], b[j], b[k]] for i in xrange(3) for j in xrange(3) for k in xrange(3)],
                   dtype=np.uint32)
     # create vector for rdf
-    gs = np.zeros((len(natoms), bins), dtype=np.float64)
+    g = np.zeros(bins, dtype=np.float64)
     # reshape position vector
     pos = pos.reshape((len(natoms), natoms[0], -1))
     # return properties
-    return natoms, box, pos, br, r, dr, nrho, dni, gs
+    return natoms, box, pos, br, r, dr, nrho, dni, g
 
 
 @nb.njit
 def calculate_rdf(j):
     ''' calculate rdf for sample j '''
-    g = np.copy(GS[j, :])
+    g = np.copy(G)
     # loop through lattice vectors
     for k in xrange(BR.shape[0]):
         # displacement vector matrix for sample j
@@ -136,7 +136,7 @@ def calculate_rdf(j):
     return g
 
 # get spatial properties
-NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, GS = calculate_spatial()
+NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, G = calculate_spatial()
 # calculate radial distribution for each sample in parallel
 
 if PARALLEL:
@@ -166,13 +166,10 @@ if PARALLEL:
         print('calculating rdfs for %s at pressure %f' % (EL.lower(), PI))
         progress(FUTURES)
         print('\n')
-    RESULTS = CLIENT.gather(FUTURES)
-    for u in xrange(len(NATOMS)):
-        GS[u, :] = RESULTS[u]
+    GS = np.array(CLIENT.gather(FUTURES), dtype=np.float32)
     CLIENT.close()
 else:
-    for u in xrange(len(NATOMS)):
-        GS[u, :] = calculate_rdf(u)
+    GS = np.array([calculate_rdf(u) for u in xrange(len(NATOMS))], dtype=np.float32)
 
 # adjust rdf by atom count and atoms contained by shells
 G = np.divide(GS, NATOMS[0]*DNI)

@@ -760,7 +760,9 @@ CONST = init_constants()
 OUTPUT = init_outputs()
 init_headers()
 # initialize simulation
-STATE = CLIENT.gather(init_samples())
+STATE = init_samples()
+if PARALLEL:
+    STATE[:] = CLIENT.gather(STATE)
 # loop through to number of samples that need to be collected
 for s in xrange(NSMPL):
     if VERBOSE:
