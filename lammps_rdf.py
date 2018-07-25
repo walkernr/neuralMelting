@@ -93,7 +93,7 @@ def calculate_spatial():
     # minimum box size in simulation
     l = np.min(box)
     # maximum radius for rdf
-    mr = np.sqrt(3)/2 # 1/2
+    mr = 1/2
     # bin count for rdf
     bins = 256
     # domain for rdf
