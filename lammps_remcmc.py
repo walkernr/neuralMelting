@@ -741,7 +741,7 @@ def init_samples_restart():
     return pickle.load(open(refile, 'rb'))
 
 
-def save_restart_samples(restep):
+def save_restart_samples():
     ''' save restart state '''
     refile = os.getcwd()+'/'+'%s.%s.%s.lammps.rsrtt.%d.pickle' % (NAME, EL.lower(),
                                                                   LAT[EL][0], STEP)
