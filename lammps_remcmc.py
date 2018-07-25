@@ -8,6 +8,7 @@ Created on Thu Jun 07 04:20:00 2018
 from __future__ import division, print_function
 import argparse
 import os
+import pickle
 import numpy as np
 from lammps import lammps
 from tqdm import tqdm
