@@ -24,25 +24,25 @@ DISTRIBUTED = args.distributed
 SIM = args.simulation
 RDF = args.rdf
 
-sim_args = []
-prs_args = []
-rdf_args = []
+SIM_ARGS = []
+PRS_ARGS = []
+RDF_ARGS = []
 
 if VERBOSE:
     if SIM:
-        sim_args.append('-v')
+        SIM_ARGS.append('-v')
     if RDF:
-        prs_args.append('-v')
-        rdf_args.append('-v')
+        PRS_ARGS.append('-v')
+        RDF_ARGS.append('-v')
 if PARALLEL:
     if SIM:
-        sim_args.append('-p')
+        SIM_ARGS.append('-p')
         if DISTRIBUTED:
-            sim_args.append('-d')
+            SIM_ARGS.append('-d')
     if RDF:
-        rdf_args.append('-p')
+        RDF_ARGS.append('-p')
         if DISTRIBUTED:
-            rdf_args.append('-d')
+            RDF_ARGS.append('-d')
 
 QUEUE = 'lasigma'
 ALLOC = 'hpc_lasigma01'
@@ -54,8 +54,8 @@ if DISTRIBUTED:
     NTHREAD = 1
     NWORKER = int(NODES*PPN/NTHREAD)
 else:
-    NTHREAD = PPN
-    NWORKER = 1
+    NTHREAD = 1
+    NWORKER = int(PPN/NTHREAD)
 NAME = 'test'
 EL = 'LJ'
 SZ = 4
@@ -81,14 +81,14 @@ if PARALLEL:
                              '-w', str(WALLTIME),
                              '-m', str(MEM)]
     if SIM:
-        sim_args = sim_args+par_args
+        SIM_ARGS = SIM_ARGS+par_args
     if RDF:
-        rdf_args = rdf_args+par_args
+        RDF_ARGS = RDF_ARGS+par_args
 
 id_args = ['-n', NAME,
            '-e', EL]
 if SIM:
-    sim_args = sim_args+id_args+['-ss', str(SZ),
+    SIM_ARGS = SIM_ARGS+id_args+['-ss', str(SZ),
                                  '-pn', str(NPRESS),
                                  '-pr', str(LPRESS), str(HPRESS),
                                  '-tn', str(NTEMP),
@@ -100,13 +100,13 @@ if SIM:
                                  '-vm', str(PVOL),
                                  '-t', str(NSTPS)]
 if RDF:
-    rdf_args = rdf_args+id_args
-    prs_args = prs_args+id_args
+    RDF_ARGS = RDF_ARGS+id_args
+    PRS_ARGS = PRS_ARGS+id_args
 
 if SIM:
-    subprocess.call(['python', 'lammps_remcmc.py']+sim_args)
+    subprocess.call(['python', 'lammps_remcmc.py']+SIM_ARGS)
 if RDF:
     for i in xrange(NPRESS):
-        subprocess.call(['python', 'lammps_parse.py']+prs_args+['-i', str(i)])
+        subprocess.call(['python', 'lammps_parse.py']+PRS_ARGS+['-i', str(i)])
     for i in xrange(NPRESS):
-        subprocess.call(['python', 'lammps_rdf.py']+rdf_args+['-i', str(i)])
+        subprocess.call(['python', 'lammps_rdf.py']+RDF_ARGS+['-i', str(i)])
