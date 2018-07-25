@@ -217,9 +217,9 @@ def init_output(k):
     i, j = np.unravel_index(k, dims=(NP, NT), order='C')
     thrm = file_prefix(i)+'.%02d.thrm' % j
     traj = thrm.replace('thrm', 'traj')
-    if os.path.isfile(thrm)
+    if os.path.isfile(thrm):
         os.remove(thrm)
-    if os.path.isfile(thrm)
+    if os.path.isfile(thrm):
         os.remove(traj)
     return thrm, traj
 
