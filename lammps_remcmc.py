@@ -834,10 +834,9 @@ else:
 # loop through to number of samples that need to be collected
 for STEP in tqdm(xrange(NSMPL)):
     # generate samples
-    STATE[:] = gen_mc_params(gen_samples())
-    # STATE[:] = gen_samples()
+    STATE[:] = gen_samples()
     # generate mc parameters
-    # STATE[:] = gen_mc_params()
+    STATE[:] = gen_mc_params()
     if STEP >= CUTOFF:
         # write data
         write_outputs()
