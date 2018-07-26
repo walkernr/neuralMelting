@@ -746,7 +746,7 @@ def replica_exchange():
     ''' performs parallel tempering acrros all samples
         accepts/rejects based on enthalpy metropolis criterion '''
     # collect system properties
-    STATE = [list(STATE[k]) for k in xrange(NS)]
+    STATE[:] = [list(STATE[k]) for k in xrange(NS)]
     # catalog swaps
     swaps = 0
     # loop through upper right triangular matrix
@@ -834,15 +834,16 @@ else:
 # loop through to number of samples that need to be collected
 for STEP in tqdm(xrange(NSMPL)):
     # generate samples
-    STATE = gen_samples()
+    STATE[:] = gen_mc_params(gen_samples())
+    # STATE[:] = gen_samples()
     # generate mc parameters
-    STATE = gen_mc_params()
+    # STATE[:] = gen_mc_params()
     if STEP >= CUTOFF:
         # write data
         write_outputs()
     if PARALLEL:
         # gather results from cluster
-        STATE = CLIENT.gather(STATE)
+        STATE[:] = CLIENT.gather(STATE)
     if STEP % REFREQ == 0 and STEP > 0:
         # save state for restart
         dump_samples_restart()
