@@ -838,11 +838,6 @@ for STEP in tqdm(xrange(NSMPL)):
     if STEP % REFREQ == 0 and STEP > 0:
         # save state for restart
         dump_samples_restart()
-        if PARALLEL:
-            # restart client
-            if VERBOSE:
-                print('restarting client')
-            CLIENT.restart()
     # replica exchange markov chain mc
     replica_exchange()
 if PARALLEL:
