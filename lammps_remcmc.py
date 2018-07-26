@@ -25,7 +25,7 @@ PARSER.add_argument('-p', '--parallel', help='parallel run', action='store_true'
 PARSER.add_argument('-d', '--distributed', help='distributed run', action='store_true')
 PARSER.add_argument('-rd', '--restart_dump', help='restart dump frequency',
                     type=int, default=256)
-PARSER.add_argument('-rn', '--resart_name', help='restart dump name',
+PARSER.add_argument('-rn', '--restart_name', help='restart dump name',
                     type=str, default='test')
 PARSER.add_argument('-rs', '--restart_step', help='restart run step',
                     type=int, default=256)
