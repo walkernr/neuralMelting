@@ -69,6 +69,10 @@ PARSER.add_argument('-vm', '--volume_move', help='volume monte carlo move probab
                     type=float, default=0.25)
 PARSER.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps',
                     type=int, default=8)
+PARSER.add_argument('-dx', '--pos_displace', help='position displacement (proportion of lattice)',
+                    type=float, default=0.125)
+PARSER.add_argument('-dl', '--box_displace', help='box displacement (proportion of box)',
+                    type=float, default=0.03125)
 # parse arguments
 ARGS = PARSER.parse_args()
 
@@ -114,6 +118,9 @@ PPOS = ARGS.position_move
 PVOL = ARGS.volume_move
 # number of hamiltonian monte carlo timesteps
 NSTPS = ARGS.timesteps
+# proportional displacements
+PDX = ARGS.pos_displace
+PDL = ARGS.box_displace
 
 if PARALLEL:
     os.environ['DASK_ALLOWED_FAILURES'] = '4'
@@ -167,8 +174,8 @@ P = np.linspace(LP, HP, NP, dtype=np.float32)
 # temperature
 T = np.linspace(LT, HT, NT, dtype=np.float32)
 # inital position variation, volume variation, and timestep
-DX = 0.125*LAT[EL][1]
-DL = 0.03125*SZ*LAT[EL][1]
+DX = PDX*LAT[EL][1]
+DL = PDL*SZ*LAT[EL][1]
 DT = TIMESTEP[UNITS[EL]]
 
 # ----------------
@@ -439,7 +446,7 @@ def init_sample(k):
     lmps.command('fix 1 all box/relax iso %f vmax %f' % (P[i], 0.0009765625))
     lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
     seed = np.random.randint(1, 2**16)
-    lmps.command('displace_atoms all random %f %f %f %d' % (3*(DX,)+(seed,)))
+    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(DX,)+(seed,)))
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
@@ -491,7 +498,7 @@ def bulk_position_mc(lmps, et, ntp, nap, dx):
     x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
     pe = lmps.extract_compute('thermo_pe', None, 0)/et
     seed = np.random.randint(1, 2**16)
-    lmps.command('displace_atoms all random %f %f %f %d' % (3*(dx,)+(seed,)))
+    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(dx,)+(seed,)))
     lmps.command('run 0')
     penew = lmps.extract_compute('thermo_pe', None, 0)/et
     de = penew-pe
@@ -838,6 +845,8 @@ for STEP in tqdm(xrange(NSMPL)):
     if STEP % REFREQ == 0 and STEP > 0:
         # save state for restart
         dump_samples_restart()
+        if PARALLEL:
+            CLIENT.restart()
     # replica exchange markov chain mc
     replica_exchange()
 if PARALLEL:
