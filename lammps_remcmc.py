@@ -83,10 +83,11 @@ VERBOSE = ARGS.verbose
 PARALLEL = ARGS.parallel
 RESTART = ARGS.restart
 DISTRIBUTED = ARGS.distributed
-# restart step
-RESTEP = ARGS.restart_step
 # restart write frequency
-REFREQ = ARGS.restart_write
+REFREQ = ARGS.restart_dump
+# restart information
+RENAME = ARGS.restart_name
+RESTEP = ARGS.restart_step
 # arguments for distributed run using pbs
 QUEUE = ARGS.queue
 ALLOC = ARGS.allocation
@@ -218,8 +219,8 @@ def init_constants():
 
 def file_prefix(i):
     ''' returns filename prefix for simulation '''
-    prefix = '%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL][0], i)
-    return os.getcwd()+'/'+prefix
+    prefix = os.getcwd()+'/%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL][0], i)
+    return prefix
 
 
 def init_output(k):
@@ -775,7 +776,7 @@ def load_samples_restart():
     ''' initialize samples with restart file '''
     if VERBOSE:
         print('loading samples from previous dump')
-    rf = os.getcwd()+'/'+'%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], RESTEP)
+    rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (RENAME, EL.lower(), LAT[EL][0], RESTEP)
     return pickle.load(open(rf, 'rb'))
 
 
@@ -783,7 +784,7 @@ def dump_samples_restart():
     ''' save restart state '''
     if VERBOSE:
         print('dumping samples')
-    rf = os.getcwd()+'/'+'%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], STEP)
+    rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], STEP)
     pickle.dump(STATE, open(rf, 'wb'))
 
 # -----------------
