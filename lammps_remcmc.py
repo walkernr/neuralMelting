@@ -721,9 +721,8 @@ def gen_mc_params():
         futures = CLIENT.compute(operations)
         # progress bar
         if VERBOSE:
-            print('updating mc params')
+            print('\nupdating mc params')
             progress(futures)
-            print('\n')
     else:
         # loop through pressures
         if VERBOSE:
