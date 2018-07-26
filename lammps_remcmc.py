@@ -282,7 +282,6 @@ def init_headers():
         if VERBOSE:
             print('initializing headers')
             progress(futures)
-            print('\n')
     else:
         if VERBOSE:
             print('initializing headers')
