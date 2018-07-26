@@ -23,9 +23,11 @@ PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true
 PARSER.add_argument('-r', '--restart', help='restart run', action='store_true')
 PARSER.add_argument('-p', '--parallel', help='parallel run', action='store_true')
 PARSER.add_argument('-d', '--distributed', help='distributed run', action='store_true')
-PARSER.add_argument('-rs', '--restart_step', help='restart run step',
+PARSER.add_argument('-rd', '--restart_dump', help='restart dump frequency',
                     type=int, default=256)
-PARSER.add_argument('-rw', '--restart_write', help='restart write frequency',
+PARSER.add_arguemnt('-rn', '--resart_name', help='restart dump name'
+                    type=str, default='test')
+PARSER.add_argument('-rs', '--restart_step', help='restart run step',
                     type=int, default=256)
 PARSER.add_argument('-q', '--queue', help='submission queue',
                     type=str, default='lasigma')
@@ -855,4 +857,5 @@ for STEP in tqdm(xrange(NSMPL)):
 if PARALLEL:
     # terminate client after completion
     CLIENT.close()
+# consolidate output files
 consolidate_outputs()

@@ -101,27 +101,27 @@ if PLOT:
     plt.rcParams.update(PPARAMS)
 
 # simulation identifiers
-NAME = ARGS.name
-EL = ARGS.element
-PI = ARGS.pressure_index
-NT = ARGS.temperature_number
-NS = ARGS.sample_number
+NAME = ARGS.name              # simulation name
+EL = ARGS.element             # element name
+PI = ARGS.pressure_index      # pressure index
+NT = ARGS.temperature_number  # number of temperature sets
+NS = ARGS.sample_number       # number of samples per temperature set
 # data preparation parameters
-LN = ARGS.learning_number
-TS = ARGS.training_sets
-FTR = ARGS.feature
-SCLR = ARGS.scaler
-RDCN = ARGS.reduction
+LN = ARGS.learning_number  # number of learning samples per temperature set
+TS = ARGS.training_sets    # number of training sets per phase
+FTR = ARGS.feature         # feature to be learned
+SCLR = ARGS.scaler         # feature scaler
+RDCN = ARGS.reduction      # feature dimension reduction
 # data analysis parameters
-NN = ARGS.neural_network
-FF = ARGS.fit_function
+NN = ARGS.neural_network  # neural network
+FF = ARGS.fit_function    # fitting function
 # training and classification sample counts
-TST = 2*TS
-CS = NT-TST
-SN = NT*LN
-TSN = TS*LN
-TSTN = TST*LN
-CSN = CS*LN
+TST = 2*TS     # number of training sets
+CS = NT-TST    # number of classification sets
+SN = NT*LN     # total samples
+TSN = TS*LN    # training samples for single phase
+TSTN = TST*LN  # total training samples
+CSN = CS*LN    # total classification samples
 # training indices
 TI = np.arange(-TS, TS)
 
@@ -339,8 +339,8 @@ MTEMP = np.array([[np.mean(TTEMP[TC == i]) for i in xrange(2)],
 # curve fitting and transition temp extraction
 TDOM = np.mean(CTEMP, 1)  # temperature domain of classification data
 TERR = np.std(CTEMP, 1)   # standard error of temperature domain
-MPROB = np.mean(PROB, 1)    # mean probability array
-SPROB = np.std(PROB, 1)     # standard error probability array
+MPROB = np.mean(PROB, 1)  # mean probability array
+SPROB = np.std(PROB, 1)   # standard error probability array
 # curve fitting
 ODR_DATA = RealData(TDOM, MPROB, TERR, SPROB)
 ODR_MODEL = Model(FFS[FF])
@@ -383,7 +383,7 @@ with open(OUTPREF+'.out', 'wb') as output:
     output.write('# number of sets:              %d\n' % NT)
     output.write('# number of samples (per set): %d\n' % NS)
     output.write('# training sets (per phase):   %d\n' % TS)
-    output.write('# training samples (per set):  $d\n' % LN)
+    output.write('# training samples (per set):  %d\n' % LN)
     output.write('# property:                    %s\n' % FTR)
     output.write('# scaler:                      %s\n' % SCLR)
     output.write('# reduction:                   %s\n' % RDCN)
