@@ -282,6 +282,7 @@ def init_headers():
         if VERBOSE:
             print('initializing headers')
             progress(futures)
+            print('\n')
     else:
         if VERBOSE:
             print('initializing headers')
@@ -325,6 +326,7 @@ def write_outputs():
         if VERBOSE:
             print('writing outputs')
             progress(futures)
+            print('\n')
     else:
         if VERBOSE:
             print('writing outputs')
@@ -464,6 +466,7 @@ def init_samples():
         if VERBOSE:
             print('initializing samples')
             progress(futures)
+            print('\n')
     else:
         if VERBOSE:
             print('initializing samples')
@@ -678,6 +681,7 @@ def gen_samples():
         if VERBOSE:
             print('performing monte carlo')
             progress(futures)
+            print('\n')
     else:
         # loop through pressures
         if VERBOSE:
@@ -720,8 +724,9 @@ def gen_mc_params():
         futures = CLIENT.compute(operations)
         # progress bar
         if VERBOSE:
-            print('\nupdating mc params')
+            print('updating mc params')
             progress(futures)
+            print('\n')
     else:
         # loop through pressures
         if VERBOSE:
