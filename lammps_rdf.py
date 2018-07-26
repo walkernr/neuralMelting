@@ -60,7 +60,7 @@ PI = ARGS.pressure_index
 if VERBOSE:
     from tqdm import tqdm
 if PARALLEL:
-    os.environ['DASK_ALLOWED_FAILURES'] = '4'
+    os.environ['DASK_ALLOWED_FAILURES'] = '32'
     from distributed import Client, LocalCluster, progress
     from dask import delayed
 if DISTRIBUTED:

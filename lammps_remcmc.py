@@ -26,7 +26,7 @@ PARSER.add_argument('-d', '--distributed', help='distributed run', action='store
 PARSER.add_argument('-rd', '--restart_dump', help='restart dump frequency',
                     type=int, default=256)
 PARSER.add_argument('-rn', '--restart_name', help='restart dump name',
-                    type=str, default='test')
+                    type=str, default='test_init')
 PARSER.add_argument('-rs', '--restart_step', help='restart run step',
                     type=int, default=256)
 PARSER.add_argument('-q', '--queue', help='submission queue',
@@ -46,7 +46,7 @@ PARSER.add_argument('-nw', '--workers', help='total job worker count',
 PARSER.add_argument('-nt', '--threads', help='threads per worker',
                     type=int, default=1)
 PARSER.add_argument('-n', '--name', help='name of simulation',
-                    type=str, default='test')
+                    type=str, default='test_run')
 PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
 PARSER.add_argument('-ss', '--supercell_size', help='supercell size',
@@ -126,7 +126,7 @@ PDX = ARGS.pos_displace
 PDL = ARGS.box_displace
 
 if PARALLEL:
-    os.environ['DASK_ALLOWED_FAILURES'] = '4'
+    os.environ['DASK_ALLOWED_FAILURES'] = '32'
     from distributed import Client, LocalCluster, progress
     from dask import delayed
 if DISTRIBUTED:
@@ -746,24 +746,19 @@ def replica_exchange():
     ''' performs parallel tempering acrros all samples
         accepts/rejects based on enthalpy metropolis criterion '''
     # collect system properties
-    et = [CONST[k][0] for k in xrange(NS)]
-    pf = [CONST[k][1] for k in xrange(NS)]
-    etot = [STATE[k][4]+STATE[k][5] for k in xrange(NS)]
-    vol = [STATE[k][8] for k in xrange(NS)]
+    STATE = [list(STATE[k]) for k in xrange(NS)]
     # catalog swaps
     swaps = 0
     # loop through upper right triangular matrix
     for i in xrange(NS):
         for j in xrange(i+1, NS):
             # change in enthalpy
-            de, dv = etot[i]-etot[j], vol[i]-vol[j]
-            dh = de*(1/et[i]-1/et[j])+(pf[i]-pf[j])*dv
+            de, dv = sum(STATE[i][4:6])-sum(STATE[j][4:6]), STATE[i][8]-STATE[j][8]
+            dh = de*(1/CONST[i][0]-1/CONST[j][0])+(CONST[i][1]-CONST[j][1])*dv
             if np.random.rand() <= np.min([1, np.exp(dh)]):
                 swaps += 1
-                # swap lammps objects
-                etot[j], etot[i] = etot[i], etot[j]
-                vol[j], vol[i] = vol[i], vol[j]
-                STATE[j], STATE[i] = STATE[i], STATE[j]
+                # swap states
+                STATE[j][:9], STATE[i][:9] = STATE[i][:9], STATE[j][:9]
     if VERBOSE:
         print('%d replica exchanges performed' % swaps)
 
