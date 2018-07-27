@@ -135,8 +135,6 @@ if DISTRIBUTED:
 
 # number of simulations
 NS = NP*NT
-# adjust total samples by cutoff
-NSMPL = CUTOFF+NSMPL
 # total number of monte carlo sweeps
 NSWPS = NSMPL*MOD
 # hamiltonian monte carlo probability
@@ -835,7 +833,7 @@ for STEP in tqdm(xrange(NSMPL)):
     STATE[:] = gen_samples()
     # generate mc parameters
     STATE[:] = gen_mc_params()
-    if STEP >= CUTOFF:
+    if (STEP+1) > CUTOFF:
         # write data
         write_outputs()
     if PARALLEL:
