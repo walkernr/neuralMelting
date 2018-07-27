@@ -60,7 +60,7 @@ PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures'
 PARSER.add_argument('-tr', '--temperature_range', help='temperature range',
                     type=float, nargs=2, default=[0.25, 2.5])
 PARSER.add_argument('-sc', '--sample_cutoff', help='sample cutoff',
-                    type=int, default=1024)
+                    type=int, default=0)
 PARSER.add_argument('-sn', '--sample_number', help='sample number',
                     type=int, default=1024)
 PARSER.add_argument('-sm', '--sample_mod', help='sample record modulo',
@@ -457,8 +457,8 @@ def init_sample(k):
     ntp, nap, ntv, nav, nth, nah, ap, av, ah = np.zeros(9)
     dx, dl, dt = DL, DX, DT
     # return system info and data storage files
-    return (natoms, x, v, temp, pe, ke, virial, box, vol,
-            ntp, nap, ntv, nav, nth, nah, ap, av, ah, dx, dl, dt)
+    return [natoms, x, v, temp, pe, ke, virial, box, vol,
+            ntp, nap, ntv, nav, nth, nah, ap, av, ah, dx, dl, dt]
 
 
 def init_samples():
@@ -669,8 +669,8 @@ def gen_sample(k, const, state):
         av = np.nan_to_num(np.float64(nav)/np.float64(ntv))
         ah = np.nan_to_num(np.float64(nah)/np.float64(nth))
     # return lammps object, tries/acceptation counts, and mc params
-    return (natoms, x, v, temp, pe, ke, virial, box, vol,
-            ntp, nap, ntv, nav, nth, nah, ap, av, ah, dx, dl, dt)
+    return [natoms, x, v, temp, pe, ke, virial, box, vol,
+            ntp, nap, ntv, nav, nth, nah, ap, av, ah, dx, dl, dt]
 
 
 def gen_samples():
@@ -715,7 +715,7 @@ def gen_mc_param(state):
         dt = 0.9375*dt
     else:
         dt = 1.0625*dt
-    return state[:-6]+(ap, av, ah, dx, dl, dt)
+    return state[:-6]+[ap, av, ah, dx, dl, dt]
 
 
 def gen_mc_params():
@@ -745,8 +745,6 @@ def gen_mc_params():
 def replica_exchange():
     ''' performs parallel tempering acrros all samples
         accepts/rejects based on enthalpy metropolis criterion '''
-    # collect system properties
-    STATE[:] = [list(STATE[k]) for k in xrange(NS)]
     # catalog swaps
     swaps = 0
     # loop through upper right triangular matrix
@@ -843,7 +841,7 @@ for STEP in tqdm(xrange(NSMPL)):
     if PARALLEL:
         # gather results from cluster
         STATE[:] = CLIENT.gather(STATE)
-    if STEP % REFREQ == 0 and STEP > 0:
+    if (STEP+1) % REFREQ == 0:
         # save state for restart
         dump_samples_restart()
         if PARALLEL:
