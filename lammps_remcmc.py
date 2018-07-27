@@ -746,15 +746,17 @@ def replica_exchange():
     # catalog swaps
     swaps = 0
     # loop through upper right triangular matrix
-    for i in xrange(NS):
-        for j in xrange(i+1, NS):
-            # change in enthalpy
-            de, dv = sum(STATE[i][4:6])-sum(STATE[j][4:6]), STATE[i][8]-STATE[j][8]
-            dh = de*(1/CONST[i][0]-1/CONST[j][0])+(CONST[i][1]-CONST[j][1])*dv
-            if np.random.rand() <= np.min([1, np.exp(dh)]):
-                swaps += 1
-                # swap states
-                STATE[j][:9], STATE[i][:9] = STATE[i][:9], STATE[j][:9]
+    for u in xrange(NP):
+        for v in xrange(NT-1, -1, -1):
+            for w in xrange(v):
+                i = np.ravel_multi_index((u, v), (NP, NT), order='C')
+                j = np.ravel_multi_index((u, w), (NP, NT), order='C')
+                de, dv = sum(STATE[i][4:6])-sum(STATE[j][4:6]), STATE[i][8]-STATE[j][8]
+                dh = de*(1/CONST[i][0]-1/CONST[j][0])+(CONST[i][1]-CONST[j][1])*dv
+                if np.random.rand() <= np.min([1, np.exp(dh)]):
+                    swaps += 1
+                    # swap states
+                    STATE[j][:9], STATE[i][:9] = STATE[i][:9], STATE[j][:9]
     if VERBOSE:
         print('%d replica exchanges performed' % swaps)
 
