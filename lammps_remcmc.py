@@ -10,7 +10,6 @@ import argparse
 import os
 import pickle
 import numpy as np
-import numba as nb
 from tqdm import tqdm
 from lammps import lammps
 
@@ -742,7 +741,7 @@ def gen_mc_params():
 # replica exchange markov chain monte carlo
 # -----------------------------------------
 
-@nb.njit
+
 def replica_exchange():
     ''' performs parallel tempering acrros all samples
         accepts/rejects based on enthalpy metropolis criterion '''
