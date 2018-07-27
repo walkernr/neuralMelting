@@ -777,7 +777,7 @@ def dump_samples_restart():
     ''' save restart state '''
     if VERBOSE:
         print('dumping samples')
-    rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], STEP)
+    rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], STEP+1)
     pickle.dump(STATE, open(rf, 'wb'))
 
 # -----------------
