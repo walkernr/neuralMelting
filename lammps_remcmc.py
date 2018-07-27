@@ -10,6 +10,7 @@ import argparse
 import os
 import pickle
 import numpy as np
+import numba as nb
 from tqdm import tqdm
 from lammps import lammps
 
@@ -361,7 +362,7 @@ def consolidate_outputs():
         print('cleaning files')
     for k in xrange(NS):
         os.remove(thrm[k])
-        os.remove(thrm[k])
+        os.remove(traj[k])
 
 # ---------------------------------
 # lammps file/object initialization
@@ -665,9 +666,9 @@ def gen_sample(k, const, state):
     lmps.close()
     # acceptation ratios
     with np.errstate(invalid='ignore'):
-        ap = np.nan_to_num(np.float64(nap)/np.float64(ntp))
-        av = np.nan_to_num(np.float64(nav)/np.float64(ntv))
-        ah = np.nan_to_num(np.float64(nah)/np.float64(nth))
+        ap = np.nan_to_num(np.float32(nap)/np.float32(ntp))
+        av = np.nan_to_num(np.float32(nav)/np.float32(ntv))
+        ah = np.nan_to_num(np.float32(nah)/np.float32(nth))
     # return lammps object, tries/acceptation counts, and mc params
     return [natoms, x, v, temp, pe, ke, virial, box, vol,
             ntp, nap, ntv, nav, nth, nah, ap, av, ah, dx, dl, dt]
@@ -741,7 +742,7 @@ def gen_mc_params():
 # replica exchange markov chain monte carlo
 # -----------------------------------------
 
-
+@nb.njit
 def replica_exchange():
     ''' performs parallel tempering acrros all samples
         accepts/rejects based on enthalpy metropolis criterion '''
