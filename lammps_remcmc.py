@@ -19,51 +19,51 @@ from lammps import lammps
 
 # parse command line (help option generated automatically)
 PARSER = argparse.ArgumentParser()
-PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
-PARSER.add_argument('-r', '--restart', help='restart run', action='store_true')
-PARSER.add_argument('-p', '--parallel', help='parallel run', action='store_true')
-PARSER.add_argument('-d', '--distributed', help='distributed run', action='store_true')
+PARSER.add_argument('-v', '--verbose', help='verbose output mode', action='store_true')
+PARSER.add_argument('-r', '--restart', help='restart run mode', action='store_true')
+PARSER.add_argument('-p', '--parallel', help='parallel run mode', action='store_true')
+PARSER.add_argument('-d', '--distributed', help='distributed run mode', action='store_true')
 PARSER.add_argument('-rd', '--restart_dump', help='restart dump frequency',
                     type=int, default=256)
-PARSER.add_argument('-rn', '--restart_name', help='restart dump name',
+PARSER.add_argument('-rn', '--restart_name', help='restart dump simulation name',
                     type=str, default='test_init')
-PARSER.add_argument('-rs', '--restart_step', help='restart run step',
+PARSER.add_argument('-rs', '--restart_step', help='restart dump start step',
                     type=int, default=256)
-PARSER.add_argument('-q', '--queue', help='submission queue',
+PARSER.add_argument('-q', '--queue', help='job submission queue',
                     type=str, default='lasigma')
-PARSER.add_argument('-a', '--allocation', help='submission allocation',
+PARSER.add_argument('-a', '--allocation', help='job submission allocation',
                     type=str, default='hpc_lasigma01')
-PARSER.add_argument('-nn', '--nodes', help='number of nodes',
+PARSER.add_argument('-nn', '--nodes', help='job node count',
                     type=int, default=1)
 PARSER.add_argument('-np', '--procs_per_node', help='number of processors per node',
                     type=int, default=16)
 PARSER.add_argument('-w', '--walltime', help='job walltime',
                     type=int, default=24)
-PARSER.add_argument('-m', '--memory', help='total job memory',
+PARSER.add_argument('-m', '--memory', help='job memory (total)',
                     type=int, default=32)
-PARSER.add_argument('-nw', '--workers', help='total job worker count',
+PARSER.add_argument('-nw', '--workers', help='job worker count (total)',
                     type=int, default=16)
 PARSER.add_argument('-nt', '--threads', help='threads per worker',
                     type=int, default=1)
-PARSER.add_argument('-n', '--name', help='name of simulation',
+PARSER.add_argument('-n', '--name', help='simulation name',
                     type=str, default='test_run')
-PARSER.add_argument('-e', '--element', help='element choice',
+PARSER.add_argument('-e', '--element', help='simulation element',
                     type=str, default='LJ')
-PARSER.add_argument('-ss', '--supercell_size', help='supercell size',
+PARSER.add_argument('-ss', '--supercell_size', help='simulation supercell size',
                     type=int, default=4)
 PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
                     type=int, default=4)
-PARSER.add_argument('-pr', '--pressure_range', help='pressure range',
+PARSER.add_argument('-pr', '--pressure_range', help='pressure range (low and high)',
                     type=float, nargs=2, default=[2, 8])
 PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures',
                     type=int, default=48)
-PARSER.add_argument('-tr', '--temperature_range', help='temperature range',
+PARSER.add_argument('-tr', '--temperature_range', help='temperature range (low and high)',
                     type=float, nargs=2, default=[0.25, 2.5])
-PARSER.add_argument('-sc', '--sample_cutoff', help='sample cutoff',
+PARSER.add_argument('-sc', '--sample_cutoff', help='sample recording cutoff',
                     type=int, default=0)
-PARSER.add_argument('-sn', '--sample_number', help='sample number',
+PARSER.add_argument('-sn', '--sample_number', help='number of samples to generate',
                     type=int, default=1024)
-PARSER.add_argument('-sm', '--sample_mod', help='sample record modulo',
+PARSER.add_argument('-sm', '--sample_mod', help='sample collection frequency',
                     type=int, default=128)
 PARSER.add_argument('-pm', '--position_move', help='position monte carlo move probability',
                     type=float, default=0.015625)
@@ -85,7 +85,7 @@ RESTART = ARGS.restart
 DISTRIBUTED = ARGS.distributed
 # restart write frequency
 REFREQ = ARGS.restart_dump
-# restart information
+# restart information (name of simulation and step to load)
 RENAME = ARGS.restart_name
 RESTEP = ARGS.restart_step
 # arguments for distributed run using pbs
@@ -112,9 +112,9 @@ NT = ARGS.temperature_number
 LT, HT = ARGS.temperature_range
 # sample cutoff
 CUTOFF = ARGS.sample_cutoff
-# number of recording samples
+# number of total samples (recording starts after cutoff)
 NSMPL = ARGS.sample_number
-# record frequency
+# recording frequency
 MOD = ARGS.sample_mod
 # monte carlo probabilities
 PPOS = ARGS.position_move
@@ -186,6 +186,7 @@ DT = TIMESTEP[UNITS[EL]]
 
 def init_constant(k):
     ''' calculates thermodynamic constants for a sample '''
+    # extract pressure/temperature indices from index
     i, j = np.unravel_index(k, dims=(NP, NT), order='C')
     if UNITS[EL] == 'real':
         na = 6.0221409e23                              # avagadro number [num/mol]
@@ -223,9 +224,11 @@ def file_prefix(i):
 
 def init_output(k):
     ''' initializes output filenames for a sample '''
+    # extract pressure/temperature indices from index
     i, j = np.unravel_index(k, dims=(NP, NT), order='C')
     thrm = file_prefix(i)+'.%02d.thrm' % j
     traj = thrm.replace('thrm', 'traj')
+    # clean old output files if they exist
     if os.path.isfile(thrm):
         os.remove(thrm)
     if os.path.isfile(thrm):
@@ -242,6 +245,7 @@ def init_outputs():
 
 def init_header(k, output):
     ''' writes header for a sample '''
+    # extract pressure/temperature indices from index
     i, j = np.unravel_index(k, dims=(NP, NT), order='C')
     with open(output[0], 'wb') as thrm_out:
         thrm_out.write('#----------------------\n')
@@ -745,14 +749,20 @@ def replica_exchange():
         accepts/rejects based on enthalpy metropolis criterion '''
     # catalog swaps
     swaps = 0
-    # loop through upper right triangular matrix
+    # loop through pressures
     for u in xrange(NP):
+        # loop through reference temperatures from high to low
         for v in xrange(NT-1, -1, -1):
+            # loop through temperatures from low to current reference temperature
             for w in xrange(v):
+                # extract index from each pressure/temperature index pair
                 i = np.ravel_multi_index((u, v), (NP, NT), order='C')
                 j = np.ravel_multi_index((u, w), (NP, NT), order='C')
+                # calculate energy and volume differences
                 de, dv = sum(STATE[i][4:6])-sum(STATE[j][4:6]), STATE[i][8]-STATE[j][8]
-                dh = de*(1/CONST[i][0]-1/CONST[j][0])+(CONST[i][1]-CONST[j][1])*dv
+                # enthalpy difference
+                dh = de*(1./CONST[i][0]-1./CONST[j][0])+(CONST[i][1]-CONST[j][1])*dv
+                # metropolis criterion
                 if np.random.rand() <= np.min([1, np.exp(dh)]):
                     swaps += 1
                     # swap states
@@ -824,6 +834,7 @@ init_headers()
 # initialize simulation
 if RESTART:
     STATE = load_samples_restart()
+    replica_exchange()
 else:
     if PARALLEL:
         STATE = CLIENT.gather(init_samples())
