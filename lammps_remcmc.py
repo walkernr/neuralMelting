@@ -800,8 +800,8 @@ if PARALLEL:
         CLUSTER = PBSCluster(queue=QUEUE, project=ALLOC,
                              resource_spec='nodes=%d:ppn=%d' % (NODES, PPN),
                              walltime='%d:00:00' % WALLTIME,
-                             processes=NWORKER, cores=NTHREAD*NWORKER,
-                             memory=str(MEM)+'GB')
+                             processes=NWORKER, cores=NTHREAD*NWORKER, memory=str(MEM)+'GB',
+                             local_dir=os.getcwd())
         CLUSTER.start_workers(1)
         # start client with distributed cluster
         CLIENT = Client(CLUSTER)
