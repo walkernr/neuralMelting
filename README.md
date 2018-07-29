@@ -70,11 +70,6 @@ lammps_rdf.py
 
 This program calculates the radial distributions, structure factors, and entropic fingerprints, and densities alongside the domains for each structural function for each sample using the pickled trajectory information from the parsing script. The calculations can be run in parallel using a multiprocessing or multithreading approach on local or distributed clusters. The parallelism is implemented with the Dask Distributed library. Since Dask uses Bokeh, multiprocessing runs may be monitored at localhost:8787/status assuming the default Bokeh TCP port is used. The rdf calculations are also optimized using a combination of vectorized code by way of NumPy alongside a JIT compiler by way of Numba.
 
-lammps_run.py
--------------
-
-This program performs the REMCMC simulations, parses the output files, and then calculates all of the structure data in one run.
-
 lammps_neural.py
 ----------------
 
