@@ -12,7 +12,7 @@ import pickle
 import numpy as np
 import numba as nb
 
-
+# parse command line (help option generated automatically)
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
 PARSER.add_argument('-p', '--parallel', help='parallel run', action='store_true')
@@ -39,22 +39,27 @@ PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
 PARSER.add_argument('-i', '--pressure_index', help='pressure index',
                     type=int, default=0)
-
+# parse arguments
 ARGS = PARSER.parse_args()
-
+# booleans for run type
 VERBOSE = ARGS.verbose
 PARALLEL = ARGS.parallel
 DISTRIBUTED = ARGS.distributed
+# arguments for distributed run using pbs
 QUEUE = ARGS.queue
 ALLOC = ARGS.allocation
 NODES = ARGS.nodes
 PPN = ARGS.procs_per_node
 WALLTIME = ARGS.walltime
 MEM = ARGS.memory
+# arguments for parallel run
 NWORKER = ARGS.workers
 NTHREAD = ARGS.threads
+# simulation name
 NAME = ARGS.name
+# element choice
 EL = ARGS.element
+# pressure value
 PI = ARGS.pressure_index
 
 if VERBOSE:
@@ -172,8 +177,6 @@ if VERBOSE:
 # calculate radial distributions
 if PARALLEL:
     OPERATIONS = [delayed(calculate_rdf)(u) for u in xrange(len(NATOMS))]
-    if VERBOSE:
-        print('operations defined')
     FUTURES = CLIENT.compute(OPERATIONS)
     if VERBOSE:
         print('calculating rdfs for %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))

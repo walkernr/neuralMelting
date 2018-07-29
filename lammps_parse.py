@@ -11,6 +11,7 @@ import os
 import pickle
 import numpy as np
 
+# parse command line (help option generated automatically)
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
 PARSER.add_argument('-n', '--name', help='name of simulation',
@@ -19,12 +20,15 @@ PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
 PARSER.add_argument('-i', '--pressure_index', help='pressure index',
                     type=int, default=0)
-
+# parse arguments
 ARGS = PARSER.parse_args()
-
+# verbosity of output
 VERBOSE = ARGS.verbose
+# simulation name
 NAME = ARGS.name
+# element choice
 EL = ARGS.element
+# pressure value
 PI = ARGS.pressure_index
 
 # lattice type

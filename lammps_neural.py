@@ -304,7 +304,7 @@ def build_keras_cnn1d():
                   epsilon=None, schedule_decay=0.00390625)
     model.compile(loss='binary_crossentropy', optimizer=nadam, metrics=['accuracy'])
     return model
-
+# network dictionary
 NNS = {'dense':KerasClassifier(build_keras_dense, epochs=2, verbose=VERBOSE),
        'cnn1d':KerasClassifier(build_keras_cnn1d, epochs=1, verbose=VERBOSE)}
 if VERBOSE:
