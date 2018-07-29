@@ -127,7 +127,7 @@ def calculate_spatial():
 @nb.njit
 def calculate_rdf(j):
     ''' calculate rdf for sample j '''
-    g = np.copy(G)
+    gs = np.copy(GS)
     # loop through lattice vectors
     for k in xrange(BR.shape[0]):
         # displacement vector matrix for sample j
@@ -135,8 +135,8 @@ def calculate_rdf(j):
         # vector of displacements between atoms
         d = np.sqrt(np.sum(np.square(dvm), -1))
         # calculate rdf for sample j
-        g[1:] += np.histogram(d, R)[0]
-    return g
+        gs[1:] += np.histogram(d, R)[0]
+    return gs/NATOMS[j]
 
 # client initialization
 if PARALLEL:
@@ -166,7 +166,7 @@ if PARALLEL:
             print(CLIENT.scheduler_info)
 
 # get spatial properties
-NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, G = calculate_spatial()
+NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, GS = calculate_spatial()
 if VERBOSE:
     print('data loaded')
 # calculate radial distributions           
@@ -176,20 +176,20 @@ if PARALLEL:
         print('operations defined')
     FUTURES = CLIENT.compute(OPERATIONS)
     if VERBOSE:
-        print('calculating rdfs for %s %s samples at pressure %f' % (len(NATOMS), EL.lower(), PI))
+        print('calculating rdfs for %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
         progress(FUTURES)
         print('\n')
-    GS = np.array(CLIENT.gather(FUTURES), dtype=np.float32)
+    G = np.array(CLIENT.gather(FUTURES), dtype=np.float32)
     CLIENT.close()
 else:
     if VERBOSE:
         print('calculating rdfs for %s %s samples at pressure %f' % (len(NATOMS), EL.lower(), PI))
-        GS = np.array([calculate_rdf(u) for u in tqdm(xrange(len(NATOMS)))], dtype=np.float32)
+        G = np.array([calculate_rdf(u) for u in tqdm(xrange(len(NATOMS)))], dtype=np.float32)
     else:
-        GS = np.array([calculate_rdf(u) for u in xrange(len(NATOMS))], dtype=np.float32)
+        G = np.array([calculate_rdf(u) for u in xrange(len(NATOMS))], dtype=np.float32)
 
 # adjust rdf by atom count and atoms contained by shells
-G = np.divide(GS, NATOMS[0]*DNI)
+G = np.divide(G, DNI)
 # calculate domain for structure factor
 Q = 2*np.pi/DR*np.fft.fftfreq(R.size)[1:int(R.size/2)]
 # fourier transform of g
