@@ -183,7 +183,7 @@ if PARALLEL:
     CLIENT.close()
 else:
     if VERBOSE:
-        print('calculating rdfs for %s %s samples at pressure %f' % (len(NATOMS), EL.lower(), PI))
+        print('calculating rdfs for %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
         G = np.array([calculate_rdf(u) for u in tqdm(xrange(len(NATOMS)))], dtype=np.float32)
     else:
         G = np.array([calculate_rdf(u) for u in xrange(len(NATOMS))], dtype=np.float32)
