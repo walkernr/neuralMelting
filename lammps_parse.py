@@ -37,7 +37,7 @@ LAT = {'Ti': 'bcc',
 PREFIX = os.getcwd()+'/'+'%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL], PI)
 
 if VERBOSE:
-    print('parsing data for %s at pressure index %f' % (EL.lower(), PI))
+    print('parsing data for %s at pressure index %d' % (EL.lower(), PI))
 # parse thermo file
 TEMP, PE, KE, VIRIAL, VOL, AP, AV, AH = np.split(np.loadtxt(PREFIX+'.thrm', dtype=np.float32), 8, 1)
 TEMP = TEMP[:, 0]
