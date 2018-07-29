@@ -117,11 +117,11 @@ def calculate_spatial():
     br = np.array([[b[i], b[j], b[k]] for i in xrange(3) for j in xrange(3) for k in xrange(3)],
                   dtype=np.int8)
     # create vector for rdf
-    g = np.zeros(bins, dtype=np.float32)
+    gs = np.zeros(bins, dtype=np.float32)
     # reshape position vector
     pos = pos.reshape((len(natoms), natoms[0], -1))
     # return properties
-    return natoms, box, pos, br, r, dr, nrho, dni, g
+    return natoms, box, pos, br, r, dr, nrho, dni, gs
 
 
 @nb.njit
@@ -169,7 +169,7 @@ if PARALLEL:
 NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, GS = calculate_spatial()
 if VERBOSE:
     print('data loaded')
-# calculate radial distributions           
+# calculate radial distributions
 if PARALLEL:
     OPERATIONS = [delayed(calculate_rdf)(u) for u in xrange(len(NATOMS))]
     if VERBOSE:
