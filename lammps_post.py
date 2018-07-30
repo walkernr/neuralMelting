@@ -5,8 +5,8 @@ Created on Wed May 22 13:31:27 2018
 @author: Nicholas
 """
 
-from __future__ import division, print_function
-import sys, pickle
+import argparse
+import pickle
 import numpy as np
 from scipy.stats import linregress
 import matplotlib as mpl
