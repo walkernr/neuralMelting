@@ -5,7 +5,6 @@ Created on Wed May 22 13:31:27 2018
 @author: Nicholas
 """
 
-from __future__ import division, print_function
 import argparse
 import os
 import pickle
@@ -26,7 +25,7 @@ PARSER.add_argument('-nt', '--threads', help='number of threads',
 PARSER.add_argument('-b', '--backend', help='keras backend',
                     type=str, default='tensorflow')
 PARSER.add_argument('-n', '--name', help='name of simulation',
-                    type=str, default='test')
+                    type=str, default='test_run')
 PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
 PARSER.add_argument('-i', '--pressure_index', help='pressure index',
@@ -178,20 +177,20 @@ if VERBOSE:
     print('------------------------------------------------------------')
 
 # load simulation data
-NATOMS = pickle.load(open(PREFIX+'.natoms.pickle')).reshape(NT, NS)
+NATOMS = pickle.load(open(PREFIX+'.natoms.pickle', 'rb')).reshape(NT, NS)
 # load potential data
-PE = pickle.load(open(PREFIX+'.pe.pickle')).reshape(NT, NS)
+PE = pickle.load(open(PREFIX+'.pe.pickle', 'rb')).reshape(NT, NS)
 # load pressure data
-VIRIAL = pickle.load(open(PREFIX+'.virial.pickle')).reshape(NT, NS)
+VIRIAL = pickle.load(open(PREFIX+'.virial.pickle', 'rb')).reshape(NT, NS)
 # load temperature data
-TEMP = pickle.load(open(PREFIX+'.temp.pickle')).reshape(NT, NS)
+TEMP = pickle.load(open(PREFIX+'.temp.pickle', 'rb')).reshape(NT, NS)
 # load structure domains
-R = pickle.load(open(PREFIX+'.r.pickle'))
-Q = pickle.load(open(PREFIX+'.q.pickle'))
+R = pickle.load(open(PREFIX+'.r.pickle', 'rb'))
+Q = pickle.load(open(PREFIX+'.q.pickle', 'rb'))
 # load structure data
-G = pickle.load(open(PREFIX+'.rdf.pickle')).reshape(NT, NS, -1)
-S = pickle.load(open(PREFIX+'.sf.pickle')).reshape(NT, NS, -1)
-I = pickle.load(open(PREFIX+'.ef.pickle')).reshape(NT, NS, -1)
+G = pickle.load(open(PREFIX+'.rdf.pickle', 'rb')).reshape(NT, NS, -1)
+S = pickle.load(open(PREFIX+'.sf.pickle', 'rb')).reshape(NT, NS, -1)
+I = pickle.load(open(PREFIX+'.ef.pickle', 'rb')).reshape(NT, NS, -1)
 # sample space reduction for improving performance
 NATOMS = NATOMS[:, -LN:]
 PE = PE[:, -LN:]
@@ -333,8 +332,8 @@ TC = TC.reshape(TST, LN)
 CC = CC.reshape(CS, LN)
 
 # mean temps
-MTEMP = np.array([[np.mean(TTEMP[TC == i]) for i in xrange(2)],
-                  [np.mean(CTEMP[CC == i]) for i in xrange(2)]], dtype=float)
+MTEMP = np.array([[np.mean(TTEMP[TC == i]) for i in range(2)],
+                  [np.mean(CTEMP[CC == i]) for i in range(2)]], dtype=float)
 # curve fitting and transition temp extraction
 TDOM = np.mean(CTEMP, 1)  # temperature domain of classification data
 TERR = np.std(CTEMP, 1)   # standard error of temperature domain
@@ -373,7 +372,7 @@ if VERBOSE:
 OUTPREF = '%s.%s.%s.%s.%s.%s' % (PREFIX, NN, FTR, SCLR, RDCN, FF)
 
 # save data to file
-with open(OUTPREF+'.out', 'wb') as output:
+with open(OUTPREF+'.out', 'w') as output:
     output.write('# -------------------------------------------------------------\n')
     output.write('# parameters\n')
     output.write('# ---------------------------------------------------------------\n')
@@ -410,9 +409,9 @@ def plot_phase_probs():
     ax.plot(FITDOM, FITVAL, color=CM(SCALE(TRANS)),
             label=r'$\mathrm{Phase\enspace Probability\enspace Curve}$')
     ax.axvline(TRANS, color=CM(SCALE(TRANS)), alpha=0.50)
-    for j in xrange(2):
+    for j in range(2):
         ax.axvline(TINT[j], color=CM(SCALE(TINT[j])), alpha=0.50, linestyle='--')
-    for j in xrange(2):
+    for j in range(2):
         ax.scatter(CTEMP[CC == j], PROB[CC == j], c=CM(SCALE(MTEMP[1, j])),
                    s=120, alpha=0.05, edgecolors='none')
     ax.scatter(TDOM, MPROB, color=CM(SCALE(TDOM)), s=240, edgecolors='none', marker='*')
@@ -442,7 +441,7 @@ def plot_ftrs():
     ax.spines['top'].set_visible(False)
     ax.xaxis.set_ticks_position('bottom')
     ax.yaxis.set_ticks_position('left')
-    for j in xrange(2):
+    for j in range(2):
         plabels = [r'$\mathrm{Trained\enspace %s\enspace Phase}$' % labels[j],
                    r'$\mathrm{Classified\enspace %s\enspace Phase}$' % labels[j]]
         ax.plot(FDOM[FTR], np.mean(UTDATA[TC.reshape(-1) == j], axis=0),

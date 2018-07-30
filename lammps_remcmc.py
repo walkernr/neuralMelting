@@ -5,7 +5,6 @@ Created on Thu Jun 07 04:20:00 2018
 @author: Nicholas
 """
 
-from __future__ import division, print_function
 import argparse
 import os
 import pickle
@@ -55,11 +54,11 @@ def parse_args():
                         type=int, default=4)
     parser.add_argument('-pn', '--pressure_number', help='number of pressures',
                         type=int, default=4)
-    parser.add_argument('-pr', '--pressure_range', help='pressure xrange (low and high)',
+    parser.add_argument('-pr', '--pressure_range', help='pressure range (low and high)',
                         type=float, nargs=2, default=[2, 8])
     parser.add_argument('-tn', '--temperature_number', help='number of temperatures',
                         type=int, default=48)
-    parser.add_argument('-tr', '--temperature_range', help='temperature xrange (low and high)',
+    parser.add_argument('-tr', '--temperature_range', help='temperature range (low and high)',
                         type=float, nargs=2, default=[0.25, 2.5])
     parser.add_argument('-sc', '--sample_cutoff', help='sample recording cutoff',
                         type=int, default=0)
@@ -86,8 +85,8 @@ def parse_args():
             args.walltime, args.memory,
             args.workers, args.threads,
             args.name, args.element, args.supercell_size,
-            args.pressure_number, args.pressure_range[0], args.pressure_range[1],
-            args.temperature_number, args.temperature_range[0], args.temperature_range[1],
+            args.pressure_number, *args.pressure_range,
+            args.temperature_number, *args.temperature_range,
             args.sample_cutoff, args.sample_number, args.sample_mod,
             args.position_move, args.volume_move, args.timesteps,
             args.pos_displace, args.box_displace)
@@ -122,7 +121,7 @@ def init_constants():
     ''' calculates thermodynamic constants for all samples '''
     if VERBOSE:
         print('initializing constants')
-    return [init_constant(k) for k in xrange(NS)]
+    return [init_constant(k) for k in range(NS)]
 
 # -----------------------------
 # output file utility functions
@@ -153,7 +152,7 @@ def init_outputs():
     ''' initializes output filenames for all samples '''
     if VERBOSE:
         print('initializing outputs')
-    return [init_output(k) for k in xrange(NS)]
+    return [init_output(k) for k in range(NS)]
 
 
 def init_header(k, output):
@@ -195,7 +194,7 @@ def init_header(k, output):
 def init_headers():
     ''' writes headers for all samples '''
     if PARALLEL:
-        operations = [delayed(init_header)(k, OUTPUT[k]) for k in xrange(NS)]
+        operations = [delayed(init_header)(k, OUTPUT[k]) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
             print('initializing headers')
@@ -204,7 +203,7 @@ def init_headers():
     else:
         if VERBOSE:
             print('initializing headers')
-        for k in xrange(NS):
+        for k in range(NS):
             init_header(k, OUTPUT[k])
 
 
@@ -226,7 +225,7 @@ def write_traj(output, state):
     box = state[7]
     with open(traj, 'a') as traj_out:
         traj_out.write('%d %.4E\n' % (natoms, box))
-        for i in xrange(natoms):
+        for i in range(natoms):
             traj_out.write('%.4E %.4E %.4E\n' % tuple(x[3*i:3*i+3]))
 
 
@@ -239,7 +238,7 @@ def write_output(output, state):
 def write_outputs():
     ''' writes outputs for all samples '''
     if PARALLEL:
-        operations = [delayed(write_output)(OUTPUT[k], STATE[k]) for k in xrange(NS)]
+        operations = [delayed(write_output)(OUTPUT[k], STATE[k]) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
             print('writing outputs')
@@ -248,7 +247,7 @@ def write_outputs():
     else:
         if VERBOSE:
             print('writing outputs')
-        for k in xrange(NS):
+        for k in range(NS):
             write_output(OUTPUT[k], STATE[k])
 
 
@@ -256,25 +255,25 @@ def consolidate_outputs():
     ''' consolidates outputs across samples '''
     if VERBOSE:
         print('consolidating outputs')
-    thrm = [OUTPUT[k][0] for k in xrange(NS)]
-    traj = [OUTPUT[k][1] for k in xrange(NS)]
-    for i in xrange(NP):
+    thrm = [OUTPUT[k][0] for k in range(NS)]
+    traj = [OUTPUT[k][1] for k in range(NS)]
+    for i in range(NP):
         with open(file_prefix(i)+'.thrm', 'w') as thrm_out:
-            for j in xrange(NT):
+            for j in range(NT):
                 k = np.ravel_multi_index((i, j), (NP, NT), order='C')
                 with open(thrm[k], 'r') as thrm_in:
                     for line in thrm_in:
                         thrm_out.write(line)
-    for i in xrange(NP):
+    for i in range(NP):
         with open(file_prefix(i)+'.traj', 'w') as traj_out:
-            for j in xrange(NT):
+            for j in range(NT):
                 k = np.ravel_multi_index((i, j), (NP, NT), order='C')
                 with open(traj[k], 'r') as traj_in:
                     for line in traj_in:
                         traj_out.write(line)
     if VERBOSE:
         print('cleaning files')
-    for k in xrange(NS):
+    for k in range(NS):
         os.remove(thrm[k])
         os.remove(traj[k])
 
@@ -379,7 +378,7 @@ def init_sample(k):
 def init_samples():
     ''' initializes all samples '''
     if PARALLEL:
-        operations = [delayed(init_sample)(k) for k in xrange(NS)]
+        operations = [delayed(init_sample)(k) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
             print('initializing samples')
@@ -388,7 +387,7 @@ def init_samples():
     else:
         if VERBOSE:
             print('initializing samples')
-        futures = [init_sample(k) for k in xrange(NS)]
+        futures = [init_sample(k) for k in range(NS)]
     return futures
 
 
@@ -441,7 +440,7 @@ def iter_position_mc(lmps, et, ntp, nap, dx):
     boxmax = lmps.extract_global('boxhi', 1)
     box = boxmax-boxmin
     # loop through atoms
-    for k in xrange(natoms):
+    for k in range(natoms):
         # update position tries
         ntp += 1
         # save current physical properties
@@ -571,7 +570,7 @@ def gen_sample(k, const, state):
     dx, dl, dt = state[18:21]
     lmps = init_lammps(i, x, v, box)
     # loop through monte carlo moves
-    for _ in xrange(MOD):
+    for _ in range(MOD):
         lmps, ntp, nap, ntv, nav, nth, nah = move_mc(lmps, et, pf, t,
                                                      ntp, nap, ntv, nav, nth, nah, dx, dl, dt)
     # extract system properties
@@ -592,7 +591,7 @@ def gen_samples():
     ''' generates all monte carlo samples '''
     if PARALLEL:
         # list of delayed operations
-        operations = [delayed(gen_sample)(k, CONST[k], STATE[k]) for k in xrange(NS)]
+        operations = [delayed(gen_sample)(k, CONST[k], STATE[k]) for k in range(NS)]
         # submit futures to client
         futures = CLIENT.compute(operations)
         # progress bar
@@ -604,7 +603,7 @@ def gen_samples():
         # loop through pressures
         if VERBOSE:
             print('performing monte carlo')
-        futures = [gen_sample(k, CONST[k], STATE[k]) for k in xrange(NS)]
+        futures = [gen_sample(k, CONST[k], STATE[k]) for k in range(NS)]
     return futures
 
 # ----------------------------
@@ -637,7 +636,7 @@ def gen_mc_params():
     ''' generate adaptive monte carlo parameters for all samples '''
     if PARALLEL:
         # list of delayed operations
-        operations = [delayed(gen_mc_param)(STATE[k]) for k in xrange(NS)]
+        operations = [delayed(gen_mc_param)(STATE[k]) for k in range(NS)]
         # submit futures to client
         futures = CLIENT.compute(operations)
         # progress bar
@@ -649,7 +648,7 @@ def gen_mc_params():
         # loop through pressures
         if VERBOSE:
             print('updating mc params')
-        futures = [gen_mc_param(STATE[k]) for k in xrange(NS)]
+        futures = [gen_mc_param(STATE[k]) for k in range(NS)]
     return futures
 
 # -----------------------------------------
@@ -662,11 +661,11 @@ def replica_exchange():
     # catalog swaps
     swaps = 0
     # loop through pressures
-    for u in xrange(NP):
+    for u in range(NP):
         # loop through reference temperatures from high to low
-        for v in xrange(NT-1, -1, -1):
+        for v in range(NT-1, -1, -1):
             # loop through temperatures from low to current reference temperature
-            for w in xrange(v):
+            for w in range(v):
                 # extract index from each pressure/temperature index pair
                 i = np.ravel_multi_index((u, v), (NP, NT), order='C')
                 j = np.ravel_multi_index((u, w), (NP, NT), order='C')
@@ -827,7 +826,7 @@ if __name__ == '__main__':
         else:
             STATE = init_samples()
     # loop through to number of samples that need to be collected
-    for STEP in tqdm(xrange(NSMPL)):
+    for STEP in tqdm(range(NSMPL)):
         # generate samples
         STATE[:] = gen_samples()
         # generate mc parameters
