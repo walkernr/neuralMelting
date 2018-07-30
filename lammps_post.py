@@ -17,11 +17,11 @@ import matplotlib.pyplot as plt
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
 PARSER.add_argument('-n', '--name', help='name of simulation',
-                    type=str, default='test')
+                    type=str, default='test_run')
 PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
 PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
-                    type=int, default=0)
+                    type=int, default=4)
 PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures',
                     type=int, default=48)
 PARSER.add_argument('-f', '--feature', help='feature to learn',
@@ -160,7 +160,7 @@ def plot_pt():
     ax = fig.add_subplot(111)
     for i in xrange(npress):
         ax.errorbar(TM[i], PM[i], xerr=TS[i], yerr=PS[i], color=CM(SCALE(i)), alpha=0.5,
-                    label=r'$P = %.1f \pm %.1f$' % tuple(PMS[i))
+                    label=r'$P = %.1f \pm %.1f$' % tuple(PMS[i]))
         ax.axvline(TRANS[i, 0], color=CM(SCALE(i)))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$P$')
