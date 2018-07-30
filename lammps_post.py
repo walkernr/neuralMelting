@@ -135,14 +135,14 @@ TRANS = np.zeros((NP, 2), dtype=float)
 
 # file prefixes
 PREFIX = '%s.%s.%s.lammps' % (NAME, EL.lower(), LAT[EL])
-PPREFS = ['%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL], i) for i in xrange(NP)]
-NPREFS = ['%s.%s.%s.%s.%s.%s' % (PPREFS[i], NN, FTR, SCLR, RDCN, FF) for i in xrange(NP)]
+PPREFS = ['%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL], i) for i in range(NP)]
+NPREFS = ['%s.%s.%s.%s.%s.%s' % (PPREFS[i], NN, FTR, SCLR, RDCN, FF) for i in range(NP)]
 
 if VERBOSE:
     print('neural network transitions')
     print('pressure | temperature')
     print('------------------------------------------------------------')
-for i in xrange(NP):
+for i in range(NP):
     UM[i, :], US[i, :] = extract_potential(i)
     PM[i, :], PS[i, :], PMS[i, :] = extract_pressure(i)
     TM[i, :], TS[i, :] = extract_temperature(i)
@@ -158,7 +158,7 @@ SCALE = lambda i: (PMS[i, 0]-np.min(PM))/np.max(PM)
 def plot_pt():
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    for i in xrange(npress):
+    for i in range(npress):
         ax.errorbar(TM[i], PM[i], xerr=TS[i], yerr=PS[i], color=CM(SCALE(i)), alpha=0.5,
                     label=r'$P = %.1f \pm %.1f$' % tuple(PMS[i]))
         ax.axvline(TRANS[i, 0], color=CM(SCALE(i)))
@@ -171,7 +171,7 @@ def plot_pt():
 def plot_ut():
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    for i in xrange(npress):
+    for i in range(npress):
         ax.errorbar(TM[i], UM[i], xerr=TS[i], yerr=US[i], color=CM(SCALE(i)), alpha=0.5,
                     label=r'$P = %.1f \pm %.1f$' % tuple(PMS[i]))
         ax.axvline(TRANS[i, 0], color=CM(SCALE(i)))
