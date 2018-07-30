@@ -55,7 +55,7 @@ if VERBOSE:
     print('%d thermodynamic property steps parsed' % len(TEMP))
 
 # parse trajectory file
-with open(PREFIX+'.traj', 'rb') as traj_in:
+with open(PREFIX+'.traj', 'r') as traj_in:
     DATA = [line.split() for line in traj_in.readlines()]
     NATOMS, BOX = np.split(np.array([values for values in DATA if len(values) == 2]), 2, 1)
     NATOMS = NATOMS.astype(np.uint16)[:, 0]
