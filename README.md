@@ -36,12 +36,6 @@ I recommend using Anaconda since the only additional libraries needed are LAMMPS
 - tqdm
 - MatPlotLib
 
-LAMMPS Libraries
-----------------
-
-- USER-MEAMC (for MEAM potentials)
-- PYTHON
-
 LAMMPS Information
 ------------------
 
@@ -76,57 +70,58 @@ lammps_neural.py
 
 This program classifies samples as either solids or liquids by passing structural information through a multi-layer perceptron neural network. There are many options available with regards to which structural information, scaler, reducer, classification neural network, and fitting function to use.
 
-### Available structural functions
+### Structure Features
 - Radial distribution
 - Structure factor
 - Entropic fingerprint
 
-### Available scalers
+### Feature Scalers
 - Standard: very common, vulnerable to outliers, does not guarantee a map to a common numerical range
 - MinMax: also common, vulnerable to outliers, guarantees a map to a common numerical range
 - Robust: resilient to outliers, does not guarantee a map to a common numerical range
 - Tanh: resilient to outliers, guarantees a map to a common numerical range
 
-### Available reducers
-- none: use the raw scaled data
+### Feature Dimensionality Reducers
+- None: use the raw scaled data
 - PCA: common and fast, orthogonal linear transformation into new basis that maximizes variance of data along new projections
 - Kernal PCA: slower than PCA, nonlinear reduction in the sample space rather than feature space
 - Isomap: slower than PCA, a nonlinear reduction considered to be an extension of the Kernel PCA algorithm
 - Locally Linear Embedding: slower than PCA, can be considered as a series of local PCA reductions that are globally stiched together
 
-### Available networks
-- Dense Classifier (not currently working: doesn't learn)
+### Neural Networks
+- Dense Classifier  -- NOT CURRENTLY WORKING --
 - 1-D Convolutional Neural Network Classifier
 
-### Available fitting functions
+### Fitting Functions
 - Logistic: well-behaved and easily extracted transition temperature estimate, symmetric
-- Gompertz: well-behaved and easily extracted transition temperature estimate, faster uptake than saturation (not recommended: error analysis is not robust)
-- Richard: generalized logistic function, (not recommended: too many fitting parameters)
+- Gompertz: well-behaved and easily extracted transition temperature estimate, faster uptake than saturation -- ERROR ANALYSIS UNDERGOING REWRITE --
 
-### Plans for the future
+### Future Plans
 - Refine neural network structures and hyperparameters with grid searching
 - Refine data preparation techniques (more appropriate scaling, data reorientation, etc.)
 - Refine data analysis techniques (better curve fitting, alternate approaches to transition etimation, etc.)
 
-Since the structural functions, scalers, reducers, networks, and fitting functions are all embedded in dictionaries, the user may feel free to add their own features.
+Since the structural feautres, feature scalers, feature dimensionality reducers, neural networks, and fitting functions are all embedded in dictionaries, the user may feel free to add their own.
 
 lammps_cluster.py
 -----------------
 
+-- CURRENTLY UNDERGOING REWRITE --
+
 This program classifies samples as either solids or liquid by passing either the radial distributions or the structure factors through an unsupervised clustering algorithm following data dimensionality reduction. Dimensionality reduction is limited to either PCA or PCA followed by t-SNE.
 
-### Available scalers
+### Feature Scalers
 - Standard: very common, vulnerable to outliers, does not guarantee a map to a common numerical range
 - MinMax: also common, vulnerable to outliers, guarantees a map to a common numerical range
 - Robust: resilient to outliers, does not guarantee a map to a common numerical range
 - Tanh: resilient to outliers, guarantees a map to a common numerical range
 
-### Available clustering methods
+### Clustering Methods
 - K-Means: Good for globular data, struggles on elongated data sets and irregular cluster boundaries (including concentric clusters)
 - Agglomerative: Good for globular data, struggles with low density clusters and concentric clusters
 - Spectral: Good for connected data (including concentric), struggles with edges of globular data
 
-### Plans for the future
+### Future Plans
 This will take second priority to the supervised method with respect to data analysis
 - Allow for tuning of clustering method parameters (choice of metric, similarity measure, affinity, etc.)
 - Perhaps support for other nonlinear dimensionality reduction algorithms will be added
