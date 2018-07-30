@@ -17,167 +17,80 @@ from lammps import lammps
 # run parameters
 # --------------
 
-# parse command line (help option generated automatically)
-PARSER = argparse.ArgumentParser()
-PARSER.add_argument('-v', '--verbose', help='verbose output mode', action='store_true')
-PARSER.add_argument('-r', '--restart', help='restart run mode', action='store_true')
-PARSER.add_argument('-p', '--parallel', help='parallel run mode', action='store_true')
-PARSER.add_argument('-d', '--distributed', help='distributed run mode', action='store_true')
-PARSER.add_argument('-rd', '--restart_dump', help='restart dump frequency',
-                    type=int, default=256)
-PARSER.add_argument('-rn', '--restart_name', help='restart dump simulation name',
-                    type=str, default='test_init')
-PARSER.add_argument('-rs', '--restart_step', help='restart dump start step',
-                    type=int, default=256)
-PARSER.add_argument('-q', '--queue', help='job submission queue',
-                    type=str, default='lasigma')
-PARSER.add_argument('-a', '--allocation', help='job submission allocation',
-                    type=str, default='hpc_lasigma01')
-PARSER.add_argument('-nn', '--nodes', help='job node count',
-                    type=int, default=1)
-PARSER.add_argument('-np', '--procs_per_node', help='number of processors per node',
-                    type=int, default=16)
-PARSER.add_argument('-w', '--walltime', help='job walltime',
-                    type=int, default=24)
-PARSER.add_argument('-m', '--memory', help='job memory (total)',
-                    type=int, default=32)
-PARSER.add_argument('-nw', '--workers', help='job worker count (total)',
-                    type=int, default=16)
-PARSER.add_argument('-nt', '--threads', help='threads per worker',
-                    type=int, default=1)
-PARSER.add_argument('-n', '--name', help='simulation name',
-                    type=str, default='test_run')
-PARSER.add_argument('-e', '--element', help='simulation element',
-                    type=str, default='LJ')
-PARSER.add_argument('-ss', '--supercell_size', help='simulation supercell size',
-                    type=int, default=4)
-PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
-                    type=int, default=4)
-PARSER.add_argument('-pr', '--pressure_range', help='pressure range (low and high)',
-                    type=float, nargs=2, default=[2, 8])
-PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures',
-                    type=int, default=48)
-PARSER.add_argument('-tr', '--temperature_range', help='temperature range (low and high)',
-                    type=float, nargs=2, default=[0.25, 2.5])
-PARSER.add_argument('-sc', '--sample_cutoff', help='sample recording cutoff',
-                    type=int, default=0)
-PARSER.add_argument('-sn', '--sample_number', help='number of samples to generate',
-                    type=int, default=1024)
-PARSER.add_argument('-sm', '--sample_mod', help='sample collection frequency',
-                    type=int, default=128)
-PARSER.add_argument('-pm', '--position_move', help='position monte carlo move probability',
-                    type=float, default=0.015625)
-PARSER.add_argument('-vm', '--volume_move', help='volume monte carlo move probability',
-                    type=float, default=0.25)
-PARSER.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps',
-                    type=int, default=8)
-PARSER.add_argument('-dx', '--pos_displace', help='position displacement (proportion of lattice)',
-                    type=float, default=0.125)
-PARSER.add_argument('-dl', '--box_displace', help='box displacement (proportion of box)',
-                    type=float, default=0.03125)
-# parse arguments
-ARGS = PARSER.parse_args()
 
-# booleans for run type
-VERBOSE = ARGS.verbose
-PARALLEL = ARGS.parallel
-RESTART = ARGS.restart
-DISTRIBUTED = ARGS.distributed
-# restart write frequency
-REFREQ = ARGS.restart_dump
-# restart information (name of simulation and step to load)
-RENAME = ARGS.restart_name
-RESTEP = ARGS.restart_step
-# arguments for distributed run using pbs
-QUEUE = ARGS.queue
-ALLOC = ARGS.allocation
-NODES = ARGS.nodes
-PPN = ARGS.procs_per_node
-WALLTIME = ARGS.walltime
-MEM = ARGS.memory
-# arguments for parallel run
-NWORKER = ARGS.workers
-NTHREAD = ARGS.threads
-# simulation name
-NAME = ARGS.name
-# element choice
-EL = ARGS.element
-# supercell size in lattice parameters
-SZ = ARGS.supercell_size
-# pressure parameters
-NP = ARGS.pressure_number
-LP, HP = ARGS.pressure_range
-# temperature parameters
-NT = ARGS.temperature_number
-LT, HT = ARGS.temperature_range
-# sample cutoff
-CUTOFF = ARGS.sample_cutoff
-# number of total samples (recording starts after cutoff)
-NSMPL = ARGS.sample_number
-# recording frequency
-MOD = ARGS.sample_mod
-# monte carlo probabilities
-PPOS = ARGS.position_move
-PVOL = ARGS.volume_move
-# number of hamiltonian monte carlo timesteps
-NSTPS = ARGS.timesteps
-# proportional displacements
-PDX = ARGS.pos_displace
-PDL = ARGS.box_displace
-
-if PARALLEL:
-    os.environ['DASK_ALLOWED_FAILURES'] = '32'
-    from distributed import Client, LocalCluster, progress
-    from dask import delayed
-if DISTRIBUTED:
-    import time
-    from dask_jobqueue import PBSCluster
-
-# number of simulations
-NS = NP*NT
-# total number of monte carlo sweeps
-NSWPS = NSMPL*MOD
-# hamiltonian monte carlo probability
-PHMC = 1-PPOS-PVOL
-
-# set random seed
-SEED = 256
-np.random.seed(SEED)
-
-# -------------------
-# material properties
-# -------------------
-
-# unit system
-UNITS = {'Ti': 'metal',
-         'Al': 'metal',
-         'Ni': 'metal',
-         'Cu': 'metal',
-         'LJ': 'lj'}
-# lattice type and parameter
-LAT = {'Ti': ('bcc', 2.951),
-       'Al': ('fcc', 4.046),
-       'Ni': ('fcc', 3.524),
-       'Cu': ('fcc', 3.615),
-       'LJ': ('fcc', 1.122)}
-# mass
-MASS = {'Ti': 47.867,
-        'Al': 29.982,
-        'Ni': 58.693,
-        'Cu': 63.546,
-        'LJ': 1.0}
-# timestep
-TIMESTEP = {'real': 4.0,
-            'metal': 0.00390625,
-            'lj': 0.00390625}
-# pressure
-P = np.linspace(LP, HP, NP, dtype=np.float32)
-# temperature
-T = np.linspace(LT, HT, NT, dtype=np.float32)
-# inital position variation, volume variation, and timestep
-DX = PDX*LAT[EL][1]
-DL = PDL*SZ*LAT[EL][1]
-DT = TIMESTEP[UNITS[EL]]
+def parse_args():
+    ''' parse command line arguments '''
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-v', '--verbose', help='verbose output mode', action='store_true')
+    parser.add_argument('-r', '--restart', help='restart run mode', action='store_true')
+    parser.add_argument('-p', '--parallel', help='parallel run mode', action='store_true')
+    parser.add_argument('-d', '--distributed', help='distributed run mode', action='store_true')
+    parser.add_argument('-rd', '--restart_dump', help='restart dump frequency',
+                        type=int, default=256)
+    parser.add_argument('-rn', '--restart_name', help='restart dump simulation name',
+                        type=str, default='test_init')
+    parser.add_argument('-rs', '--restart_step', help='restart dump start step',
+                        type=int, default=256)
+    parser.add_argument('-q', '--queue', help='job submission queue',
+                        type=str, default='lasigma')
+    parser.add_argument('-a', '--allocation', help='job submission allocation',
+                        type=str, default='hpc_lasigma01')
+    parser.add_argument('-nn', '--nodes', help='job node count',
+                        type=int, default=1)
+    parser.add_argument('-np', '--procs_per_node', help='number of processors per node',
+                        type=int, default=16)
+    parser.add_argument('-w', '--walltime', help='job walltime',
+                        type=int, default=24)
+    parser.add_argument('-m', '--memory', help='job memory (total)',
+                        type=int, default=32)
+    parser.add_argument('-nw', '--workers', help='job worker count (total)',
+                        type=int, default=16)
+    parser.add_argument('-nt', '--threads', help='threads per worker',
+                        type=int, default=1)
+    parser.add_argument('-n', '--name', help='simulation name',
+                        type=str, default='test_run')
+    parser.add_argument('-e', '--element', help='simulation element',
+                        type=str, default='LJ')
+    parser.add_argument('-ss', '--supercell_size', help='simulation supercell size',
+                        type=int, default=4)
+    parser.add_argument('-pn', '--pressure_number', help='number of pressures',
+                        type=int, default=4)
+    parser.add_argument('-pr', '--pressure_range', help='pressure xrange (low and high)',
+                        type=float, nargs=2, default=[2, 8])
+    parser.add_argument('-tn', '--temperature_number', help='number of temperatures',
+                        type=int, default=48)
+    parser.add_argument('-tr', '--temperature_range', help='temperature xrange (low and high)',
+                        type=float, nargs=2, default=[0.25, 2.5])
+    parser.add_argument('-sc', '--sample_cutoff', help='sample recording cutoff',
+                        type=int, default=0)
+    parser.add_argument('-sn', '--sample_number', help='number of samples to generate',
+                        type=int, default=1024)
+    parser.add_argument('-sm', '--sample_mod', help='sample collection frequency',
+                        type=int, default=128)
+    parser.add_argument('-pm', '--position_move', help='position monte carlo move probability',
+                        type=float, default=0.015625)
+    parser.add_argument('-vm', '--volume_move', help='volume monte carlo move probability',
+                        type=float, default=0.25)
+    parser.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps',
+                        type=int, default=8)
+    parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
+                        type=float, default=0.125)
+    parser.add_argument('-dl', '--box_displace', help='box displacement (box proportion)',
+                        type=float, default=0.03125)
+    # parse arguments
+    args = parser.parse_args()
+    # return arguments
+    return (args.verbose, args.parallel, args.restart, args.distributed,
+            args.restart_dump, args.restart_name, args.restart_step,
+            args.queue, args.allocation, args.nodes, args.procs_per_node,
+            args.walltime, args.memory,
+            args.workers, args.threads,
+            args.name, args.element, args.supercell_size,
+            args.pressure_number, args.pressure_range[0], args.pressure_range[1],
+            args.temperature_number, args.temperature_range[0], args.temperature_range[1],
+            args.sample_cutoff, args.sample_number, args.sample_mod,
+            args.position_move, args.volume_move, args.timesteps,
+            args.pos_displace, args.box_displace)
 
 # ----------------
 # unit definitions
@@ -247,7 +160,7 @@ def init_header(k, output):
     ''' writes header for a sample '''
     # extract pressure/temperature indices from index
     i, j = np.unravel_index(k, dims=(NP, NT), order='C')
-    with open(output[0], 'wb') as thrm_out:
+    with open(output[0], 'w') as thrm_out:
         thrm_out.write('#----------------------\n')
         thrm_out.write('# simulation parameters\n')
         thrm_out.write('#----------------------\n')
@@ -302,7 +215,7 @@ def write_thrm(output, state):
     vol = state[8]
     ap, av, ah = state[15:18]
     args = temp, pe, ke, virial, vol, ap, av, ah
-    with open(thrm, 'ab') as thrm_out:
+    with open(thrm, 'a') as thrm_out:
         thrm_out.write('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E\n' % args)
 
 
@@ -311,7 +224,7 @@ def write_traj(output, state):
     traj = output[1]
     natoms, x = state[:2]
     box = state[7]
-    with open(traj, 'ab') as traj_out:
+    with open(traj, 'a') as traj_out:
         traj_out.write('%d %.4E\n' % (natoms, box))
         for i in xrange(natoms):
             traj_out.write('%.4E %.4E %.4E\n' % tuple(x[3*i:3*i+3]))
@@ -346,17 +259,17 @@ def consolidate_outputs():
     thrm = [OUTPUT[k][0] for k in xrange(NS)]
     traj = [OUTPUT[k][1] for k in xrange(NS)]
     for i in xrange(NP):
-        with open(file_prefix(i)+'.thrm', 'wb') as thrm_out:
+        with open(file_prefix(i)+'.thrm', 'w') as thrm_out:
             for j in xrange(NT):
                 k = np.ravel_multi_index((i, j), (NP, NT), order='C')
-                with open(thrm[k], 'rb') as thrm_in:
+                with open(thrm[k], 'r') as thrm_in:
                     for line in thrm_in:
                         thrm_out.write(line)
     for i in xrange(NP):
-        with open(file_prefix(i)+'.traj', 'wb') as traj_out:
+        with open(file_prefix(i)+'.traj', 'w') as traj_out:
             for j in xrange(NT):
                 k = np.ravel_multi_index((i, j), (NP, NT), order='C')
-                with open(traj[k], 'rb') as traj_in:
+                with open(traj[k], 'r') as traj_in:
                     for line in traj_in:
                         traj_out.write(line)
     if VERBOSE:
@@ -365,9 +278,9 @@ def consolidate_outputs():
         os.remove(thrm[k])
         os.remove(traj[k])
 
-# ---------------------------------
-# lammps file/object initialization
-# ---------------------------------
+# ------------------------------------------------
+# sample initialization and information extraction
+# ------------------------------------------------
 
 
 def lammps_input(i):
@@ -378,7 +291,7 @@ def lammps_input(i):
     # set lammps file name
     lmpsfile = prefix+'.in'
     # open lammps file
-    with open(lmpsfile, 'wb') as lf:
+    with open(lmpsfile, 'w') as lf:
         # file header
         lf.write('# LAMMPS Monte Carlo: %s\n\n' % EL)
         # units and atom style
@@ -428,10 +341,10 @@ def lammps_extract(lmps):
     natoms = lmps.extract_global('natoms', 0)
     x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
     v = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('v', 1, 3)))
-    temp = lmps.extract_compute('thermo_temp', None, 0)
-    pe = lmps.extract_compute('thermo_pe', None, 0)
-    ke = lmps.extract_compute('thermo_ke', None, 0)
-    virial = lmps.extract_compute('thermo_press', None, 0)
+    temp = lmps.extract_compute('thermo_temp', 0, 0)
+    pe = lmps.extract_compute('thermo_pe', 0, 0)
+    ke = lmps.extract_compute('thermo_ke', 0, 0)
+    virial = lmps.extract_compute('thermo_press', 0, 0)
     boxmin = lmps.extract_global('boxlo', 1)
     boxmax = lmps.extract_global('boxhi', 1)
     box = boxmax-boxmin
@@ -503,11 +416,11 @@ def bulk_position_mc(lmps, et, ntp, nap, dx):
     ''' classic position monte carlo (bulk) '''
     ntp += 1
     x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
-    pe = lmps.extract_compute('thermo_pe', None, 0)/et
+    pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     seed = np.random.randint(1, 2**16)
     lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(dx,)+(seed,)))
     lmps.command('run 0')
-    penew = lmps.extract_compute('thermo_pe', None, 0)/et
+    penew = lmps.extract_compute('thermo_pe', 0, 0)/et
     de = penew-pe
     if np.random.rand() <= np.min([1, np.exp(-de)]):
         # update pos acceptations
@@ -533,13 +446,13 @@ def iter_position_mc(lmps, et, ntp, nap, dx):
         ntp += 1
         # save current physical properties
         x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
-        pe = lmps.extract_compute('thermo_pe', None, 0)/et
+        pe = lmps.extract_compute('thermo_pe', 0, 0)/et
         xnew = np.copy(x)
         xnew[3*k:3*k+3] += (np.random.rand(3)-0.5)*dx
         xnew[3*k:3*k+3] -= np.floor(xnew[3*k:3*k+3]/box)*box
         lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
         lmps.command('run 0')
-        penew = lmps.extract_compute('thermo_pe', None, 0)/et
+        penew = lmps.extract_compute('thermo_pe', 0, 0)/et
         de = penew-pe
         if np.random.rand() <= np.min([1, np.exp(-de)]):
             # update pos acceptations
@@ -563,7 +476,7 @@ def volume_mc(lmps, et, pf, ntv, nav, dl):
     box = boxmax-boxmin
     vol = np.power(box, 3)
     x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
-    pe = lmps.extract_compute('thermo_pe', None, 0)/et
+    pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     # save new physical properties
     boxnew = box+(np.random.rand()-0.5)*dl
     volnew = np.power(boxnew, 3)
@@ -574,7 +487,7 @@ def volume_mc(lmps, et, pf, ntv, nav, dl):
     lmps.command(box_cmd % (3*(boxnew,)))
     lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
     lmps.command('run 0')
-    penew = lmps.extract_compute('thermo_pe', None, 0)/et
+    penew = lmps.extract_compute('thermo_pe', 0, 0)/et
     # calculate enthalpy criterion
     dh = (penew-pe)+pf*(volnew-vol)-natoms*np.log(volnew/vol)
     if np.random.rand() <= np.min([1, np.exp(-dh)]):
@@ -603,14 +516,14 @@ def hamiltonian_mc(lmps, et, t, nth, nah, dt):
     # save current physical properties
     x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
     v = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('v', 1, 3)))
-    pe = lmps.extract_compute('thermo_pe', None, 0)/et
-    ke = lmps.extract_compute('thermo_ke', None, 0)/et
+    pe = lmps.extract_compute('thermo_pe', 0, 0)/et
+    ke = lmps.extract_compute('thermo_ke', 0, 0)/et
     etot = pe+ke
     # run md
     lmps.command('run %d' % NSTPS)  # this part should be implemented as parallel
     # set new physical properties
-    penew = lmps.extract_compute('thermo_pe', None, 0)/et
-    kenew = lmps.extract_compute('thermo_ke', None, 0)/et
+    penew = lmps.extract_compute('thermo_pe', 0, 0)/et
+    kenew = lmps.extract_compute('thermo_ke', 0, 0)/et
     etotnew = penew+kenew
     # calculate hamiltonian criterion
     de = etotnew-etot
@@ -745,8 +658,7 @@ def gen_mc_params():
 
 
 def replica_exchange():
-    ''' performs parallel tempering acrros all samples
-        accepts/rejects based on enthalpy metropolis criterion '''
+    ''' performs parallel tempering across temperature samples for each pressure '''
     # catalog swaps
     swaps = 0
     # loop through pressures
@@ -790,77 +702,151 @@ def dump_samples_restart():
     rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], STEP+1)
     pickle.dump(STATE, open(rf, 'wb'))
 
-# -----------------
-# initialize client
-# -----------------
+# ----
+# main
+# ----
 
-if PARALLEL:
+if __name__ == '__main__':
+
+    (VERBOSE, PARALLEL, RESTART, DISTRIBUTED,
+     REFREQ, RENAME, RESTEP,
+     QUEUE, ALLOC, NODES, PPN,
+     WALLTIME, MEM,
+     NWORKER, NTHREAD,
+     NAME, EL, SZ,
+     NP, LP, HP,
+     NT, LT, HT,
+     CUTOFF, NSMPL, MOD,
+     PPOS, PVOL, NSTPS,
+     PDX, PDL) = parse_args()
+
+    if PARALLEL:
+        os.environ['DASK_ALLOWED_FAILURES'] = '32'
+        from distributed import Client, LocalCluster, progress
+        from dask import delayed
+        from multiprocessing import freeze_support
     if DISTRIBUTED:
-        # construct distributed cluster
-        CLUSTER = PBSCluster(queue=QUEUE, project=ALLOC,
-                             resource_spec='nodes=%d:ppn=%d' % (NODES, PPN),
-                             walltime='%d:00:00' % WALLTIME,
-                             processes=NWORKER, cores=NTHREAD*NWORKER, memory=str(MEM)+'GB',
-                             local_dir=os.getcwd())
-        CLUSTER.start_workers(1)
-        # start client with distributed cluster
-        CLIENT = Client(CLUSTER)
-        while 'processes=0 cores=0' in str(CLIENT.scheduler_info):
-            time.sleep(5)
+        import time
+        from dask_jobqueue import PBSCluster
+
+    # number of simulations
+    NS = NP*NT
+    # total number of monte carlo sweeps
+    NSWPS = NSMPL*MOD
+    # hamiltonian monte carlo probability
+    PHMC = 1-PPOS-PVOL
+
+    # set random seed
+    SEED = 256
+    np.random.seed(SEED)
+
+    # -------------------
+    # material properties
+    # -------------------
+
+    # unit system
+    UNITS = {'Ti': 'metal',
+             'Al': 'metal',
+             'Ni': 'metal',
+             'Cu': 'metal',
+             'LJ': 'lj'}
+    # lattice type and parameter
+    LAT = {'Ti': ('bcc', 2.951),
+           'Al': ('fcc', 4.046),
+           'Ni': ('fcc', 3.524),
+           'Cu': ('fcc', 3.615),
+           'LJ': ('fcc', 1.122)}
+    # mass
+    MASS = {'Ti': 47.867,
+            'Al': 29.982,
+            'Ni': 58.693,
+            'Cu': 63.546,
+            'LJ': 1.0}
+    # timestep
+    TIMESTEP = {'real': 4.0,
+                'metal': 0.00390625,
+                'lj': 0.00390625}
+    # pressure
+    P = np.linspace(LP, HP, NP, dtype=np.float32)
+    # temperature
+    T = np.linspace(LT, HT, NT, dtype=np.float32)
+    # inital position variation, volume variation, and timestep
+    DX = PDX*LAT[EL][1]
+    DL = PDL*SZ*LAT[EL][1]
+    DT = TIMESTEP[UNITS[EL]]
+
+    # -----------------
+    # initialize client
+    # -----------------
+
+    if PARALLEL:
+        freeze_support()
+        if DISTRIBUTED:
+            # construct distributed cluster
+            CLUSTER = PBSCluster(queue=QUEUE, project=ALLOC,
+                                 resource_spec='nodes=%d:ppn=%d' % (NODES, PPN),
+                                 walltime='%d:00:00' % WALLTIME,
+                                 processes=NWORKER, cores=NTHREAD*NWORKER, memory=str(MEM)+'GB',
+                                 local_dir=os.getcwd())
+            CLUSTER.start_workers(1)
+            # start client with distributed cluster
+            CLIENT = Client(CLUSTER)
+            while 'processes=0 cores=0' in str(CLIENT.scheduler_info):
+                time.sleep(5)
+                if VERBOSE:
+                    print(CLIENT.scheduler_info)
+        else:
+            # construct local cluster
+            if NWORKER == 1:
+                PROC = False
+            else:
+                PROC = True
+            CLUSTER = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD, processes=PROC)
+            # start client with local cluster
+            CLIENT = Client(CLUSTER)
+            # display client information
             if VERBOSE:
                 print(CLIENT.scheduler_info)
-    else:
-        # construct local cluster
-        if NWORKER == 1:
-            PROC = False
-        else:
-            PROC = True
-        CLUSTER = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD, processes=PROC)
-        # start client with local cluster
-        CLIENT = Client(CLUSTER)
-        # display client information
-        if VERBOSE:
-            print(CLIENT.scheduler_info)
 
-# -----------
-# monte carlo
-# -----------
+    # -----------
+    # monte carlo
+    # -----------
 
-# define thermodynamic constants
-CONST = init_constants()
-# define output file names
-OUTPUT = init_outputs()
-init_headers()
-# initialize simulation
-if RESTART:
-    STATE = load_samples_restart()
-    replica_exchange()
-else:
-    if PARALLEL:
-        STATE = CLIENT.gather(init_samples())
+    # define thermodynamic constants
+    CONST = init_constants()
+    # define output file names
+    OUTPUT = init_outputs()
+    init_headers()
+    # initialize simulation
+    if RESTART:
+        STATE = load_samples_restart()
+        replica_exchange()
     else:
-        STATE = init_samples()
-# loop through to number of samples that need to be collected
-for STEP in tqdm(xrange(NSMPL)):
-    # generate samples
-    STATE[:] = gen_samples()
-    # generate mc parameters
-    STATE[:] = gen_mc_params()
-    if (STEP+1) > CUTOFF:
-        # write data
-        write_outputs()
-    if PARALLEL:
-        # gather results from cluster
-        STATE[:] = CLIENT.gather(STATE)
-    if (STEP+1) % REFREQ == 0:
-        # save state for restart
-        dump_samples_restart()
         if PARALLEL:
-            CLIENT.restart()
-    # replica exchange markov chain mc
-    replica_exchange()
-if PARALLEL:
-    # terminate client after completion
-    CLIENT.close()
-# consolidate output files
-consolidate_outputs()
+            STATE = CLIENT.gather(init_samples())
+        else:
+            STATE = init_samples()
+    # loop through to number of samples that need to be collected
+    for STEP in tqdm(xrange(NSMPL)):
+        # generate samples
+        STATE[:] = gen_samples()
+        # generate mc parameters
+        STATE[:] = gen_mc_params()
+        if (STEP+1) > CUTOFF:
+            # write data
+            write_outputs()
+        if PARALLEL:
+            # gather results from cluster
+            STATE[:] = CLIENT.gather(STATE)
+        if (STEP+1) % REFREQ == 0:
+            # save state for restart
+            dump_samples_restart()
+            if PARALLEL:
+                CLIENT.restart()
+        # replica exchange markov chain mc
+        replica_exchange()
+    if PARALLEL:
+        # terminate client after completion
+        CLIENT.close()
+    # consolidate output files
+    consolidate_outputs()

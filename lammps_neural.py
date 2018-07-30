@@ -49,7 +49,6 @@ PARSER.add_argument('-nn', '--neural_network', help='neural network',
                     type=str, default='cnn1d')
 PARSER.add_argument('-ff', '--fit_function', help='fitting function',
                     type=str, default='logistic')
-
 # parse arguments
 ARGS = PARSER.parse_args()
 # run specifications

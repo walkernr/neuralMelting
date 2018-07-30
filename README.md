@@ -32,6 +32,7 @@ I recommend using Anaconda since the only additional libraries needed are LAMMPS
 - Scikit-Learn
 - Multicore-TSNE
 - Keras
+- TensorFlow/Theano
 - tqdm
 - MatPlotLib
 
