@@ -12,6 +12,7 @@ import numpy as np
 import numba as nb
 
 def parse_args():
+    ''' parse command line arguments '''
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
     parser.add_argument('-p', '--parallel', help='parallel run', action='store_true')
@@ -108,13 +109,13 @@ def calculate_rdf(j):
     return gs/NATOMS[j]
 
 if __name__ == '__main__':
-    
+
     (VERBOSE, PARALLEL, DISTRIBUTED,
      QUEUE, ALLOC, NODES, PPN,
      WALLTIME, MEM,
      NWORKER, NTHREAD,
      NAME, EL, PI) = parse_args()
-    
+
     if VERBOSE:
         from tqdm import tqdm
     if PARALLEL:
@@ -172,14 +173,14 @@ if __name__ == '__main__':
         OPERATIONS = [delayed(calculate_rdf)(u) for u in range(len(NATOMS))]
         FUTURES = CLIENT.compute(OPERATIONS)
         if VERBOSE:
-            print('calculating rdfs for %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
+            print('computing %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
             progress(FUTURES)
             print('\n')
         G = np.array(CLIENT.gather(FUTURES), dtype=np.float32)
         CLIENT.close()
     else:
         if VERBOSE:
-            print('calculating rdfs for %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
+            print('computing %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
             G = np.array([calculate_rdf(u) for u in tqdm(range(len(NATOMS)))], dtype=np.float32)
         else:
             G = np.array([calculate_rdf(u) for u in range(len(NATOMS))], dtype=np.float32)

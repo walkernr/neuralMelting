@@ -36,6 +36,8 @@ I recommend using Anaconda since the only additional libraries needed are LAMMPS
 - tqdm
 - MatPlotLib
 
+The scripts are written for Python 3.X syntax, but minor adjustments allow them to comply with Python 2.X syntax.
+
 LAMMPS Information
 ------------------
 

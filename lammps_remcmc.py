@@ -189,6 +189,7 @@ def init_header(k, output):
         thrm_out.write('# ------------------------------------------------------------\n')
         thrm_out.write('# | temp | pe | ke | virial | vol | accpos | accvol | acchmc |\n')
         thrm_out.write('# ------------------------------------------------------------\n')
+    return
 
 
 def init_headers():
@@ -205,6 +206,7 @@ def init_headers():
             print('initializing headers')
         for k in range(NS):
             init_header(k, OUTPUT[k])
+    return
 
 
 def write_thrm(output, state):
@@ -216,6 +218,7 @@ def write_thrm(output, state):
     args = temp, pe, ke, virial, vol, ap, av, ah
     with open(thrm, 'a') as thrm_out:
         thrm_out.write('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E\n' % args)
+    return
 
 
 def write_traj(output, state):
@@ -227,12 +230,14 @@ def write_traj(output, state):
         traj_out.write('%d %.4E\n' % (natoms, box))
         for i in range(natoms):
             traj_out.write('%.4E %.4E %.4E\n' % tuple(x[3*i:3*i+3]))
+    return
 
 
 def write_output(output, state):
     ''' writes output for a sample '''
     write_thrm(output, state)
     write_traj(output, state)
+    return
 
 
 def write_outputs():
@@ -249,6 +254,7 @@ def write_outputs():
             print('writing outputs')
         for k in range(NS):
             write_output(OUTPUT[k], STATE[k])
+    return
 
 
 def consolidate_outputs():
@@ -276,6 +282,7 @@ def consolidate_outputs():
     for k in range(NS):
         os.remove(thrm[k])
         os.remove(traj[k])
+    return
 
 # ------------------------------------------------
 # sample initialization and information extraction
@@ -680,6 +687,7 @@ def replica_exchange():
                     STATE[j][:9], STATE[i][:9] = STATE[i][:9], STATE[j][:9]
     if VERBOSE:
         print('%d replica exchanges performed' % swaps)
+    return
 
 # -------------
 # restart files
@@ -700,6 +708,7 @@ def dump_samples_restart():
         print('dumping samples')
     rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], STEP+1)
     pickle.dump(STATE, open(rf, 'wb'))
+    return
 
 # ----
 # main
