@@ -61,6 +61,8 @@ def calculate_spatial():
     ''' calculate spatial properties '''
     # load atom count, box dimensions, and atom positions
     natoms, box, pos = load_data()
+    # number of samples
+    ns = natoms.size
     # number density of atoms
     nrho = np.divide(natoms, np.power(box, 3))
     # minimum box size in simulation
@@ -91,22 +93,38 @@ def calculate_spatial():
     # reshape position vector
     pos = pos.reshape((len(natoms), natoms[0], -1))
     # return properties
-    return natoms, box, pos, br, r, dr, nrho, dni, gs
+    return ns, natoms, box, pos, br, r, dr, nrho, dni, gs
 
 
 @nb.njit
-def calculate_rdf(j):
+def calculate_rdf(k, pos):
     ''' calculate rdf for sample j '''
     gs = np.copy(GS)
     # loop through lattice vectors
     for k in range(BR.shape[0]):
         # displacement vector matrix for sample j
-        dvm = POS[j]-(POS[j]+BOX[j]*BR[k].reshape((1, -1))).reshape((-1, 1, 3))
+        dvm = pos-(pos+BOX[j]*BR[k].reshape((1, -1))).reshape((-1, 1, 3))
         # vector of displacements between atoms
         d = np.sqrt(np.sum(np.square(dvm), -1))
         # calculate rdf for sample j
         gs[1:] += np.histogram(d, R)[0]
     return gs/NATOMS[j]
+
+
+def calculate_rdfs():
+    ''' calculate rdfs for all samples '''
+    if PARALLEL:
+        operations = [delayed(calculate_rdf)(k, POS[k]) for k in range(NS)]
+        futures = CLIENT.compute(operations)
+        if VERBOSE:
+            print('computing %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
+            progress(futures)
+            print('\n')
+    else:
+        if VERBOSE:
+            print('computing %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
+        futures = [calculate_rdf(k, POS[k]) for k in range(NS)]
+    return futures
 
 if __name__ == '__main__':
 
@@ -167,26 +185,15 @@ if __name__ == '__main__':
                 print(CLIENT.scheduler_info)
 
     # get spatial properties
-    NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, GS = calculate_spatial()
+    NS, NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, GS = calculate_spatial()
     if VERBOSE:
         print('data loaded')
     # calculate radial distributions
+    G = calculate_rdfs()
     if PARALLEL:
-        OPERATIONS = [delayed(calculate_rdf)(u) for u in range(len(NATOMS))]
-        FUTURES = CLIENT.compute(OPERATIONS)
-        if VERBOSE:
-            print('computing %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
-            progress(FUTURES)
-            print('\n')
-        G = np.array(CLIENT.gather(FUTURES), dtype=np.float32)
-        CLIENT.close()
+        G = np.array(CLIENT.gather(G), dtype=np.float32)
     else:
-        if VERBOSE:
-            print('computing %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
-            G = np.array([calculate_rdf(u) for u in tqdm(range(len(NATOMS)))], dtype=np.float32)
-        else:
-            G = np.array([calculate_rdf(u) for u in range(len(NATOMS))], dtype=np.float32)
-
+        G = np.array(G, dtype=np.float32)
     # adjust rdf by atom count and atoms contained by shells
     G = np.divide(G, DNI)
     # calculate domain for structure factor
