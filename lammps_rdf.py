@@ -191,6 +191,7 @@ if __name__ == '__main__':
     G = calculate_rdfs()
     if PARALLEL:
         G = np.array(CLIENT.gather(G), dtype=np.float32)
+        CLIENT.close()
     else:
         G = np.array(G, dtype=np.float32)
     # adjust rdf by atom count and atoms contained by shells
