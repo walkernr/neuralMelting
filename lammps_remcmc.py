@@ -731,7 +731,7 @@ if __name__ == '__main__':
     if PARALLEL:
         import dask as dk
         dk.config.set({'scheduler.allowed-failures': 32})
-        dk.config.set({'worker.multiprocessing-method': 'fork'})
+        dk.config.set({'worker.multiprocessing-method': 'spawn'})
         from distributed import Client, LocalCluster, progress
         from multiprocessing import freeze_support
     if DISTRIBUTED:
