@@ -120,6 +120,8 @@ if __name__ == '__main__':
         from tqdm import tqdm
     if PARALLEL:
         os.environ['DASK_ALLOWED_FAILURES'] = '32'
+        os.environ['DASK_MULTIPROCESSING_METHOD'] = 'spawn'
+        os.environ['DASK_LOG_FORMAT'] = '\n%(name)s - %(levelname)s - %(message)s'
         from distributed import Client, LocalCluster, progress
         from dask import delayed
         from multiprocessing import freeze_support
