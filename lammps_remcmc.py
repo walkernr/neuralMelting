@@ -198,12 +198,11 @@ def init_headers():
         operations = [delayed(init_header)(k, OUTPUT[k]) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
-            print('initializing headers')
+            print('\ninitializing headers\n')
             progress(futures)
-            print('\n')
     else:
         if VERBOSE:
-            print('initializing headers')
+            print('\ninitializing headers\n')
         for k in range(NS):
             init_header(k, OUTPUT[k])
     return
@@ -246,12 +245,11 @@ def write_outputs():
         operations = [delayed(write_output)(OUTPUT[k], STATE[k]) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
-            print('writing outputs')
+            print('\nwriting outputs\n')
             progress(futures)
-            print('\n')
     else:
         if VERBOSE:
-            print('writing outputs')
+            print('\nwriting outputs\n')
         for k in range(NS):
             write_output(OUTPUT[k], STATE[k])
     return
@@ -260,7 +258,7 @@ def write_outputs():
 def consolidate_outputs():
     ''' consolidates outputs across samples '''
     if VERBOSE:
-        print('consolidating outputs')
+        print('\nconsolidating outputs\n')
     thrm = [OUTPUT[k][0] for k in range(NS)]
     traj = [OUTPUT[k][1] for k in range(NS)]
     for i in range(NP):
@@ -278,7 +276,7 @@ def consolidate_outputs():
                     for line in traj_in:
                         traj_out.write(line)
     if VERBOSE:
-        print('cleaning files')
+        print('\ncleaning files\n')
     for k in range(NS):
         os.remove(thrm[k])
         os.remove(traj[k])
@@ -388,12 +386,11 @@ def init_samples():
         operations = [delayed(init_sample)(k) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
-            print('initializing samples')
+            print('\ninitializing samples\n')
             progress(futures)
-            print('\n')
     else:
         if VERBOSE:
-            print('initializing samples')
+            print('\ninitializing samples\n')
         futures = [init_sample(k) for k in range(NS)]
     return futures
 
@@ -603,13 +600,12 @@ def gen_samples():
         futures = CLIENT.compute(operations)
         # progress bar
         if VERBOSE:
-            print('performing monte carlo')
+            print('\nperforming monte carlo\n')
             progress(futures)
-            print('\n')
     else:
         # loop through pressures
         if VERBOSE:
-            print('performing monte carlo')
+            print('\nperforming monte carlo\n')
         futures = [gen_sample(k, CONST[k], STATE[k]) for k in range(NS)]
     return futures
 
@@ -648,13 +644,12 @@ def gen_mc_params():
         futures = CLIENT.compute(operations)
         # progress bar
         if VERBOSE:
-            print('updating mc params')
+            print('\nupdating mc params\n')
             progress(futures)
-            print('\n')
     else:
         # loop through pressures
         if VERBOSE:
-            print('updating mc params')
+            print('\nupdating mc params\n')
         futures = [gen_mc_param(STATE[k]) for k in range(NS)]
     return futures
 
@@ -697,7 +692,7 @@ def replica_exchange():
 def load_samples_restart():
     ''' initialize samples with restart file '''
     if VERBOSE:
-        print('loading samples from previous dump')
+        print('\nloading samples from previous dump\n')
     rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (RENAME, EL.lower(), LAT[EL][0], RESTEP)
     return pickle.load(open(rf, 'rb'))
 
@@ -705,7 +700,7 @@ def load_samples_restart():
 def dump_samples_restart():
     ''' save restart state '''
     if VERBOSE:
-        print('dumping samples')
+        print('\ndumping samples\n')
     rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], STEP+1)
     pickle.dump(STATE, open(rf, 'wb'))
     return
@@ -731,7 +726,7 @@ if __name__ == '__main__':
     if PARALLEL:
         os.environ['DASK_ALLOWED_FAILURES'] = '32'
         os.environ['DASK_MULTIPROCESSING_METHOD'] = 'spawn'
-        os.environ['DASK_LOG_FORMAT'] = '\n%(name)s - %(levelname)s - %(message)s'
+        os.environ['DASK_LOG_FORMAT'] = '\r%(name)s - %(levelname)s - %(message)s'
         from distributed import Client, LocalCluster, progress
         from dask import delayed
         from multiprocessing import freeze_support

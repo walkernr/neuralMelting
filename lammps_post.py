@@ -115,7 +115,7 @@ def extract_temperature(i):
 
 
 def extract_transition(i):
-    with open(NPREFS[i]+'.out', 'rb') as fi:
+    with open(NPREFS[i]+'.out', 'r') as fi:
         iters = iter(fi)
         for lina in iters:
             if 'transition | critical error' in lina:
