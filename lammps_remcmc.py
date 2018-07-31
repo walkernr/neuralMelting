@@ -195,11 +195,12 @@ def init_header(k, output):
 def init_headers():
     ''' writes headers for all samples '''
     if PARALLEL:
-        operations = [delayed(init_header)(k, OUTPUT[k]) for k in range(NS)]
+        operations = [dk.delayed(init_header)(k, OUTPUT[k]) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
             print('initializing headers')
             progress(futures)
+            print('\n')
     else:
         if VERBOSE:
             print('initializing headers')
@@ -242,11 +243,12 @@ def write_output(output, state):
 def write_outputs():
     ''' writes outputs for all samples '''
     if PARALLEL:
-        operations = [delayed(write_output)(OUTPUT[k], STATE[k]) for k in range(NS)]
+        operations = [dk.delayed(write_output)(OUTPUT[k], STATE[k]) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
             print('writing outputs')
             progress(futures)
+            print('\n')
     else:
         if VERBOSE:
             print('writing outputs')
@@ -383,11 +385,12 @@ def init_sample(k):
 def init_samples():
     ''' initializes all samples '''
     if PARALLEL:
-        operations = [delayed(init_sample)(k) for k in range(NS)]
+        operations = [dk.delayed(init_sample)(k) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
             print('initializing samples')
             progress(futures)
+            print('\n')
     else:
         if VERBOSE:
             print('initializing samples')
@@ -595,13 +598,14 @@ def gen_samples():
     ''' generates all monte carlo samples '''
     if PARALLEL:
         # list of delayed operations
-        operations = [delayed(gen_sample)(k, CONST[k], STATE[k]) for k in range(NS)]
+        operations = [dk.delayed(gen_sample)(k, CONST[k], STATE[k]) for k in range(NS)]
         # submit futures to client
         futures = CLIENT.compute(operations)
         # progress bar
         if VERBOSE:
             print('performing monte carlo')
             progress(futures)
+            print('\n')
     else:
         # loop through pressures
         if VERBOSE:
@@ -639,13 +643,14 @@ def gen_mc_params():
     ''' generate adaptive monte carlo parameters for all samples '''
     if PARALLEL:
         # list of delayed operations
-        operations = [delayed(gen_mc_param)(STATE[k]) for k in range(NS)]
+        operations = [dk.delayed(gen_mc_param)(STATE[k]) for k in range(NS)]
         # submit futures to client
         futures = CLIENT.compute(operations)
         # progress bar
         if VERBOSE:
             print('updating mc params')
             progress(futures)
+            print('\n')
     else:
         # loop through pressures
         if VERBOSE:
@@ -724,9 +729,10 @@ if __name__ == '__main__':
      PDX, PDL) = parse_args()
 
     if PARALLEL:
-        os.environ['DASK_ALLOWED_FAILURES'] = '32'
+        import dask as dk
+        dk.config.set({'scheduler.allowed-failures': 32})
+        dk.config.set({'worker.multiprocessing-method': 'fork'})
         from distributed import Client, LocalCluster, progress
-        from dask import delayed
         from multiprocessing import freeze_support
     if DISTRIBUTED:
         import time
