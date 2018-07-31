@@ -120,7 +120,9 @@ def init_constant(k):
 def init_constants():
     ''' calculates thermodynamic constants for all samples '''
     if VERBOSE:
+        print('----------------------')
         print('initializing constants')
+        print('----------------------')
     return [init_constant(k) for k in range(NS)]
 
 # -----------------------------
@@ -152,6 +154,7 @@ def init_outputs():
     ''' initializes output filenames for all samples '''
     if VERBOSE:
         print('initializing outputs')
+        print('--------------------')
     return [init_output(k) for k in range(NS)]
 
 
@@ -198,11 +201,13 @@ def init_headers():
         operations = [delayed(init_header)(k, OUTPUT[k]) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
-            print('\ninitializing headers\n')
+            print('initializing headers')
+            print('--------------------')
             progress(futures)
     else:
         if VERBOSE:
-            print('\ninitializing headers\n')
+            print('initializing headers')
+            print('--------------------')
         for k in range(NS):
             init_header(k, OUTPUT[k])
     return
@@ -245,11 +250,14 @@ def write_outputs():
         operations = [delayed(write_output)(OUTPUT[k], STATE[k]) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
-            print('\nwriting outputs\n')
+            print('\n---------------')
+            print('writing outputs')
+            print('---------------')
             progress(futures)
     else:
         if VERBOSE:
-            print('\nwriting outputs\n')
+            print('writing outputs')
+            print('---------------')
         for k in range(NS):
             write_output(OUTPUT[k], STATE[k])
     return
@@ -258,7 +266,9 @@ def write_outputs():
 def consolidate_outputs():
     ''' consolidates outputs across samples '''
     if VERBOSE:
-        print('\nconsolidating outputs\n')
+        print('---------------------')
+        print('consolidating outputs')
+        print('---------------------')
     thrm = [OUTPUT[k][0] for k in range(NS)]
     traj = [OUTPUT[k][1] for k in range(NS)]
     for i in range(NP):
@@ -276,7 +286,8 @@ def consolidate_outputs():
                     for line in traj_in:
                         traj_out.write(line)
     if VERBOSE:
-        print('\ncleaning files\n')
+        print('cleaning files')
+        print('--------------')
     for k in range(NS):
         os.remove(thrm[k])
         os.remove(traj[k])
@@ -386,11 +397,14 @@ def init_samples():
         operations = [delayed(init_sample)(k) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
-            print('\ninitializing samples\n')
+            print('\n--------------------')
+            print('initializing samples')
+            print('--------------------')
             progress(futures)
     else:
         if VERBOSE:
-            print('\ninitializing samples\n')
+            print('initializing samples')
+            print('--------------------')
         futures = [init_sample(k) for k in range(NS)]
     return futures
 
@@ -600,12 +614,16 @@ def gen_samples():
         futures = CLIENT.compute(operations)
         # progress bar
         if VERBOSE:
-            print('\nperforming monte carlo\n')
+            print('\n----------------------')
+            print('performing monte carlo')
+            print('----------------------')
             progress(futures)
     else:
         # loop through pressures
         if VERBOSE:
-            print('\nperforming monte carlo\n')
+            print('----------------------')
+            print('performing monte carlo')
+            print('----------------------')
         futures = [gen_sample(k, CONST[k], STATE[k]) for k in range(NS)]
     return futures
 
@@ -644,12 +662,15 @@ def gen_mc_params():
         futures = CLIENT.compute(operations)
         # progress bar
         if VERBOSE:
-            print('\nupdating mc params\n')
+            print('\n------------------')
+            print('updating mc params')
+            print('------------------')
             progress(futures)
     else:
         # loop through pressures
         if VERBOSE:
-            print('\nupdating mc params\n')
+            print('updating mc params')
+            print('------------------')
         futures = [gen_mc_param(STATE[k]) for k in range(NS)]
     return futures
 
@@ -681,7 +702,10 @@ def replica_exchange():
                     # swap states
                     STATE[j][:9], STATE[i][:9] = STATE[i][:9], STATE[j][:9]
     if VERBOSE:
+        if PARALLEL and not ((STEP+1) % REFREQ == 0):
+            print('\n')
         print('%d replica exchanges performed' % swaps)
+        print('-------------------------------')
     return
 
 # -------------
@@ -692,7 +716,10 @@ def replica_exchange():
 def load_samples_restart():
     ''' initialize samples with restart file '''
     if VERBOSE:
-        print('\nloading samples from previous dump\n')
+        if PARALLEL:
+            print('\n----------------------------------')
+        print('loading samples from previous dump')
+        print('----------------------------------')
     rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (RENAME, EL.lower(), LAT[EL][0], RESTEP)
     return pickle.load(open(rf, 'rb'))
 
@@ -700,7 +727,10 @@ def load_samples_restart():
 def dump_samples_restart():
     ''' save restart state '''
     if VERBOSE:
-        print('\ndumping samples\n')
+        if PARALLEL:
+            print('\n---------------')
+        print('dumping samples')
+        print('---------------')
     rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], STEP+1)
     pickle.dump(STATE, open(rf, 'wb'))
     return
