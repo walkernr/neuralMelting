@@ -97,24 +97,24 @@ def calculate_spatial():
 
 
 @nb.njit
-def calculate_rdf(k, pos):
+def calculate_rdf(i, pos):
     ''' calculate rdf for sample j '''
     gs = np.copy(GS)
     # loop through lattice vectors
-    for k in range(BR.shape[0]):
+    for j in range(BR.shape[0]):
         # displacement vector matrix for sample j
-        dvm = pos-(pos+BOX[j]*BR[k].reshape((1, -1))).reshape((-1, 1, 3))
+        dvm = pos-(pos+BOX[i]*BR[j].reshape((1, -1))).reshape((-1, 1, 3))
         # vector of displacements between atoms
         d = np.sqrt(np.sum(np.square(dvm), -1))
         # calculate rdf for sample j
         gs[1:] += np.histogram(d, R)[0]
-    return gs/NATOMS[j]
+    return gs/NATOMS[i]
 
 
 def calculate_rdfs():
     ''' calculate rdfs for all samples '''
     if PARALLEL:
-        operations = [delayed(calculate_rdf)(k, POS[k]) for k in range(NS)]
+        operations = [delayed(calculate_rdf)(i, POS[i]) for i in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
             print('computing %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
@@ -123,7 +123,7 @@ def calculate_rdfs():
     else:
         if VERBOSE:
             print('computing %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
-        futures = [calculate_rdf(k, POS[k]) for k in range(NS)]
+        futures = [calculate_rdf(i, POS[i]) for i in range(NS)]
     return futures
 
 if __name__ == '__main__':
