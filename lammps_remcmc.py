@@ -730,7 +730,6 @@ def dump_samples_restart():
         if PARALLEL:
             print('\n---------------')
         print('dumping samples')
-        print('---------------')
     rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], STEP+1)
     pickle.dump(STATE, open(rf, 'wb'))
     return

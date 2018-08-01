@@ -115,12 +115,7 @@ def extract_temperature(i):
 
 
 def extract_transition(i):
-    with open(NPREFS[i]+'.out', 'r') as fi:
-        iters = iter(fi)
-        for lina in iters:
-            if 'transition | critical error' in lina:
-                linb = iters.next()
-                trans = np.array(linb.strip().split()).astype(float)
+    trans = np.loadtxt(NPREFS[i]+'.out', dtype=np.float32)[0, :]
     return trans
 
 # physical properties
