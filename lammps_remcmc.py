@@ -197,19 +197,24 @@ def init_header(k, output):
 
 def init_headers():
     ''' writes headers for all samples '''
-    if PARALLEL:
-        operations = [delayed(init_header)(k, OUTPUT[k]) for k in range(NS)]
-        futures = CLIENT.compute(operations)
-        if VERBOSE:
-            print('initializing headers')
-            print('--------------------')
-            progress(futures)
-    else:
-        if VERBOSE:
-            print('initializing headers')
-            print('--------------------')
-        for k in range(NS):
-            init_header(k, OUTPUT[k])
+    # if PARALLEL:
+        # operations = [delayed(init_header)(k, OUTPUT[k]) for k in range(NS)]
+        # futures = CLIENT.compute(operations)
+        # if VERBOSE:
+            # print('initializing headers')
+            # print('--------------------')
+            # progress(futures)
+    # else:
+        # if VERBOSE:
+            # print('initializing headers')
+            # print('--------------------')
+        # for k in range(NS):
+            # init_header(k, OUTPUT[k])
+    if VERBOSE:
+        print('initializing headers')
+        print('--------------------')
+    for k in range(NS):
+        init_header(k, OUTPUT[k])
     return
 
 
@@ -246,20 +251,28 @@ def write_output(output, state):
 
 def write_outputs():
     ''' writes outputs for all samples '''
-    if PARALLEL:
-        operations = [delayed(write_output)(OUTPUT[k], STATE[k]) for k in range(NS)]
-        futures = CLIENT.compute(operations)
-        if VERBOSE:
-            print('\n---------------')
+    # if PARALLEL:
+        # operations = [delayed(write_output)(OUTPUT[k], STATE[k]) for k in range(NS)]
+        # futures = CLIENT.compute(operations)
+        # if VERBOSE:
+            # print('\n---------------')
+            # print('writing outputs')
+            # print('---------------')
+            # progress(futures)
+    # else:
+        # if VERBOSE:
+            # print('writing outputs')
+            # print('---------------')
+        # for k in range(NS):
+            # write_output(OUTPUT[k], STATE[k])
+    if VERBOSE:
+        if PARALLEL:
+            print('\nwriting outputs')
+        else:
             print('writing outputs')
-            print('---------------')
-            progress(futures)
-    else:
-        if VERBOSE:
-            print('writing outputs')
-            print('---------------')
-        for k in range(NS):
-            write_output(OUTPUT[k], STATE[k])
+        print('---------------')
+    for k in range(NS):
+        write_output(OUTPUT[k], STATE[k])
     return
 
 
@@ -866,12 +879,12 @@ if __name__ == '__main__':
         STATE[:] = gen_samples()
         # generate mc parameters
         STATE[:] = gen_mc_params()
-        if (STEP+1) > CUTOFF:
-            # write data
-            write_outputs()
         if PARALLEL:
             # gather results from cluster
             STATE[:] = CLIENT.gather(STATE)
+        if (STEP+1) > CUTOFF:
+            # write data
+            write_outputs()
         if (STEP+1) % REFREQ == 0:
             # save state for restart
             dump_samples_restart()
