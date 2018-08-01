@@ -179,7 +179,7 @@ def plot_ut():
 def plot_mc():
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    if el == 'LJ':
+    if EL == 'LJ':
         # ref 1: http://paros.princeton.edu/cbe422/MP.pdf
         # ref 2: http://dirac.ruc.dk/~urp/interface.pdf
         litpress0 = np.array([1, 5, 10])
