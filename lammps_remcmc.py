@@ -703,7 +703,7 @@ def replica_exchange():
                     STATE[j][:9], STATE[i][:9] = STATE[i][:9], STATE[j][:9]
     if VERBOSE:
         if PARALLEL and not ((STEP+1) % REFREQ == 0):
-            print('\n')
+            print('\n-------------------------------')
         print('%d replica exchanges performed' % swaps)
         print('-------------------------------')
     return
