@@ -153,7 +153,7 @@ SCALE = lambda i: (PMS[i, 0]-np.min(PM))/np.max(PM)
 def plot_pt():
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    for i in range(npress):
+    for i in range(NP):
         ax.errorbar(TM[i], PM[i], xerr=TS[i], yerr=PS[i], color=CM(SCALE(i)), alpha=0.5,
                     label=r'$P = %.1f \pm %.1f$' % tuple(PMS[i]))
         ax.axvline(TRANS[i, 0], color=CM(SCALE(i)))
@@ -166,7 +166,7 @@ def plot_pt():
 def plot_ut():
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    for i in range(npress):
+    for i in range(NP):
         ax.errorbar(TM[i], UM[i], xerr=TS[i], yerr=US[i], color=CM(SCALE(i)), alpha=0.5,
                     label=r'$P = %.1f \pm %.1f$' % tuple(PMS[i]))
         ax.axvline(TRANS[i, 0], color=CM(SCALE(i)))
