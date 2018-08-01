@@ -190,7 +190,7 @@ def plot_mc():
         litslp1, litint1 = linregress(littemp1, litpress1)[:2]
         ax.scatter(littemp0, litpress0, color=CM(0.25), s=240, edgecolors='none', marker='*',
                     label=r'$\mathrm{Literature\enspace (full\enspace potential)}$')
-        ax.plot(littemp0, litslp0*littemp0+litint0, color=cm(0.25))
+        ax.plot(littemp0, litslp0*littemp0+litint0, color=CM(0.25))
         ax.scatter(littemp1, litpress1, color=CM(0.375), s=240, edgecolors='none', marker='*',
                     label=r'$\mathrm{Literature\enspace} (r_c = 2.5)$')
         ax.plot(littemp1, litslp1*littemp1+litint1, color=CM(0.375))
