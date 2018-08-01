@@ -197,7 +197,7 @@ def plot_mc():
     ax.errorbar(TRANS[:, 0], PMS[:, 0], xerr=TRANS[:, 1], yerr=PMS[:, 1], color=CM(0.5),
                 fmt='o', label=r'$\mathrm{Keras\enspace CNN-1D}$')
     neurslp, neurint = linregress(TRANS[:, 0], PMS[:, 0])[:2]
-    ax.plot(TRANS[:, 0], neurslp*neurtrans[:, 0]+neurint, color=CM(0.5))
+    ax.plot(TRANS[:, 0], neurslp*TRANS[:, 0]+neurint, color=CM(0.5))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$P$')
     ax.legend(loc='upper left')
