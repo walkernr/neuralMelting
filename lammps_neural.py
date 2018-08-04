@@ -420,6 +420,8 @@ def plot_phase_probs():
     for j in range(2):
         ax.scatter(CTEMP[CC == j], PROB[CC == j], c=CM(SCALE(MTEMP[1, j])),
                    s=120, alpha=0.05, edgecolors='none')
+        ax.scatter(TTEMP[TC == j], j*np.ones((TC == j).shape), c = CM(SCALE(MTEMP[0, j])),
+                   s=120, alpha=0.05, edgecolors='none')
     ax.scatter(TDOM, MPROB, color=CM(SCALE(TDOM)), s=240, edgecolors='none', marker='*')
     if EL == 'LJ':
         ax.text(TRANS+2*np.diff(TDOM)[0], .5,
