@@ -335,10 +335,10 @@ CC = CC.reshape(CS, LN)
 MTEMP = np.array([[np.mean(TTEMP[TC == i]) for i in range(2)],
                   [np.mean(CTEMP[CC == i]) for i in range(2)]], dtype=float)
 # curve fitting and transition temp extraction
-TDOM = np.mean(TEMP, 1)                                                   # temperature domain of classification data
-TERR = np.std(TEMP, 1)                                                    # standard error of temperature domain
-MPROB = np.concatenate((np.zeros(TS), np.mean(PROB, 1), np.ones(TS)), 0)  # mean probability array
-SPROB = np.concatenate((np.zeros(TS), np.std(PROB, 1), np.zeros(TS)), 0)  # standard error probability array
+TDOM = np.mean(TEMP, 1)                                                   # temp domain
+TERR = np.std(TEMP, 1)                                                    # temp standard error
+MPROB = np.concatenate((np.zeros(TS), np.mean(PROB, 1), np.ones(TS)), 0)  # mean prob
+SPROB = np.concatenate((np.zeros(TS), np.std(PROB, 1), np.zeros(TS)), 0)  # prob standard error
 # curve fitting
 ODR_DATA = RealData(TDOM, MPROB, TERR, SPROB)
 ODR_MODEL = Model(FFS[FF])
