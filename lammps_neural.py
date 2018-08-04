@@ -338,7 +338,7 @@ MTEMP = np.array([[np.mean(TTEMP[TC == i]) for i in range(2)],
 TDOM = np.mean(TEMP, 1)                                                   # temp domain
 TERR = np.std(TEMP, 1)                                                    # temp standard error
 MPROB = np.concatenate((np.zeros(TS), np.mean(PROB, 1), np.ones(TS)), 0)  # mean prob
-SPROB = np.concatenate((np.zeros(TS), np.std(PROB, 1), np.zeros(TS)), 0)  # prob standard error
+SPROB = np.concatenate((2**-14*np.ones(TS), np.std(PROB, 1), 2**-14*np.ones(TS)), 0)  # prob standard error
 # curve fitting
 ODR_DATA = RealData(TDOM, MPROB, TERR, SPROB)
 ODR_MODEL = Model(FFS[FF])
