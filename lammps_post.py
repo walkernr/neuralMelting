@@ -126,7 +126,7 @@ for i in range(NP):
     (TRANS[i], MPROB[i], SPROB[i], MPE[i], SPE[i],
      MVIRIAL[i], SVIRIAL[i], MTEMP[i], STEMP[i]) = extract_data(i)
     if VERBOSE:
-        print('%.2f %.2f' % (np.mean(MVIRIAL[i]), TRANS[i, 0])) for i in range(NP)
+        print('%.2f %.2f' % (np.mean(MVIRIAL[i]), TRANS[i, 0]))
 if VERBOSE:
     print('------------------------------------------------------------')
 
