@@ -398,12 +398,8 @@ with open(OUTPREF+'.out', 'w') as output:
     for i in range(NT):
         output.write('%f %f\n' % (np.mean(TEMP[i, :]), np.std(TEMP[i, :])))
     output.write('# liquid probability | standard error\n')
-    for i in range(TS):
-        output.write('%f %f\n' % (0.0, 0.0))
-    for i in range(CS):
+    for i in range(NT):
         output.write('%f %f\n' % (MPROB[i], SPROB[i]))
-    for i in range(TS):
-        output.write('%f %f\n' % (1.0, 0.0))
     output.write('# transition | standard error\n')
     output.write('%f %f\n' % (TRANS, CERR))
 
