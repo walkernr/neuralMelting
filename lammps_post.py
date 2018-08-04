@@ -96,10 +96,10 @@ def extract_data(i):
     data = np.loadtxt(NPREFS[i]+'.out', dtype=np.float32)
     trans = data[0]
     prob, pe, virial, temp = np.split(data[1:], 4, axis=0)
-    mprob, sprob = np.split(prob, 2, axis=1)
-    mpe, spe = np.split(pe, 2, axis=1)
-    mvirial, svirial = np.split(virial, 2, axis=1)
-    mtemp, stemp = np.split(temp, 2, axis=1)
+    mprob, sprob = np.split(prob.T, 2, axis=0)
+    mpe, spe = np.split(pe.T, 2, axis=0)
+    mvirial, svirial = np.split(virial.T, 2, axis=0)
+    mtemp, stemp = np.split(temp.T, 2, axis=0)
     return trans, mprob, sprob, mpe, spe, mvirial, svirial, mtemp, stemp
 
 # physical properties
