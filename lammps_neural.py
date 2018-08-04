@@ -388,6 +388,11 @@ with open(OUTPREF+'.out', 'w') as output:
     output.write('# network:                     %s\n' % NN)
     output.write('# fitting function:            %s\n' % FF)
     output.write('# ------------------------------------------------------------\n')
+    output.write('# transition | standard error\n')
+    output.write('%f %f\n' % (TRANS, CERR))
+    output.write('# liquid probability | standard error\n')
+    for i in range(NT):
+        output.write('%f %f\n' % (MPROB[i], SPROB[i]))
     output.write('# potential | standard error\n')
     for i in range(NT):
         output.write('%f %f\n' % (np.mean(PE[i, :]), np.std(PE[i, :])))
@@ -397,11 +402,6 @@ with open(OUTPREF+'.out', 'w') as output:
     output.write('# temperature | standard error\n')
     for i in range(NT):
         output.write('%f %f\n' % (np.mean(TEMP[i, :]), np.std(TEMP[i, :])))
-    output.write('# liquid probability | standard error\n')
-    for i in range(NT):
-        output.write('%f %f\n' % (MPROB[i], SPROB[i]))
-    output.write('# transition | standard error\n')
-    output.write('%f %f\n' % (TRANS, CERR))
 
 
 def plot_phase_probs():
