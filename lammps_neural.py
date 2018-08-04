@@ -335,10 +335,10 @@ CC = CC.reshape(CS, LN)
 MTEMP = np.array([[np.mean(TTEMP[TC == i]) for i in range(2)],
                   [np.mean(CTEMP[CC == i]) for i in range(2)]], dtype=float)
 # curve fitting and transition temp extraction
-TDOM = np.mean(CTEMP, 1)  # temperature domain of classification data
-TERR = np.std(CTEMP, 1)   # standard error of temperature domain
-MPROB = np.mean(PROB, 1)  # mean probability array
-SPROB = np.std(PROB, 1)   # standard error probability array
+TDOM = np.mean(TEMP, 1)                                                   # temperature domain of classification data
+TERR = np.std(TEMP, 1)                                                    # standard error of temperature domain
+MPROB = np.concatenate((np.zeros(TS), np.mean(PROB, 1), np.ones(TS)), 0)  # mean probability array
+SPROB = np.concatenate((np.zeros(TS), np.std(PROB, 1), np.zeros(TS)), 0)  # standard error probability array
 # curve fitting
 ODR_DATA = RealData(TDOM, MPROB, TERR, SPROB)
 ODR_MODEL = Model(FFS[FF])
@@ -388,14 +388,24 @@ with open(OUTPREF+'.out', 'w') as output:
     output.write('# network:                     %s\n' % NN)
     output.write('# fitting function:            %s\n' % FF)
     output.write('# ------------------------------------------------------------\n')
-    output.write('# transition | critical error\n')
+    output.write('# potential | standard error\n')
+    for i in range(NT):
+        output.write('%f %f\n' % (np.mean(PE[i, :]), np.std(PE[i, :])))
+    output.write('# virial | standard error\n')
+    for i in range(NT):
+        output.write('%f %f\n' % (np.mean(VIRIAL[i, :]), np.std(VIRIAL[i, :])))
+    output.write('# temperature | standard error\n')
+    for i in range(NT):
+        output.write('%f %f\n' % (np.mean(TEMP[i, :]), np.std(TEMP[i, :])))
+    output.write('# liquid probability | standard error\n')
+    for i in range(TS):
+        output.write('%f %f\n' % (0.0, 0.0))
+    for i in range(CS):
+        output.write('%f %f\n' % (MPROB[i], SPROB[i]))
+    for i in range(TS):
+        output.write('%f %f\n' % (1.0, 0.0))
+    output.write('# transition | standard error\n')
     output.write('%f %f\n' % (TRANS, CERR))
-    output.write('# transition interval\n')
-    output.write('%s %s\n' % tuple(TINT))
-    output.write('# optimal fit parameters\n')
-    output.write('%s %s\n' % tuple(POPT))
-    output.write('# fit parameter error\n')
-    output.write('%s %s\n' % tuple(PERR))
 
 
 def plot_phase_probs():
