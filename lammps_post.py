@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
 PARSER.add_argument('-n', '--name', help='name of simulation',
-                    type=str, default='test_run')
+                    type=str, default='remcmc_run')
 PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
 PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
