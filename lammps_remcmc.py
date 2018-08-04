@@ -73,9 +73,9 @@ def parse_args():
     parser.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps',
                         type=int, default=8)
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
-                        type=float, default=0.125)
+                        type=float, default=0.25)
     parser.add_argument('-dl', '--box_displace', help='box displacement (box proportion)',
-                        type=float, default=0.03125)
+                        type=float, default=0.0625)
     # parse arguments
     args = parser.parse_args()
     # return arguments

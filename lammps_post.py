@@ -23,7 +23,7 @@ PARSER.add_argument('-e', '--element', help='element choice',
 PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
                     type=int, default=4)
 PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures',
-                    type=int, default=48)
+                    type=int, default=96)
 PARSER.add_argument('-f', '--feature', help='feature to learn',
                     type=str, default='entropic_fingerprint')
 PARSER.add_argument('-s', '--scaler', help='feature scaler',
@@ -92,70 +92,54 @@ if VERBOSE:
     print('------------------------------------------------------------')
 
 
-def extract_potential(i):
-    u = pickle.load(open(PPREFS[i]+'.pe.pickle', 'rb')).reshape(NT, -1)
-    um = np.mean(u, 1)
-    us = np.std(u, 1)
-    return um, us
-
-
-def extract_pressure(i):
-    p = pickle.load(open(PPREFS[i]+'.virial.pickle', 'rb')).reshape(NT, -1)
-    pm = np.mean(p, 1)
-    ps = np.std(p, 1)
-    pms = np.array([np.mean(p), np.std(p)], np.float32)
-    return pm, ps, pms
-
-
-def extract_temperature(i):
-    T = pickle.load(open(PPREFS[i]+'.temp.pickle', 'rb')).reshape(NT, -1)
-    TM = np.mean(T, 1)
-    TS = np.std(T, 1)
-    return TM, TS
-
-
-def extract_transition(i):
-    trans = np.loadtxt(NPREFS[i]+'.out', dtype=np.float32)[0, :]
-    return trans
+def extract_data(i):
+    data = np.loadtxt(NPREFS[i]+'.out', dtype=np.float32)
+    trans = data[0]
+    prob, pe, virial, temp = np.split(data[1:], 4, axis=0)
+    mprob, sprob = np.split(prob, 2, axis=1)
+    mpe, spe = np.split(pe, 2, axis=1)
+    mvirial, svirial = np.split(virial, 2, axis=1)
+    mtemp, stemp = np.split(temp, 2, axis=1)
+    return trans, mprob, sprob, mpe, spe, mvirial, svirial, mtemp, stemp
 
 # physical properties
-UM = np.zeros((NP, NT), dtype=float)
-US = np.zeros((NP, NT), dtype=float)
-PM = np.zeros((NP, NT), dtype=float)
-PS = np.zeros((NP, NT), dtype=float)
-TM = np.zeros((NP, NT), dtype=float)
-TS = np.zeros((NP, NT), dtype=float)
-PMS = np.zeros((NP, 2), dtype=float)
 TRANS = np.zeros((NP, 2), dtype=float)
+MPROB = np.zeros((NP, NT), dtype=float)
+SPROB = np.zeros((NP, NT), dtype=float)
+MPE = np.zeros((NP, NT), dtype=float)
+SPE = np.zeros((NP, NT), dtype=float)
+MVIRIAL = np.zeros((NP, NT), dtype=float)
+SVIRIAL = np.zeros((NP, NT), dtype=float)
+MTEMP = np.zeros((NP, NT), dtype=float)
+STEMP = np.zeros((NP, NT), dtype=float)
 
 # file prefixes
 PREFIX = '%s.%s.%s.lammps' % (NAME, EL.lower(), LAT[EL])
-PPREFS = ['%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL], i) for i in range(NP)]
-NPREFS = ['%s.%s.%s.%s.%s.%s' % (PPREFS[i], NN, FTR, SCLR, RDCN, FF) for i in range(NP)]
+NPREFS = ['%s.%s.%s.%02d.lammps.%s.%s.%s.%s.%s' % (NAME, EL.lower(), LAT[EL],
+                                                   i, NN, FTR, SCLR, RDCN, FF) for i in range(NP)]
 
 if VERBOSE:
     print('neural network transitions')
     print('pressure | temperature')
     print('------------------------------------------------------------')
 for i in range(NP):
-    UM[i, :], US[i, :] = extract_potential(i)
-    PM[i, :], PS[i, :], PMS[i, :] = extract_pressure(i)
-    TM[i, :], TS[i, :] = extract_temperature(i)
-    TRANS[i, :] = extract_transition(i)
+    (TRANS[i], MPROB[i], SPROB[i], MPE[i], SPE[i],
+     MVIRIAL[i], SVIRIAL[i], MTEMP[i], STEMP[i]) = extract_data(i)
+    if VERBOSE:
+        print('%.2f %.2f' % (np.mean(MVIRIAL[i]), TRANS[i, 0])) for i in range(NP)
 if VERBOSE:
-    [print('%.2f %.2f' % (PMS[i, 0], TRANS[i, 0])) for i in range(NP)]
     print('------------------------------------------------------------')
 
 CM = plt.get_cmap('plasma')
-SCALE = lambda i: (PMS[i, 0]-np.min(PM))/np.max(PM)
+SCALE = lambda i: (np.mean(MVIRIAL[i])-np.min(MVIRIAL))/np.max(MVIRIAL)
 
 
 def plot_pt():
     fig = plt.figure()
     ax = fig.add_subplot(111)
     for i in range(NP):
-        ax.errorbar(TM[i], PM[i], xerr=TS[i], yerr=PS[i], color=CM(SCALE(i)), alpha=0.5,
-                    label=r'$P = %.1f \pm %.1f$' % tuple(PMS[i]))
+        ax.errorbar(MTEMP[i], MVIRIAL[i], xerr=STEMP[i], yerr=SVIRIAL[i], color=CM(SCALE(i)),
+                    alpha=0.5, label=r'$P = %.1f \pm %.1f$' % tuple(PMS[i]))
         ax.axvline(TRANS[i, 0], color=CM(SCALE(i)))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$P$')
@@ -167,8 +151,8 @@ def plot_ut():
     fig = plt.figure()
     ax = fig.add_subplot(111)
     for i in range(NP):
-        ax.errorbar(TM[i], UM[i], xerr=TS[i], yerr=US[i], color=CM(SCALE(i)), alpha=0.5,
-                    label=r'$P = %.1f \pm %.1f$' % tuple(PMS[i]))
+        ax.errorbar(MTEMP[i], MPE[i], xerr=STEMP[i], yerr=SPE[i], color=CM(SCALE(i)), alpha=0.5,
+                    label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[i]), np.mean(SVIRIAL[i])))
         ax.axvline(TRANS[i, 0], color=CM(SCALE(i)))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$U$')
@@ -194,9 +178,10 @@ def plot_mc():
         ax.scatter(littemp1, litpress1, color=CM(0.375), s=240, edgecolors='none', marker='*',
                     label=r'$\mathrm{Literature\enspace} (r_c = 2.5)$')
         ax.plot(littemp1, litslp1*littemp1+litint1, color=CM(0.375))
-    ax.errorbar(TRANS[:, 0], PMS[:, 0], xerr=TRANS[:, 1], yerr=PMS[:, 1], color=CM(0.5),
-                fmt='o', label=r'$\mathrm{Keras\enspace CNN-1D}$')
-    neurslp, neurint = linregress(TRANS[:, 0], PMS[:, 0])[:2]
+    ax.errorbar(TRANS[:, 0], np.mean(MVIRIAL, axis=1), xerr=TRANS[:, 1],
+                yerr=np.mean(SVIRIAL, axis=1), color=CM(0.5), fmt='o',
+                label=r'$\mathrm{Keras\enspace CNN-1D}$')
+    neurslp, neurint = linregress(TRANS[:, 0], np.mean(MVIRIAL, axis=1))[:2]
     ax.plot(TRANS[:, 0], neurslp*TRANS[:, 0]+neurint, color=CM(0.5))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$P$')
