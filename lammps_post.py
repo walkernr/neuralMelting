@@ -138,8 +138,9 @@ def plot_pt():
     fig = plt.figure()
     ax = fig.add_subplot(111)
     for i in range(NP):
-        ax.errorbar(MTEMP[i], MVIRIAL[i], xerr=STEMP[i], yerr=SVIRIAL[i], color=CM(SCALE(i)),
-                    alpha=0.5, label=r'$P = %.1f \pm %.1f$' % tuple(PMS[i]))
+        ax.errorbar(MTEMP[i], MVIRIAL[i], xerr=STEMP[i], yerr=SVIRIAL[i], color=CM(SCALE(i)), 
+                    alpha=0.5,
+                    label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[i]), np.mean(SVIRIAL[i])))
         ax.axvline(TRANS[i, 0], color=CM(SCALE(i)))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$P$')
