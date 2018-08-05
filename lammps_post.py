@@ -130,7 +130,7 @@ for i in range(NP):
 if VERBOSE:
     print('------------------------------------------------------------')
 
-with open(PREFIX+'%s.%s.%s.%s.' % (NN, FTR, SCLR, RDCN, FF), 'w') as fo:
+with open(PREFIX+'%s.%s.%s.%s.pst.out' % (NN, FTR, SCLR, RDCN, FF), 'w') as fo:
     fo.write('# virial | virial standard error | transition | transition standard error\n')
     for i in range(NP):
         fo.write('%.8f %.8f %.8f %.8f' % (np.mean(MVIRIAL[i]), np.mean(SVIRIAL[i]), 
