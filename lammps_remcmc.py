@@ -57,7 +57,7 @@ def parse_args():
     parser.add_argument('-pr', '--pressure_range', help='pressure range (low and high)',
                         type=float, nargs=2, default=[1, 4])
     parser.add_argument('-tn', '--temperature_number', help='number of temperatures',
-                        type=int, default=96)
+                        type=int, default=48)
     parser.add_argument('-tr', '--temperature_range', help='temperature range (low and high)',
                         type=float, nargs=2, default=[0.25, 2.5])
     parser.add_argument('-sc', '--sample_cutoff', help='sample recording cutoff',
