@@ -863,7 +863,7 @@ if __name__ == '__main__':
     CONST = init_constants()
     # define output file names
     OUTPUT = init_outputs()
-    if CUTOFF > NSMPL:
+    if CUTOFF < NSMPL:
         init_headers()
     # initialize simulation
     if RESTART:
