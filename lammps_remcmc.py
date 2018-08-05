@@ -204,13 +204,14 @@ def init_headers():
             print('initializing headers')
             print('--------------------')
             progress(futures)
+        return [f.status for f in futures]
     else:
         if VERBOSE:
             print('initializing headers')
             print('--------------------')
         for k in range(NS):
             init_header(k, OUTPUT[k])
-    return
+        return
 
 
 def write_thrm(output, state):
@@ -254,13 +255,14 @@ def write_outputs():
             print('writing outputs')
             print('---------------')
             progress(futures)
+        return [f.status for f in futures]
     else:
         if VERBOSE:
             print('writing outputs')
             print('---------------')
         for k in range(NS):
             write_output(OUTPUT[k], STATE[k])
-    return
+        return
 
 
 def consolidate_outputs():
