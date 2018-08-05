@@ -53,9 +53,9 @@ def parse_args():
     parser.add_argument('-ss', '--supercell_size', help='simulation supercell size',
                         type=int, default=4)
     parser.add_argument('-pn', '--pressure_number', help='number of pressures',
-                        type=int, default=8)
+                        type=int, default=4)
     parser.add_argument('-pr', '--pressure_range', help='pressure range (low and high)',
-                        type=float, nargs=2, default=[1, 8])
+                        type=float, nargs=2, default=[1, 4])
     parser.add_argument('-tn', '--temperature_number', help='number of temperatures',
                         type=int, default=96)
     parser.add_argument('-tr', '--temperature_range', help='temperature range (low and high)',
