@@ -25,11 +25,11 @@ def parse_args():
     parser.add_argument('-p', '--parallel', help='parallel run mode', action='store_true')
     parser.add_argument('-d', '--distributed', help='distributed run mode', action='store_true')
     parser.add_argument('-rd', '--restart_dump', help='restart dump frequency',
-                        type=int, default=256)
+                        type=int, default=128)
     parser.add_argument('-rn', '--restart_name', help='restart dump simulation name',
                         type=str, default='test_init')
     parser.add_argument('-rs', '--restart_step', help='restart dump start step',
-                        type=int, default=256)
+                        type=int, default=1024)
     parser.add_argument('-q', '--queue', help='job submission queue',
                         type=str, default='lasigma')
     parser.add_argument('-a', '--allocation', help='job submission allocation',
@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument('-np', '--procs_per_node', help='number of processors per node',
                         type=int, default=16)
     parser.add_argument('-w', '--walltime', help='job walltime',
-                        type=int, default=24)
+                        type=int, default=72)
     parser.add_argument('-m', '--memory', help='job memory (total)',
                         type=int, default=32)
     parser.add_argument('-nw', '--workers', help='job worker count (total)',
@@ -53,9 +53,9 @@ def parse_args():
     parser.add_argument('-ss', '--supercell_size', help='simulation supercell size',
                         type=int, default=4)
     parser.add_argument('-pn', '--pressure_number', help='number of pressures',
-                        type=int, default=4)
+                        type=int, default=8)
     parser.add_argument('-pr', '--pressure_range', help='pressure range (low and high)',
-                        type=float, nargs=2, default=[2, 8])
+                        type=float, nargs=2, default=[1, 8])
     parser.add_argument('-tn', '--temperature_number', help='number of temperatures',
                         type=int, default=96)
     parser.add_argument('-tr', '--temperature_range', help='temperature range (low and high)',
