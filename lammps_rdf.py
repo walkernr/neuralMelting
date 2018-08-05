@@ -34,7 +34,7 @@ def parse_args():
     parser.add_argument('-nt', '--threads', help='threads per worker',
                         type=int, default=1)
     parser.add_argument('-n', '--name', help='name of simulation',
-                        type=str, default='test_run')
+                        type=str, default='remcmc_init')
     parser.add_argument('-e', '--element', help='element choice',
                         type=str, default='LJ')
     parser.add_argument('-i', '--pressure_index', help='pressure index',

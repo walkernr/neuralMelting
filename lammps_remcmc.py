@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument('-rd', '--restart_dump', help='restart dump frequency',
                         type=int, default=128)
     parser.add_argument('-rn', '--restart_name', help='restart dump simulation name',
-                        type=str, default='test_init')
+                        type=str, default='remcmc_init')
     parser.add_argument('-rs', '--restart_step', help='restart dump start step',
                         type=int, default=256)
     parser.add_argument('-q', '--queue', help='job submission queue',
@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument('-nt', '--threads', help='threads per worker',
                         type=int, default=1)
     parser.add_argument('-n', '--name', help='simulation name',
-                        type=str, default='test_run')
+                        type=str, default='remcmc_init')
     parser.add_argument('-e', '--element', help='simulation element',
                         type=str, default='LJ')
     parser.add_argument('-ss', '--supercell_size', help='simulation supercell size',

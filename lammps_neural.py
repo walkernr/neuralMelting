@@ -25,7 +25,7 @@ PARSER.add_argument('-nt', '--threads', help='number of threads',
 PARSER.add_argument('-b', '--backend', help='keras backend',
                     type=str, default='tensorflow')
 PARSER.add_argument('-n', '--name', help='name of simulation',
-                    type=str, default='test_run')
+                    type=str, default='remcmc_init')
 PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
 PARSER.add_argument('-i', '--pressure_index', help='pressure index',
@@ -33,9 +33,9 @@ PARSER.add_argument('-i', '--pressure_index', help='pressure index',
 PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures',
                     type=int, default=48)
 PARSER.add_argument('-sn', '--sample_number', help='sample number per temperature',
-                    type=int, default=1024)
+                    type=int, default=256)
 PARSER.add_argument('-ln', '--learning_number', help='number of samples to learn per temperature',
-                    type=int, default=1024)
+                    type=int, default=256)
 PARSER.add_argument('-ts', '--training_sets', help='number of training sets per phase',
                     type=int, default=8)
 PARSER.add_argument('-f', '--feature', help='feature to learn',

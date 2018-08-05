@@ -14,7 +14,7 @@ import numpy as np
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument('-v', '--verbose', help='verbose output', action='store_true')
 PARSER.add_argument('-n', '--name', help='name of simulation',
-                    type=str, default='remcmc_run')
+                    type=str, default='remcmc_init')
 PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
 PARSER.add_argument('-i', '--pressure_index', help='pressure index',
