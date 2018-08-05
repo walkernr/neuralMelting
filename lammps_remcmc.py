@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument('-rn', '--restart_name', help='restart dump simulation name',
                         type=str, default='test_init')
     parser.add_argument('-rs', '--restart_step', help='restart dump start step',
-                        type=int, default=1024)
+                        type=int, default=256)
     parser.add_argument('-q', '--queue', help='job submission queue',
                         type=str, default='lasigma')
     parser.add_argument('-a', '--allocation', help='job submission allocation',
@@ -63,7 +63,7 @@ def parse_args():
     parser.add_argument('-sc', '--sample_cutoff', help='sample recording cutoff',
                         type=int, default=0)
     parser.add_argument('-sn', '--sample_number', help='number of samples to generate',
-                        type=int, default=1024)
+                        type=int, default=256)
     parser.add_argument('-sm', '--sample_mod', help='sample collection frequency',
                         type=int, default=128)
     parser.add_argument('-pm', '--position_move', help='position monte carlo move probability',
@@ -637,19 +637,19 @@ def gen_mc_param(state):
     # update position displacment for pos-mc
     ap, av, ah, dx, dl, dt = state[-6:]
     if ap < 0.5:
-        dx = 0.9375*dx
+        dx = 0.875*dx
     else:
-        dx = 1.0625*dx
+        dx = 1.125*dx
     # update box displacement for vol-mc
     if av < 0.5:
-        dl = 0.9375*dl
+        dl = 0.875*dl
     else:
-        dl = 1.0625*dl
+        dl = 1.125*dl
     # update timestep for hmc
     if ah < 0.5:
-        dt = 0.9375*dt
+        dt = 0.875*dt
     else:
-        dt = 1.0625*dt
+        dt = 1.125*dt
     return state[:-6]+[ap, av, ah, dx, dl, dt]
 
 
