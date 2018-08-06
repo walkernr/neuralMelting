@@ -878,6 +878,8 @@ if __name__ == '__main__':
             dump_samples_restart()
             if PARALLEL:
                 CLIENT.restart()
+                if VERBOSE:
+                    print(CLIENT.scheduler_info)
         # replica exchange markov chain mc
         replica_exchange()
     if PARALLEL:
