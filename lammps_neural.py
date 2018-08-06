@@ -230,8 +230,9 @@ if VERBOSE:
 DATA = FTRS[FTR]                                     # extract data from dictionary
 SCLRS[SCLR].fit(DATA[TI].reshape(TSTN, -1))          # fit scaler to training data
 SDATA = SCLRS[SCLR].transform(DATA.reshape(SN, -1))  # transform data with scaler
-print('data scaled')
-print('------------------------------------------------------------')
+if VERBOSE:
+    print('data scaled')
+    print('------------------------------------------------------------')
 
 # apply reduction and extract training/classification data
 if RDCN != 'none':
