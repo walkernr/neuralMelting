@@ -637,19 +637,19 @@ def gen_mc_param(state):
     # update position displacment for pos-mc
     ap, av, ah, dx, dl, dt = state[-6:]
     if ap < 0.5:
-        dx = 0.875*dx
+        dx = 0.9375*dx
     else:
-        dx = 1.125*dx
+        dx = 1.0625*dx
     # update box displacement for vol-mc
     if av < 0.5:
-        dl = 0.875*dl
+        dl = 0.9375*dl
     else:
-        dl = 1.125*dl
+        dl = 1.0625*dl
     # update timestep for hmc
     if ah < 0.5:
-        dt = 0.875*dt
+        dt = 0.9375*dt
     else:
-        dt = 1.125*dt
+        dt = 1.0625*dt
     return state[:-6]+[ap, av, ah, dx, dl, dt]
 
 
@@ -867,12 +867,12 @@ if __name__ == '__main__':
         STATE[:] = gen_samples()
         # generate mc parameters
         STATE[:] = gen_mc_params()
-        if PARALLEL:
-            # gather results from cluster
-            STATE[:] = CLIENT.gather(STATE)
         if (STEP+1) > CUTOFF:
             # write data
             write_outputs()
+        if PARALLEL:
+            # gather results from cluster
+            STATE[:] = CLIENT.gather(STATE)
         if (STEP+1) % REFREQ == 0:
             # save state for restart
             dump_samples_restart()

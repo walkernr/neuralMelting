@@ -134,7 +134,7 @@ with open(PREFIX+'%s.%s.%s.%s.pst.out' % (NN, FTR, SCLR, RDCN, FF), 'w') as fo:
     fo.write('# virial | virial standard error | transition | transition standard error\n')
     for i in range(NP):
         fo.write('%.8f %.8f %.8f %.8f' % (np.mean(MVIRIAL[i]), np.mean(SVIRIAL[i]), 
-                                          TRANS[i, 0], TRANS[i, 1])
+                                          TRANS[i, 0], TRANS[i, 1]))
 
 CM = plt.get_cmap('plasma')
 SCALE = lambda i: (np.mean(MVIRIAL[i])-np.min(MVIRIAL))/np.max(MVIRIAL)
