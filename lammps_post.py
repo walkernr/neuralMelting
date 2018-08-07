@@ -23,7 +23,7 @@ PARSER.add_argument('-e', '--element', help='element choice',
 PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
                     type=int, default=4)
 PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures',
-                    type=int, default=48)
+                    type=int, default=96)
 PARSER.add_argument('-f', '--feature', help='feature to learn',
                     type=str, default='entropic_fingerprint')
 PARSER.add_argument('-s', '--scaler', help='feature scaler',
