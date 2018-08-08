@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument('-rn', '--restart_name', help='restart dump simulation name',
                         type=str, default='remcmc_init')
     parser.add_argument('-rs', '--restart_step', help='restart dump start step',
-                        type=int, default=256)
+                        type=int, default=512)
     parser.add_argument('-q', '--queue', help='job submission queue',
                         type=str, default='lasigma')
     parser.add_argument('-a', '--allocation', help='job submission allocation',
@@ -55,7 +55,7 @@ def parse_args():
     parser.add_argument('-pn', '--pressure_number', help='number of pressures',
                         type=int, default=4)
     parser.add_argument('-pr', '--pressure_range', help='pressure range (low and high)',
-                        type=float, nargs=2, default=[1, 4])
+                        type=float, nargs=2, default=[2, 8])
     parser.add_argument('-tn', '--temperature_number', help='number of temperatures',
                         type=int, default=96)
     parser.add_argument('-tr', '--temperature_range', help='temperature range (low and high)',
@@ -63,7 +63,7 @@ def parse_args():
     parser.add_argument('-sc', '--sample_cutoff', help='sample recording cutoff',
                         type=int, default=0)
     parser.add_argument('-sn', '--sample_number', help='number of samples to generate',
-                        type=int, default=256)
+                        type=int, default=512)
     parser.add_argument('-sm', '--sample_mod', help='sample collection frequency',
                         type=int, default=128)
     parser.add_argument('-pm', '--position_move', help='position monte carlo move probability',
@@ -73,7 +73,7 @@ def parse_args():
     parser.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps',
                         type=int, default=8)
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
-                        type=float, default=0.25)
+                        type=float, default=0.1875)
     parser.add_argument('-dl', '--box_displace', help='box displacement (box proportion)',
                         type=float, default=0.0625)
     # parse arguments
