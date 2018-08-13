@@ -130,6 +130,8 @@ LAT = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 
+EPS = np.finfo(np.float32).eps
+
 # file prefix
 PREFIX = '%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL], PI)
 # summary of input
@@ -268,7 +270,7 @@ UCDATA = DATA[TS:-TS].reshape(CSN, -1)  # unscaled classification data
 TSHP = TDATA.shape
 CSHP = CDATA.shape
 # classification indices
-TC = np.concatenate((np.ones(TSN, dtype=int), np.zeros(TSN, dtype=int)), 0)
+TC = np.concatenate((np.ones(TSN, dtype=np.uint16), np.zeros(TSN, dtype=np.uint16)), 0)
 
 
 # neural network construction
@@ -334,12 +336,12 @@ CC = CC.reshape(CS, LN)
 
 # mean temps
 MTEMP = np.array([[np.mean(TTEMP[TC == i]) for i in range(2)],
-                  [np.mean(CTEMP[CC == i]) for i in range(2)]], dtype=float)
+                  [np.mean(CTEMP[CC == i]) for i in range(2)]], dtype=np.float32)
 # curve fitting and transition temp extraction
 TDOM = np.mean(TEMP, 1)                                                   # temp domain
 TERR = np.std(TEMP, 1)                                                    # temp standard error
 MPROB = np.concatenate((np.zeros(TS), np.mean(PROB, 1), np.ones(TS)), 0)  # mean prob
-SPROB = np.concatenate((2**-14*np.ones(TS), np.std(PROB, 1), 2**-14*np.ones(TS)), 0)  # prob standard error
+SPROB = np.concatenate((EPS*np.ones(TS), np.std(PROB, 1), EPS*np.ones(TS)), 0) # prob standard error
 # curve fitting
 ODR_DATA = RealData(TDOM, MPROB, TERR, SPROB)
 ODR_MODEL = Model(FFS[FF])
@@ -354,7 +356,7 @@ if FF == 'logistic':
     TINT = TRANS+CERR*np.array([-1, 1])
 if FF == 'gompertz':
     TRANS = -np.log(np.log(2)/POPT[0])/POPT[1]
-    CERR = np.array([[-PERR[0], PERR[1]], [PERR[0], -PERR[1]]], dtype=float)
+    CERR = np.array([[-PERR[0], PERR[1]], [PERR[0], -PERR[1]]], dtype=np.float32)
     TINT = np.divide(-np.log(np.log(2)/(POPT[0]+CERR[:, 0])), POPT[1]+CERR[:, 1])
 NDOM = 4096
 FITDOM = np.linspace(np.min(TDOM), np.max(TDOM), NDOM)
@@ -421,7 +423,7 @@ def plot_phase_probs():
     for j in range(2):
         ax.scatter(CTEMP[CC == j], PROB[CC == j], c=CM(SCALE(MTEMP[1, j])),
                    s=120, alpha=0.05, edgecolors='none')
-        ax.scatter(TTEMP[TC == j], j*np.ones(TC[TC == j].shape), c = CM(SCALE(MTEMP[0, j])),
+        ax.scatter(TTEMP[TC == j], j*np.ones(TC[TC == j].shape), c=CM(SCALE(MTEMP[0, j])),
                    s=120, alpha=0.05, edgecolors='none')
     ax.scatter(TDOM, MPROB, color=CM(SCALE(TDOM)), s=240, edgecolors='none', marker='*')
     if EL == 'LJ':

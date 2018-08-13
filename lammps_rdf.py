@@ -122,7 +122,9 @@ def calculate_rdfs():
     else:
         if VERBOSE:
             print('computing %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
-        futures = [calculate_rdf(NATOMS[i], BOX[i], POS[i], GS) for i in range(NS)]
+            futures = [calculate_rdf(NATOMS[i], BOX[i], POS[i], GS) for i in tqdm(range(NS))]
+        else:
+            futures = [calculate_rdf(NATOMS[i], BOX[i], POS[i], GS) for i in range(NS)]
     return futures
 
 if __name__ == '__main__':

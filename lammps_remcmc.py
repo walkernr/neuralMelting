@@ -67,13 +67,13 @@ def parse_args():
     parser.add_argument('-sm', '--sample_mod', help='sample collection frequency',
                         type=int, default=128)
     parser.add_argument('-pm', '--position_move', help='position monte carlo move probability',
-                        type=float, default=0.015625)
+                        type=float, default=0.03125)
     parser.add_argument('-vm', '--volume_move', help='volume monte carlo move probability',
                         type=float, default=0.25)
     parser.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps',
                         type=int, default=8)
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
-                        type=float, default=0.1875)
+                        type=float, default=0.203125)
     parser.add_argument('-dl', '--box_displace', help='box displacement (box proportion)',
                         type=float, default=0.0625)
     # parse arguments

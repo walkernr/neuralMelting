@@ -6,7 +6,6 @@ Created on Wed May 22 13:31:27 2018
 """
 
 import argparse
-import pickle
 import numpy as np
 from scipy.stats import linregress
 import matplotlib as mpl
@@ -92,8 +91,9 @@ if VERBOSE:
     print('------------------------------------------------------------')
 
 
-def extract_data(i):
-    data = np.loadtxt(NPREFS[i]+'.out', dtype=np.float32)
+def extract_data(j):
+    ''' extracts data from neural network output '''
+    data = np.loadtxt(NPREFS[j]+'.out', dtype=np.float32)
     trans = data[0]
     prob, pe, virial, temp = np.split(data[1:], 4, axis=0)
     mprob, sprob = np.split(prob, 2, axis=1)
@@ -133,7 +133,7 @@ if VERBOSE:
 with open(PREFIX+'.pst', 'w') as fo:
     fo.write('# virial | virial standard error | transition | transition standard error\n')
     for i in range(NP):
-        fo.write('%.8f %.8f %.8f %.8f' % (np.mean(MVIRIAL[i]), np.mean(SVIRIAL[i]), 
+        fo.write('%.8f %.8f %.8f %.8f' % (np.mean(MVIRIAL[i]), np.mean(SVIRIAL[i]),
                                           TRANS[i, 0], TRANS[i, 1]))
 
 CM = plt.get_cmap('plasma')
@@ -141,13 +141,14 @@ SCALE = lambda i: (np.mean(MVIRIAL[i])-np.min(MVIRIAL))/np.max(MVIRIAL)
 
 
 def plot_pt():
+    ''' plots the pressure as a function of temperature '''
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    for i in range(NP):
-        ax.errorbar(MTEMP[i], MVIRIAL[i], xerr=STEMP[i], yerr=SVIRIAL[i], color=CM(SCALE(i)), 
+    for j in range(NP):
+        ax.errorbar(MTEMP[j], MVIRIAL[j], xerr=STEMP[j], yerr=SVIRIAL[j], color=CM(SCALE(j)),
                     alpha=0.5,
-                    label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[i]), np.mean(SVIRIAL[i])))
-        ax.axvline(TRANS[i, 0], color=CM(SCALE(i)))
+                    label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[j]), np.mean(SVIRIAL[j])))
+        ax.axvline(TRANS[j, 0], color=CM(SCALE(j)))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$P$')
     ax.legend(loc='center right')
@@ -155,12 +156,13 @@ def plot_pt():
 
 
 def plot_ut():
+    ''' plots the potential energy as a function of temperature '''
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    for i in range(NP):
-        ax.errorbar(MTEMP[i], MPE[i], xerr=STEMP[i], yerr=SPE[i], color=CM(SCALE(i)), alpha=0.5,
-                    label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[i]), np.mean(SVIRIAL[i])))
-        ax.axvline(TRANS[i, 0], color=CM(SCALE(i)))
+    for j in range(NP):
+        ax.errorbar(MTEMP[j], MPE[j], xerr=STEMP[j], yerr=SPE[j], color=CM(SCALE(j)), alpha=0.5,
+                    label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[j]), np.mean(SVIRIAL[j])))
+        ax.axvline(TRANS[j, 0], color=CM(SCALE(j)))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$U$')
     ax.legend(loc='upper left')
@@ -168,28 +170,29 @@ def plot_ut():
 
 
 def plot_mc():
+    ''' plots the melting curve '''
     fig = plt.figure()
     ax = fig.add_subplot(111)
     if EL == 'LJ':
         # ref 1: http://paros.princeton.edu/cbe422/MP.pdf
         # ref 2: http://dirac.ruc.dk/~urp/interface.pdf
-        litpress0 = np.array([1, 5, 10])
-        litpress1 = np.array([0.928, 2.185, 3.514, 4.939, 7.921])
-        littemp0 = np.array([0.77, 1.061, 1.379])
-        littemp1 = np.array([0.7, 0.8, 0.9, 1.0, 1.2])
-        litslp0, litint0 = linregress(littemp0, litpress0)[:2]
-        litslp1, litint1 = linregress(littemp1, litpress1)[:2]
-        ax.scatter(littemp0, litpress0, color=CM(0.25), s=240, edgecolors='none', marker='*',
-                    label=r'$\mathrm{Literature\enspace (full\enspace potential)}$')
-        ax.plot(littemp0, litslp0*littemp0+litint0, color=CM(0.25))
-        ax.scatter(littemp1, litpress1, color=CM(0.375), s=240, edgecolors='none', marker='*',
-                    label=r'$\mathrm{Literature\enspace} (r_c = 2.5)$')
-        ax.plot(littemp1, litslp1*littemp1+litint1, color=CM(0.375))
+        rp0 = np.array([1, 5, 10])
+        rp1 = np.array([0.928, 2.185, 3.514, 4.939, 7.921])
+        rt0 = np.array([0.77, 1.061, 1.379])
+        rt1 = np.array([0.7, 0.8, 0.9, 1.0, 1.2])
+        rs0, ri0 = linregress(rt0, rp0)[:2]
+        rs1, ri1 = linregress(rt1, rp1)[:2]
+        ax.scatter(rt0, rp0, color=CM(0.25), s=240, edgecolors='none', marker='*',
+                   label=r'$\mathrm{Literature\enspace (full\enspace potential)}$')
+        ax.plot(rt0, rs0*rt0+ri0, color=CM(0.25))
+        ax.scatter(rt1, rp1, color=CM(0.375), s=240, edgecolors='none', marker='*',
+                   label=r'$\mathrm{Literature\enspace} (r_c = 2.5)$')
+        ax.plot(rt1, rs1*rt1+ri1, color=CM(0.375))
     ax.errorbar(TRANS[:, 0], np.mean(MVIRIAL, axis=1), xerr=TRANS[:, 1],
                 yerr=np.mean(SVIRIAL, axis=1), color=CM(0.5), fmt='o',
                 label=r'$\mathrm{Keras\enspace CNN-1D}$')
-    neurslp, neurint = linregress(TRANS[:, 0], np.mean(MVIRIAL, axis=1))[:2]
-    ax.plot(TRANS[:, 0], neurslp*TRANS[:, 0]+neurint, color=CM(0.5))
+    ns, ni = linregress(TRANS[:, 0], np.mean(MVIRIAL, axis=1))[:2]
+    ax.plot(TRANS[:, 0], ns*TRANS[:, 0]+ni, color=CM(0.5))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$P$')
     ax.legend(loc='upper left')
