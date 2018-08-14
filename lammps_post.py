@@ -20,7 +20,7 @@ PARSER.add_argument('-n', '--name', help='name of simulation',
 PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
 PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
-                    type=int, default=4)
+                    type=int, default=8)
 PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures',
                     type=int, default=96)
 PARSER.add_argument('-f', '--feature', help='feature to learn',
