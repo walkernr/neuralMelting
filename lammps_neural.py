@@ -172,7 +172,7 @@ def gompertz(beta, t):
 FFS = {'logistic': logistic,
        'gompertz': gompertz}
 # initial fit parameter dictionary
-FGS = {'logistic': [1.0, 0.5],
+FGS = {'logistic': [1.0, 1.0],
        'gompertz': [1.0, 1.0]}
 if VERBOSE:
     print('fitting function defined')
