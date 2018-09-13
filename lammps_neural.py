@@ -338,9 +338,9 @@ CC = CC.reshape(CS, LN)
 MTEMP = np.array([[np.mean(TTEMP[TC == i]) for i in range(2)],
                   [np.mean(CTEMP[CC == i]) for i in range(2)]], dtype=np.float32)
 # curve fitting and transition temp extraction
-TDOM = np.mean(TEMP, 1)                                                   # temp domain
-TERR = np.std(TEMP, 1)                                                    # temp standard error
-MPROB = np.concatenate((np.zeros(TS), np.mean(PROB, 1), np.ones(TS)), 0)  # mean prob
+TDOM = np.mean(TEMP, 1)                                                        # temp domain
+TERR = np.std(TEMP, 1)                                                         # temp standard error
+MPROB = np.concatenate((np.zeros(TS), np.mean(PROB, 1), np.ones(TS)), 0)       # mean prob
 SPROB = np.concatenate((EPS*np.ones(TS), np.std(PROB, 1), EPS*np.ones(TS)), 0) # prob standard error
 # curve fitting
 ODR_DATA = RealData(TDOM, MPROB, TERR, SPROB)

@@ -51,7 +51,7 @@ def parse_args():
     parser.add_argument('-e', '--element', help='simulation element',
                         type=str, default='LJ')
     parser.add_argument('-ss', '--supercell_size', help='simulation supercell size',
-                        type=int, default=4)
+                        type=int, default=3)
     parser.add_argument('-pn', '--pressure_number', help='number of pressures',
                         type=int, default=8)
     parser.add_argument('-pr', '--pressure_range', help='pressure range (low and high)',
