@@ -5,9 +5,9 @@ Created on Sat May 26 01:22:43 2018
 @author: Nicholas
 """
 
-import sys, pickle
+import argparse
+import pickle
 import numpy as np
-from multiprocessing import cpu_count
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA, KernelPCA
