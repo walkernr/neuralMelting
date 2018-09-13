@@ -182,8 +182,7 @@ SCLRS = {'standard':StandardScaler(),
 NPCA = 64  # FTRS[FTR].shape[-1]
 NNLN = 2
 # temperature distribution
-TDIST = np.histogram(TEMP, NT, range=(np.min(TEMP), np.max(TEMP)), density=False)
-PLXTY= int(np.mean(TDIST[0]))
+PLXTY= NS
 RDCNS = {'pca':PCA(n_components=NPCA),
          'kpca':KernelPCA(n_components=NNLN, n_jobs=THREADS),
          'isomap':Isomap(n_components=NNLN, n_jobs=THREADS),
@@ -232,7 +231,7 @@ if CLST == 'kmeans':
 MPRED = np.mean(PRED.reshape(NT, LN), 1)
 SPRED = np.std(PRED.reshape(NT, LN), 1)
 # cluster mean temp
-CMT = [np.mean(TEMP[PRED.reshape(NT, LN) == i]) for i in xrange(2)]
+CMT = [np.mean(TEMP[PRED.reshape(NT, LN) == i]) for i in range(2)]
 
 # curve fitting and transition temp extraction
 TDOM = np.mean(TEMP, 1)  # temp domain
@@ -309,7 +308,7 @@ def plot_reduction():
                      cbar_mode="single",
                      cbar_size="4%",
                      cbar_pad=0.4)
-    for i in xrange(len(grid)):
+    for i in range(len(grid)):
         grid[i].spines['right'].set_visible(False)
         grid[i].spines['top'].set_visible(False)
         grid[i].xaxis.set_ticks_position('bottom')
@@ -320,7 +319,7 @@ def plot_reduction():
     grid[0].set_xlabel(r'$x_0$')
     grid[0].set_ylabel(r'$x_1$')
     grid[0].set_title(r'$\mathrm{(a)\enspace Sample\enspace Temperature}$', y=1.02)
-    for j in xrange(2):
+    for j in range(2):
         grid[1].scatter(RDATA[PRED == j, 0], RDATA[PRED == j, 1],
                         c=CM(SCALE(CMT[j])), s=120, alpha=0.05, edgecolors='none')
     grid[1].set_aspect('equal', 'datalim')
