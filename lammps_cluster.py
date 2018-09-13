@@ -94,6 +94,8 @@ LAT = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 
+EPS = np.finfo(np.float32).eps
+
 # file prefix
 PREFIX = '%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL], PI)
 # summary of input
@@ -235,7 +237,7 @@ if CMT[0] > CMT[1]:
     CMT = np.flip(CMT)
 # extract classification probabilities
 MPRED = np.mean(PRED.reshape(NT, LN), 1)
-SPRED = np.std(PRED.reshape(NT, LN), 1)
+SPRED = np.std(PRED.reshape(NT, LN), 1)+EPS
 
 # curve fitting and transition temp extraction
 TDOM = np.mean(TEMP, 1)  # temp domain
