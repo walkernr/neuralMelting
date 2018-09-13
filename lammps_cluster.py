@@ -203,7 +203,7 @@ if VERBOSE:
     print('------------------------------------------------------------')
 
 # apply reduction and extract training/classification data
-PDATA = RCDNS['pca'].fit_transform(SDATA)  # pca reduction
+PDATA = RDCNS['pca'].fit_transform(SDATA)  # pca reduction
 # display reduction information
 if VERBOSE:
     print('data reduced')
