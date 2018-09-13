@@ -384,7 +384,7 @@ def plot_ftrs():
     ax.yaxis.set_ticks_position('left')
     for j in range(2):
         ax.plot(FDOM[FTR], np.mean(FTRS[FTR].reshape(NT*LN, -1)[PRED == j], axis=0),
-                color=CM(SCALE(CMT[j])), alpha=1.00, label=labels[0])
+                color=CM(SCALE(CMT[j])), alpha=1.00, label=labels[j])
     ax.legend()
     if property == 'radial_distribution':
         ax.set_xlabel(r'$\mathrm{Distance}$')
