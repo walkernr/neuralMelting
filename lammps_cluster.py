@@ -193,7 +193,7 @@ CLSTS = {'agglom': AgglomerativeClustering(n_clusters=2),
          'kmeans': KMeans(n_jobs=THREADS, n_clusters=2, init='k-means++'),
          'spectral': SpectralClustering(n_jobs=THREADS, n_clusters=2)}
 if VERBOSE:
-    print('scaler and reduction initialized')
+    print('scaler, reduction, and clustering initialized')
     print('------------------------------------------------------------')
 
 # scale data
@@ -208,7 +208,7 @@ PDATA = RDCNS['pca'].fit_transform(SDATA)  # pca reduction
 if VERBOSE:
     print('data reduced')
     print('------------------------------------------------------------')
-    EVAR = RDCNS[RDCN].explained_variance_ratio_  # pca explained variance ratio
+    EVAR = RDCNS['pca'].explained_variance_ratio_  # pca explained variance ratio
     print('pca fit information')
     print('------------------------------------------------------------')
     print('principal components:     %d' % len(EVAR))
