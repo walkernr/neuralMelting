@@ -10,7 +10,7 @@ import numpy as np
 from multiprocessing import cpu_count
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from TanhScaler import TanhScaler
-from sklearn.decomposition import PCAfrom sklearn.decomposition import PCA, KernelPCA
+from sklearn.decomposition import PCA, KernelPCA
 from sklearn.manifold import Isomap, LocallyLinearEmbedding
 from MulticoreTSNE import MulticoreTSNE as TSNE
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
