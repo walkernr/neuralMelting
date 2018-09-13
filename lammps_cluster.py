@@ -228,11 +228,14 @@ if CLST == 'kmeans':
     print('intertia: ', CLSTS[CLST].inertia_)
     print('------------------------------------------------------------')    
 
+# cluster mean temp
+CMT = [np.mean(TEMP[PRED.reshape(NT, LN) == i]) for i in range(2)]
+if CMT[0] > CMT[1]:
+    PRED = 1-PRED
+    CMT = np.flip(CMT)
 # extract classification probabilities
 MPRED = np.mean(PRED.reshape(NT, LN), 1)
 SPRED = np.std(PRED.reshape(NT, LN), 1)
-# cluster mean temp
-CMT = [np.mean(TEMP[PRED.reshape(NT, LN) == i]) for i in range(2)]
 
 # curve fitting and transition temp extraction
 TDOM = np.mean(TEMP, 1)  # temp domain
