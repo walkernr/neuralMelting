@@ -265,7 +265,7 @@ if VERBOSE:
     print('parameter error:  %s %s' % tuple(PERR))
     print('------------------------------------------------------------')
 
-OUTPREF = [PREF, FTR, SCLR, RDCN, CLST, FF]
+OUTPREF = [PREFIX, FTR, SCLR, RDCN, CLST, FF]
 # save data to file
 with open(OUTPREF+'.out', 'w') as output:
     output.write('# -------------------------------------------------------------\n')
