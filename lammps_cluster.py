@@ -348,7 +348,7 @@ def plot_phase_probs():
     for j in range(2):
         ax.axvline(TINT[j], color=CM(SCALE(TINT[j])), alpha=0.50, linestyle='--')
     for j in range(2):
-        ax.scatter(TEMP[PRED == j], PRED[PRED == j], c=CM(SCALE(CMT[j])),
+        ax.scatter(TEMP.reshape(NT*LN)[PRED == j], PRED[PRED == j], c=CM(SCALE(CMT[j])),
                    s=120, alpha=0.05, edgecolors='none')
     ax.scatter(TDOM, MPRED, color=CM(SCALE(TDOM)), s=240, edgecolors='none', marker='*')
     if EL == 'LJ':
