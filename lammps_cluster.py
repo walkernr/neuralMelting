@@ -315,7 +315,7 @@ def plot_reduction():
         grid[i].spines['top'].set_visible(False)
         grid[i].xaxis.set_ticks_position('bottom')
         grid[i].yaxis.set_ticks_position('left')
-    cbd = grid[0].scatter(RDATA[:, 0], RDATA[:, 1], c=TEMP.reshape(NT, LN),
+    cbd = grid[0].scatter(RDATA[:, 0], RDATA[:, 1], c=TEMP.reshape(NT*LN),
                           cmap=CM, s=120, alpha=0.05, edgecolors='none')
     grid[0].set_aspect('equal', 'datalim')
     grid[0].set_xlabel(r'$x_0$')
