@@ -105,6 +105,7 @@ if VERBOSE:
     print('pressure index:              %d' % PI)
     print('number of sets:              %d' % NT)
     print('number of samples (per set): %d' % NS)
+    print('training samples (per set):  %d' % LN)
     print('feature:                     %s' % FTR)
     print('scaler:                      %s' % SCLR)
     print('reduction:                   %s' % RDCN)
@@ -265,7 +266,7 @@ if VERBOSE:
     print('parameter error:  %s %s' % tuple(PERR))
     print('------------------------------------------------------------')
 
-OUTPREF = [PREFIX, FTR, SCLR, RDCN, CLST, FF]
+OUTPREF = '%s.%s.%s.%s.%s.%s' % (PREFIX, FTR, SCLR, RDCN, CLST, FF)
 # save data to file
 with open(OUTPREF+'.out', 'w') as output:
     output.write('# -------------------------------------------------------------\n')
@@ -275,6 +276,7 @@ with open(OUTPREF+'.out', 'w') as output:
     output.write('pressure index:              %d' % PI)
     output.write('number of sets:              %d' % NT)
     output.write('number of samples (per set): %d' % NS)
+    output.write('training samples (per set):  %d' % LN)
     output.write('feature:                     %s' % FTR)
     output.write('scaler:                      %s' % SCLR)
     output.write('reduction:                   %s' % RDCN)
