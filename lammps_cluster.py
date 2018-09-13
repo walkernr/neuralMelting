@@ -135,7 +135,7 @@ def gompertz(beta, t):
 FFS = {'logistic': logistic,
        'gompertz': gompertz}
 # initial fit parameter dictionary
-FGS = {'logistic': [16.0, 0.5],
+FGS = {'logistic': [1.0, 0.5],
        'gompertz': [1.0, 1.0]}
 if VERBOSE:
     print('fitting function defined')
@@ -208,7 +208,7 @@ if VERBOSE:
 PDATA = RDCNS['pca'].fit_transform(SDATA)  # pca reduction
 # display reduction information
 if VERBOSE:
-    print('data reduced')
+    print('pca projection of data calculated')
     print('------------------------------------------------------------')
     EVAR = RDCNS['pca'].explained_variance_ratio_  # pca explained variance ratio
     print('pca fit information')
@@ -228,7 +228,7 @@ if CLST == 'kmeans':
     print('kmeans fit information')
     print('------------------------------------------------------------')
     print('intertia: ', CLSTS[CLST].inertia_)
-    print('------------------------------------------------------------')    
+    print('------------------------------------------------------------')
 
 # cluster mean temp
 CMT = [np.mean(TEMP[PRED.reshape(NT, LN) == i]) for i in range(2)]
