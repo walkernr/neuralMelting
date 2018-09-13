@@ -133,7 +133,7 @@ def gompertz(beta, t):
 FFS = {'logistic': logistic,
        'gompertz': gompertz}
 # initial fit parameter dictionary
-FGS = {'logistic': [1.0, 0.5],
+FGS = {'logistic': [16.0, 0.5],
        'gompertz': [1.0, 1.0]}
 if VERBOSE:
     print('fitting function defined')
@@ -379,7 +379,7 @@ def plot_ftrs():
     ax.yaxis.set_ticks_position('left')
     for j in range(2):
         ax.plot(FDOM[FTR], np.mean(FTRS[FTR].reshape(NT*LN, -1)[PRED == j], axis=0),
-                color=CM(SCALE(MTEMP[0, j])), alpha=1.00, label=labels[0])
+                color=CM(SCALE(CMT[j])), alpha=1.00, label=labels[0])
     ax.legend()
     if property == 'radial_distribution':
         ax.set_xlabel(r'$\mathrm{Distance}$')
