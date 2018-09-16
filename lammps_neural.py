@@ -38,6 +38,8 @@ PARSER.add_argument('-ln', '--learning_number', help='number of samples to learn
                     type=int, default=1024)
 PARSER.add_argument('-ts', '--training_sets', help='number of training sets per phase',
                     type=int, default=16)
+PARSER.add_argument('-ep', '--epochs', help='number of epochs',
+                    type=int, default=1)
 PARSER.add_argument('-f', '--feature', help='feature to learn',
                     type=str, default='entropic_fingerprint')
 PARSER.add_argument('-s', '--scaler', help='feature scaler',
@@ -107,6 +109,7 @@ NS = ARGS.sample_number       # number of samples per temperature set
 # data preparation parameters
 LN = ARGS.learning_number  # number of learning samples per temperature set
 TS = ARGS.training_sets    # number of training sets per phase
+EP = ARGS.epochs           # number of epochs
 FTR = ARGS.feature         # feature to be learned
 SCLR = ARGS.scaler         # feature scaler
 RDCN = ARGS.reduction      # feature dimension reduction
@@ -306,8 +309,8 @@ def build_keras_cnn1d():
     model.compile(loss='binary_crossentropy', optimizer=nadam, metrics=['accuracy'])
     return model
 # network dictionary
-NNS = {'dense':KerasClassifier(build_keras_dense, epochs=2, verbose=VERBOSE),
-       'cnn1d':KerasClassifier(build_keras_cnn1d, epochs=2, verbose=VERBOSE)}
+NNS = {'dense':KerasClassifier(build_keras_dense, epochs=EP, verbose=VERBOSE),
+       'cnn1d':KerasClassifier(build_keras_cnn1d, epochs=EP, verbose=VERBOSE)}
 if VERBOSE:
     print('network initialized')
     print('------------------------------------------------------------')
