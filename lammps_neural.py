@@ -306,8 +306,8 @@ def build_keras_cnn1d():
     model.compile(loss='binary_crossentropy', optimizer=nadam, metrics=['accuracy'])
     return model
 # network dictionary
-NNS = {'dense':KerasClassifier(build_keras_dense, epochs=8, verbose=VERBOSE),
-       'cnn1d':KerasClassifier(build_keras_cnn1d, epochs=8, verbose=VERBOSE)}
+NNS = {'dense':KerasClassifier(build_keras_dense, epochs=2, verbose=VERBOSE),
+       'cnn1d':KerasClassifier(build_keras_cnn1d, epochs=2, verbose=VERBOSE)}
 if VERBOSE:
     print('network initialized')
     print('------------------------------------------------------------')
