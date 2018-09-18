@@ -116,7 +116,7 @@ STEMP = np.zeros((NP, NT), dtype=float)
 # file prefixes
 PREFIX = '%s.%s.%s.lammps' % (NAME, EL.lower(), LAT[EL])
 NPREFS = ['%s.%s.%s.%02d.lammps.%s.%s.%s.%s.%s' % (NAME, EL.lower(), LAT[EL],
-                                                   i, NN, FTR, SCLR, RDCN, FF) for i in range(NP)]
+                                                   i, FTR, SCLR, RDCN, NN, FF) for i in range(NP)]
 
 if VERBOSE:
     print('neural network transitions')

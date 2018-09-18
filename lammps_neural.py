@@ -375,7 +375,7 @@ if VERBOSE:
     print('------------------------------------------------------------')
 
 # prefix for output files
-OUTPREF = '%s.%s.%s.%s.%s.%s' % (PREFIX, NN, FTR, SCLR, RDCN, FF)
+OUTPREF = '%s.%s.%s.%s.%s.%s' % (PREFIX, FTR, SCLR, RDCN, NN, FF)
 
 # save data to file
 with open(OUTPREF+'.out', 'w') as output:
