@@ -23,15 +23,25 @@ PARSER.add_argument('-pn', '--pressure_number', help='number of pressures',
                     type=int, default=8)
 PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures',
                     type=int, default=96)
-PARSER.add_argument('-f', '--feature', help='feature to learn',
+PARSER.add_argument('-sf', '--sfeature', help='supervised feature to learn',
                     type=str, default='entropic_fingerprint')
-PARSER.add_argument('-s', '--scaler', help='feature scaler',
+PARSER.add_argument('-uf', '--ufeature', help='unsupervised feature to learn',
+                    type=str, default='entropic_fingerprint')
+PARSER.add_argument('-ss', '--sscaler', help='supervised feature scaler',
                     type=str, default='tanh')
-PARSER.add_argument('-r', '--reduction', help='dimension reduction method',
+PARSER.add_argument('-us', '--uscaler', help='unsupervised feature scaler',
+                    type=str, default='tanh')
+PARSER.add_argument('-sr', '--sreduction', help='supervised dimension reduction method',
                     type=str, default='pca')
+PARSER.add_argument('-ur', '--ureduction', help='unsupervised dimension reduction method',
+                    type=str, default='tsne')
 PARSER.add_argument('-nn', '--neural_network', help='neural network',
                     type=str, default='cnn1d')
-PARSER.add_argument('-ff', '--fit_function', help='fitting function',
+PARSER.add_argument('-c', '--clustering', help='clustering method',
+                    type=str, default='agglomerative')
+PARSER.add_argument('-sff', '--sfit_function', help='supervised fitting function',
+                    type=str, default='logistic')
+PARSER.add_argument('-uff', '--ufit_function', help='unsupervised fitting function',
                     type=str, default='logistic')
 # parse arguments
 ARGS = PARSER.parse_args()
@@ -43,12 +53,17 @@ EL = ARGS.element             # element name
 NP = ARGS.pressure_number     # pressure number
 NT = ARGS.temperature_number  # number of temperature sets
 # data preparation parameters
-FTR = ARGS.feature         # feature to be learned
-SCLR = ARGS.scaler         # feature scaler
-RDCN = ARGS.reduction      # feature dimension reduction
+SFTR = ARGS.sfeature         # supervised feature to be learned
+UFTR = ARGS.ufeature         # unsupervised feature to be learned
+SSCLR = ARGS.sscaler         # supervised feature scaler
+USCLR = ARGS.uscaler         # unsupervised feature scaler
+SRDCN = ARGS.sreduction      # supervised feature dimension reduction
+URDCN = ARGS.ureduction      # unsupervised feature dimension reduction
 # data analysis parameters
 NN = ARGS.neural_network  # neural network
-FF = ARGS.fit_function    # fitting function
+CLST = ARGS.clustering    # clustering method
+SFF = ARGS.sfit_function  # supervised fitting function
+UFF = ARGS.ufit_function  # unsupervised fitting function
 
 # plotting parameters
 plt.rc('font', family='sans-serif')
@@ -91,9 +106,9 @@ if VERBOSE:
     print('------------------------------------------------------------')
 
 
-def extract_data(j):
+def extract_data(pref):
     ''' extracts data from neural network output '''
-    data = np.loadtxt(NPREFS[j]+'.out', dtype=np.float32)
+    data = np.loadtxt(pref+'.out', dtype=np.float32)
     trans = data[0]
     prob, pe, virial, temp = np.split(data[1:], 4, axis=0)
     mprob, sprob = np.split(prob, 2, axis=1)
@@ -103,41 +118,47 @@ def extract_data(j):
     return trans, mprob.T, sprob.T, mpe.T, spe.T, mvirial.T, svirial.T, mtemp.T, stemp.T
 
 # physical properties
-TRANS = np.zeros((NP, 2), dtype=float)
-MPROB = np.zeros((NP, NT), dtype=float)
-SPROB = np.zeros((NP, NT), dtype=float)
-MPE = np.zeros((NP, NT), dtype=float)
-SPE = np.zeros((NP, NT), dtype=float)
-MVIRIAL = np.zeros((NP, NT), dtype=float)
-SVIRIAL = np.zeros((NP, NT), dtype=float)
-MTEMP = np.zeros((NP, NT), dtype=float)
-STEMP = np.zeros((NP, NT), dtype=float)
+TRANS = np.zeros((2, NP, 2), dtype=float)
+MPROB = np.zeros((2, NP, NT), dtype=float)
+SPROB = np.zeros((2, NP, NT), dtype=float)
+MPE = np.zeros((2, NP, NT), dtype=float)
+SPE = np.zeros((2, NP, NT), dtype=float)
+MVIRIAL = np.zeros((2, NP, NT), dtype=float)
+SVIRIAL = np.zeros((2, NP, NT), dtype=float)
+MTEMP = np.zeros((2, NP, NT), dtype=float)
+STEMP = np.zeros((2, NP, NT), dtype=float)
 
 # file prefixes
 PREFIX = '%s.%s.%s.lammps' % (NAME, EL.lower(), LAT[EL])
-NPREFS = ['%s.%s.%s.%02d.lammps.%s.%s.%s.%s.%s' % (NAME, EL.lower(), LAT[EL],
-                                                   i, FTR, SCLR, RDCN, NN, FF) for i in range(NP)]
+SPREFS = ['%s.%02d.lammps.%s.%s.%s.%s.%s' % (PREFIX, i,
+                                             SFTR, SSCLR, SRDCN, NN, SFF) for i in range(NP)]
+UPREFS = ['%s.%02d.lammps.%s.%s.%s.%s.%s' % (PREFIX, i,
+                                             UFTR, USCLR, URDCN, NN, UFF) for i in range(NP)]
 
 if VERBOSE:
     print('neural network transitions')
     print('pressure | temperature')
     print('------------------------------------------------------------')
 for i in range(NP):
-    (TRANS[i], MPROB[i], SPROB[i], MPE[i], SPE[i],
-     MVIRIAL[i], SVIRIAL[i], MTEMP[i], STEMP[i]) = extract_data(i)
+    (TRANS[0, i], MPROB[0, i], SPROB[0, i], MPE[0, i], SPE[0, i],
+     MVIRIAL[0, i], SVIRIAL[0, i], MTEMP[0, i], STEMP[0, i]) = extract_data(SPREFS[i])
+    (TRANS[1, i], MPROB[1, i], SPROB[1, i], MPE[1, i], SPE[1, i],
+     MVIRIAL[1, i], SVIRIAL[1, i], MTEMP[1, i], STEMP[1, i]) = extract_data(UPREFS[i])
     if VERBOSE:
-        print('%.2f %.2f' % (np.mean(MVIRIAL[i]), TRANS[i, 0]))
+        print('%.2f %.2f %.2f %.2f' % (np.mean(MVIRIAL[0, i]), TRANS[0, i, 0],
+                                       np.mean(MVIRIAL[1, i]), TRANS[1, i, 0]))
 if VERBOSE:
     print('------------------------------------------------------------')
 
 with open(PREFIX+'.pst', 'w') as fo:
     fo.write('# virial | virial standard error | transition | transition standard error\n')
     for i in range(NP):
-        fo.write('%.8f %.8f %.8f %.8f' % (np.mean(MVIRIAL[i]), np.mean(SVIRIAL[i]),
-                                          TRANS[i, 0], TRANS[i, 1]))
-
+        fo.write('%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f' % (np.mean(MVIRIAL[0, i]), TRANS[0, i, 0],
+                                                              np.mean(SVIRIAL[0, i]), TRANS[0, i, 1],
+                                                              np.mean(MVIRIAL[1, i]), TRANS[1, i, 0],
+                                                              np.mean(SVIRIAL[1, i]), TRANS[1, i, 1]))
 CM = plt.get_cmap('plasma')
-SCALE = lambda i: (np.mean(MVIRIAL[i])-np.min(MVIRIAL))/np.max(MVIRIAL)
+SCALE = lambda i: (np.mean(MVIRIAL[0, i])-np.min(MVIRIAL[0]))/np.max(MVIRIAL[0])
 
 
 def plot_pt():

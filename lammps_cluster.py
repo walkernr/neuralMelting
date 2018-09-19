@@ -191,7 +191,7 @@ RDCNS = {'pca':PCA(n_components=NPCA),
          'isomap':Isomap(n_components=NNLN, n_jobs=THREADS),
          'lle':LocallyLinearEmbedding(n_components=NNLN, n_jobs=THREADS),
          'tsne':TSNE(n_components=NNLN, perplexity=PLXTY, verbose=True, n_jobs=THREADS)}
-CLSTS = {'agglom': AgglomerativeClustering(n_clusters=2),
+CLSTS = {'agglomerative': AgglomerativeClustering(n_clusters=2),
          'kmeans': KMeans(n_jobs=THREADS, n_clusters=2, init='k-means++'),
          'spectral': SpectralClustering(n_jobs=THREADS, n_clusters=2)}
 if VERBOSE:
