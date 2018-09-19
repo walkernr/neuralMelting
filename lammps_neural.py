@@ -39,7 +39,7 @@ PARSER.add_argument('-ln', '--learning_number', help='number of samples to learn
 PARSER.add_argument('-ts', '--training_sets', help='number of training sets per phase',
                     type=int, default=16)
 PARSER.add_argument('-ep', '--epochs', help='number of epochs',
-                    type=int, default=2)
+                    type=int, default=1)
 PARSER.add_argument('-f', '--feature', help='feature to learn',
                     type=str, default='entropic_fingerprint')
 PARSER.add_argument('-s', '--scaler', help='feature scaler',
