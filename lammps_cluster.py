@@ -33,7 +33,7 @@ PARSER.add_argument('-tn', '--temperature_number', help='number of temperatures'
 PARSER.add_argument('-sn', '--sample_number', help='sample number per temperature',
                     type=int, default=1024)
 PARSER.add_argument('-ln', '--learning_number', help='number of samples to learn per temperature',
-                    type=int, default=1024)
+                    type=int, default=512)
 PARSER.add_argument('-f', '--feature', help='feature to learn',
                     type=str, default='entropic_fingerprint')
 PARSER.add_argument('-s', '--scaler', help='feature scaler',
@@ -41,7 +41,7 @@ PARSER.add_argument('-s', '--scaler', help='feature scaler',
 PARSER.add_argument('-r', '--reduction', help='dimension reduction method',
                     type=str, default='tsne')
 PARSER.add_argument('-c', '--clustering', help='clustering method',
-                    type=str, default='spectral')
+                    type=str, default='agglomerative')
 PARSER.add_argument('-ff', '--fit_function', help='fitting function',
                     type=str, default='logistic')
 # parse arguments

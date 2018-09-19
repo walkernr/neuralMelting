@@ -23,7 +23,7 @@ PARSER.add_argument('-pt', '--plot', help='plot results', action='store_true')
 PARSER.add_argument('-nt', '--threads', help='number of threads',
                     type=int, default=16)
 PARSER.add_argument('-b', '--backend', help='keras backend',
-                    type=str, default='tensorflow')
+                    type=str, default='theano')
 PARSER.add_argument('-n', '--name', help='name of simulation',
                     type=str, default='remcmc_init')
 PARSER.add_argument('-e', '--element', help='element choice',
@@ -39,7 +39,7 @@ PARSER.add_argument('-ln', '--learning_number', help='number of samples to learn
 PARSER.add_argument('-ts', '--training_sets', help='number of training sets per phase',
                     type=int, default=16)
 PARSER.add_argument('-ep', '--epochs', help='number of epochs',
-                    type=int, default=1)
+                    type=int, default=2)
 PARSER.add_argument('-f', '--feature', help='feature to learn',
                     type=str, default='entropic_fingerprint')
 PARSER.add_argument('-s', '--scaler', help='feature scaler',
