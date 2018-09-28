@@ -70,7 +70,43 @@ This program calculates the radial distributions, structure factors, and entropi
 lammps_neural.py
 ----------------
 
-This program classifies samples as either solids or liquids by passing structural information through a multi-layer perceptron neural network. There are many options available with regards to which structural information, scaler, reducer, classification neural network, and fitting function to use.
+This program classifies samples as either solids or liquids by passing structural information through a multi-layer perceptron neural network.
+
+### Structural Features
+- Radial distribution
+- Structure factor
+- Entropic fingerprint
+
+### Feature Scalers
+- Standard: very common, vulnerable to outliers, does not guarantee a map to a common numerical range
+- MinMax: also common, vulnerable to outliers, guarantees a map to a common numerical range
+- Robust: resilient to outliers, does not guarantee a map to a common numerical range
+- Tanh: resilient to outliers, guarantees a map to a common numerical range
+
+### Feature Space Reducers
+- None: use the raw scaled data
+- PCA: common and fast, orthogonal linear transformation into new basis that maximizes variance of data along new projections
+- Kernal PCA: slower than PCA, nonlinear reduction in the sample space rather than feature space
+- Isomap: slower than PCA, a nonlinear reduction considered to be an extension of the Kernel PCA algorithm
+- Locally Linear Embedding: slower than PCA, can be considered as a series of local PCA reductions that are globally stiched together
+
+### Neural Networks
+- 1-D Convolutional Neural Network Classifier
+
+### Fitting Functions
+- Logistic: well-behaved and easily extracted transition temperature estimate, symmetric
+
+### Future Plans
+- Refine neural network structures and hyperparameters with grid searching
+- Add more neural networks
+- Add more fitting functions
+
+Since the structural features, feature scalers, feature space reducers, neural networks, and fitting functions are contained in libraries, the user may feel free to add their own.
+
+lammps_cluster.py
+-----------------
+
+This program classifies samples as either solids or liquid by passing structural information through an unsupervised clustering algorithm following data scaling and feature space reduction into 2 dimensions. PCA reduction always performed with an option for further nonlinear feature space reduction.
 
 ### Structure Features
 - Radial distribution
@@ -83,52 +119,27 @@ This program classifies samples as either solids or liquids by passing structura
 - Robust: resilient to outliers, does not guarantee a map to a common numerical range
 - Tanh: resilient to outliers, guarantees a map to a common numerical range
 
-### Feature Dimensionality Reducers
-- None: use the raw scaled data
+### Feature Space Reducers
+- None: use the PCA reduced data
 - PCA: common and fast, orthogonal linear transformation into new basis that maximizes variance of data along new projections
 - Kernal PCA: slower than PCA, nonlinear reduction in the sample space rather than feature space
 - Isomap: slower than PCA, a nonlinear reduction considered to be an extension of the Kernel PCA algorithm
 - Locally Linear Embedding: slower than PCA, can be considered as a series of local PCA reductions that are globally stiched together
-
-### Neural Networks
-- Dense Classifier  -- NOT CURRENTLY WORKING --
-- 1-D Convolutional Neural Network Classifier
-
-### Fitting Functions
-- Logistic: well-behaved and easily extracted transition temperature estimate, symmetric
-- Gompertz: well-behaved and easily extracted transition temperature estimate, faster uptake than saturation -- ERROR ANALYSIS UNDERGOING REWRITE --
-
-### Future Plans
-- Refine neural network structures and hyperparameters with grid searching
-- Refine data preparation techniques (more appropriate scaling, data reorientation, etc.)
-- Refine data analysis techniques (better curve fitting, alternate approaches to transition etimation, etc.)
-
-Since the structural feautres, feature scalers, feature dimensionality reducers, neural networks, and fitting functions are all embedded in dictionaries, the user may feel free to add their own.
-
-lammps_cluster.py
------------------
-
--- CURRENTLY UNDERGOING REWRITE --
-
-This program classifies samples as either solids or liquid by passing either the radial distributions or the structure factors through an unsupervised clustering algorithm following data dimensionality reduction. Dimensionality reduction is limited to either PCA or PCA followed by t-SNE.
-
-### Feature Scalers
-- Standard: very common, vulnerable to outliers, does not guarantee a map to a common numerical range
-- MinMax: also common, vulnerable to outliers, guarantees a map to a common numerical range
-- Robust: resilient to outliers, does not guarantee a map to a common numerical range
-- Tanh: resilient to outliers, guarantees a map to a common numerical range
+- t-distributed Stochastic Neighbor Embedding: slowest method, treat affinities in original space as Gaussian distributed and transforms the data such that the new affinities are Student's t-distributed
 
 ### Clustering Methods
 - K-Means: Good for globular data, struggles on elongated data sets and irregular cluster boundaries (including concentric clusters)
 - Agglomerative: Good for globular data, struggles with low density clusters and concentric clusters
 - Spectral: Good for connected data (including concentric), struggles with edges of globular data
 
-### Future Plans
-This will take second priority to the supervised method with respect to data analysis
-- Allow for tuning of clustering method parameters (choice of metric, similarity measure, affinity, etc.)
-- Perhaps support for other nonlinear dimensionality reduction algorithms will be added
+### Fitting Functions
+- Logistic: well-behaved and easily extracted transition temperature estimate, symmetric
 
-Since the scalers and clustering methods are embedded in libraries, the user may feel free to add their own features.
+### Future Plans
+- Refine tuning of clustering method parameters
+- Add more fitting functions
+
+Since the structural features, feature scalers, feature space reducers, clustering methods, and fitting functions are contained in libraries, the user may feel free to add their own.
 
 lammps_post.py
 --------------

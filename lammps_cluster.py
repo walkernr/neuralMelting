@@ -124,19 +124,10 @@ def logistic(beta, t):
     b, m = beta
     return a+np.divide(k, 1+np.exp(-b*(t-m)))
 
-
-def gompertz(beta, t):
-    ''' returns gompertz sigmoid '''
-    a = 1.0
-    b, c = beta
-    return a*np.exp(-b*np.exp(-c*t))
-
 # fit function dictionary
-FFS = {'logistic': logistic,
-       'gompertz': gompertz}
+FFS = {'logistic': logistic}
 # initial fit parameter dictionary
-FGS = {'logistic': [1.0, 0.5],
-       'gompertz': [1.0, 1.0]}
+FGS = {'logistic': [1.0, 0.5]}
 if VERBOSE:
     print('fitting function defined')
     print('------------------------------------------------------------')
@@ -250,14 +241,9 @@ ODR_.set_job(fit_type=0)
 FIT = ODR_.run()
 POPT = FIT.beta
 PERR = FIT.sd_beta
-if FF == 'logistic':
-    TRANS = POPT[1]
-    CERR = PERR[1]
-    TINT = TRANS+CERR*np.array([-1, 1])
-if FF == 'gompertz':
-    TRANS = -np.log(np.log(2)/POPT[0])/POPT[1]
-    CERR = np.array([[-PERR[0], PERR[1]], [PERR[0], -PERR[1]]], dtype=np.float32)
-    TINT = np.divide(-np.log(np.log(2)/(POPT[0]+CERR[:, 0])), POPT[1]+CERR[:, 1])
+TRANS = POPT[1]
+CERR = PERR[1]
+TINT = TRANS+CERR*np.array([-1, 1])
 NDOM = 4096
 FITDOM = np.linspace(np.min(TDOM), np.max(TDOM), NDOM)
 FITVAL = FFS[FF](POPT, FITDOM)

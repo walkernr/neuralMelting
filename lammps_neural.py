@@ -164,19 +164,10 @@ def logistic(beta, t):
     b, m = beta
     return a+np.divide(k, 1+np.exp(-b*(t-m)))
 
-
-def gompertz(beta, t):
-    ''' returns gompertz sigmoid '''
-    a = 1.0
-    b, c = beta
-    return a*np.exp(-b*np.exp(-c*t))
-
 # fit function dictionary
-FFS = {'logistic': logistic,
-       'gompertz': gompertz}
+FFS = {'logistic': logistic}
 # initial fit parameter dictionary
-FGS = {'logistic': [1.0, 0.5],
-       'gompertz': [1.0, 1.0]}
+FGS = {'logistic': [1.0, 0.5]}
 if VERBOSE:
     print('fitting function defined')
     print('------------------------------------------------------------')
@@ -277,19 +268,6 @@ TC = np.concatenate((np.ones(TSN, dtype=np.uint16), np.zeros(TSN, dtype=np.uint1
 
 
 # neural network construction
-def build_keras_dense():
-    ''' builds dense neural network '''
-    model = Sequential([Dense(units=64, activation='relu', input_dim=TSHP[1]),
-                        Dropout(rate=0.5),
-                        Dense(units=64, activation='relu'),
-                        Dropout(rate=0.5),
-                        Dense(units=1, activation='softmax')])
-    nadam = Nadam(lr=0.00024414062, beta_1=0.9375, beta_2=0.9990234375,
-                  epsilon=None, schedule_decay=0.00390625)
-    model.compile(loss='binary_crossentropy', optimizer=nadam, metrics=['accuracy'])
-    return model
-
-
 def build_keras_cnn1d():
     ''' builds 1-d convolutional neural network '''
     model = Sequential([Conv1D(filters=64, kernel_size=4, activation='relu',
@@ -308,9 +286,9 @@ def build_keras_cnn1d():
                   epsilon=None, schedule_decay=0.00390625)
     model.compile(loss='binary_crossentropy', optimizer=nadam, metrics=['accuracy'])
     return model
+
 # network dictionary
-NNS = {'dense':KerasClassifier(build_keras_dense, epochs=EP, verbose=VERBOSE),
-       'cnn1d':KerasClassifier(build_keras_cnn1d, epochs=EP, verbose=VERBOSE)}
+NNS = {'cnn1d':KerasClassifier(build_keras_cnn1d, epochs=EP, verbose=VERBOSE)}
 if VERBOSE:
     print('network initialized')
     print('------------------------------------------------------------')
@@ -353,14 +331,9 @@ ODR_.set_job(fit_type=0)
 FIT = ODR_.run()
 POPT = FIT.beta
 PERR = FIT.sd_beta
-if FF == 'logistic':
-    TRANS = POPT[1]
-    CERR = PERR[1]
-    TINT = TRANS+CERR*np.array([-1, 1])
-if FF == 'gompertz':
-    TRANS = -np.log(np.log(2)/POPT[0])/POPT[1]
-    CERR = np.array([[-PERR[0], PERR[1]], [PERR[0], -PERR[1]]], dtype=np.float32)
-    TINT = np.divide(-np.log(np.log(2)/(POPT[0]+CERR[:, 0])), POPT[1]+CERR[:, 1])
+TRANS = POPT[1]
+CERR = PERR[1]
+TINT = TRANS+CERR*np.array([-1, 1])
 NDOM = 4096
 FITDOM = np.linspace(np.min(TDOM), np.max(TDOM), NDOM)
 FITVAL = FFS[FF](POPT, FITDOM)
