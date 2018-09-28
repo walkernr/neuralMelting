@@ -182,7 +182,7 @@ SCLRS = {'standard':StandardScaler(),
          'robust':RobustScaler(),
          'tanh':TanhScaler()}
 # dimensionality
-NPCA = 64  # FTRS[FTR].shape[-1]
+NPCA = FTRS[FTR].shape[-1]
 NNLN = 2
 # temperature distribution
 PLXTY= NS

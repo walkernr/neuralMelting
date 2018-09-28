@@ -51,13 +51,13 @@ def parse_args():
     parser.add_argument('-e', '--element', help='simulation element',
                         type=str, default='LJ')
     parser.add_argument('-ss', '--supercell_size', help='simulation supercell size',
-                        type=int, default=3)
+                        type=int, default=4)
     parser.add_argument('-pn', '--pressure_number', help='number of pressures',
                         type=int, default=8)
     parser.add_argument('-pr', '--pressure_range', help='pressure range (low and high)',
                         type=float, nargs=2, default=[1, 8])
     parser.add_argument('-tn', '--temperature_number', help='number of temperatures',
-                        type=int, default=96)
+                        type=int, default=48)
     parser.add_argument('-tr', '--temperature_range', help='temperature range (low and high)',
                         type=float, nargs=2, default=[0.25, 2.5])
     parser.add_argument('-sc', '--sample_cutoff', help='sample recording cutoff',
@@ -67,13 +67,13 @@ def parse_args():
     parser.add_argument('-sm', '--sample_mod', help='sample collection frequency',
                         type=int, default=128)
     parser.add_argument('-pm', '--position_move', help='position monte carlo move probability',
-                        type=float, default=0.03125)
+                        type=float, default=0.25)
     parser.add_argument('-vm', '--volume_move', help='volume monte carlo move probability',
                         type=float, default=0.25)
     parser.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps',
                         type=int, default=8)
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
-                        type=float, default=0.25)
+                        type=float, default=0.125)
     parser.add_argument('-dl', '--box_displace', help='box displacement (box proportion)',
                         type=float, default=0.0625)
     # parse arguments
