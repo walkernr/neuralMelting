@@ -91,6 +91,12 @@ def parse_args():
             args.position_move, args.volume_move, args.timesteps,
             args.pos_displace, args.box_displace)
 
+
+def client_info():
+    ''' print client info '''
+    info = CLIENT.scheduler_info
+    print(info.split('<')[1][:-2])
+
 # ----------------
 # unit definitions
 # ----------------
@@ -613,7 +619,7 @@ def gen_samples():
         futures = CLIENT.compute(operations)
         # progress bar
         if VERBOSE:
-            print('\n----------------------')
+            print('----------------------')
             print('performing monte carlo')
             print('----------------------')
             progress(futures)
@@ -840,7 +846,7 @@ if __name__ == '__main__':
             CLIENT = Client(CLUSTER)
             # display client information
             if VERBOSE:
-                print(CLIENT.scheduler_info)
+                client_info()
 
     # -----------
     # monte carlo
@@ -864,7 +870,7 @@ if __name__ == '__main__':
     # loop through to number of samples that need to be collected
     for STEP in tqdm(range(NSMPL)):
         if VERBOSE:
-            print(CLIENT.scheduler_info)
+            client_info()
         # generate samples
         STATE[:] = gen_samples()
         # generate mc parameters
