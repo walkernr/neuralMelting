@@ -755,7 +755,7 @@ if __name__ == '__main__':
     if PARALLEL:
         os.environ['DASK_ALLOWED_FAILURES'] = '32'
         os.environ['DASK_WORK_STEALING'] = 'False'
-        os.environ['DASK_MULTIPROCESSING_METHOD'] = 'spawn'
+        os.environ['DASK_MULTIPROCESSING_METHOD'] = 'fork'
         os.environ['DASK_LOG_FORMAT'] = '\r%(name)s - %(levelname)s - %(message)s'
         from distributed import Client, LocalCluster, progress
         from dask import delayed
