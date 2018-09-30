@@ -96,7 +96,7 @@ def client_info():
     ''' print client info '''
     info = str(CLIENT.scheduler_info)
     info = info.replace('<', '').replace('>', '').split()[6:8]
-    print(tuple(info))
+    print(*info)
 
 # ----------------
 # unit definitions
