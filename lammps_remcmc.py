@@ -397,7 +397,6 @@ def init_samples():
         operations = [delayed(init_sample)(k) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
-            print('\n--------------------')
             print('initializing samples')
             print('--------------------')
             progress(futures)
