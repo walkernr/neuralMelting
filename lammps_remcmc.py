@@ -95,7 +95,7 @@ def parse_args():
 def client_info():
     ''' print client info '''
     info = CLIENT.scheduler_info
-    print(info.split('<')[1][:-2])
+    print(str(info).split('<')[1][:-2])
 
 # ----------------
 # unit definitions
