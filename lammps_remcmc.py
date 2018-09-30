@@ -864,6 +864,8 @@ if __name__ == '__main__':
             STATE = init_samples()
     # loop through to number of samples that need to be collected
     for STEP in tqdm(range(NSMPL)):
+        if VERBOSE:
+            print(CLIENT.scheduler_info)
         # generate samples
         STATE[:] = gen_samples()
         # generate mc parameters
@@ -879,8 +881,6 @@ if __name__ == '__main__':
             dump_samples_restart()
             if PARALLEL:
                 CLIENT.restart()
-                if VERBOSE:
-                    print(CLIENT.scheduler_info)
         # replica exchange markov chain mc
         replica_exchange()
     if PARALLEL:
