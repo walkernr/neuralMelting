@@ -46,6 +46,8 @@ def parse_args():
                         type=int, default=16)
     parser.add_argument('-nt', '--threads', help='threads per worker',
                         type=int, default=1)
+    parser.add_argument('-mt', '--method', help='parallelization method',
+                        type=str, default='fork'
     parser.add_argument('-n', '--name', help='simulation name',
                         type=str, default='remcmc_init')
     parser.add_argument('-e', '--element', help='simulation element',
@@ -750,7 +752,7 @@ if __name__ == '__main__':
      REFREQ, RENAME, RESTEP,
      QUEUE, ALLOC, NODES, PPN,
      WALLTIME, MEM,
-     NWORKER, NTHREAD,
+     NWORKER, NTHREAD, MTHD,
      NAME, EL, SZ,
      NP, LP, HP,
      NT, LT, HT,
@@ -761,7 +763,7 @@ if __name__ == '__main__':
     if PARALLEL:
         os.environ['DASK_ALLOWED_FAILURES'] = '32'
         os.environ['DASK_WORK_STEALING'] = 'False'
-        os.environ['DASK_MULTIPROCESSING_METHOD'] = 'fork'
+        os.environ['DASK_MULTIPROCESSING_METHOD'] = MTHD
         os.environ['DASK_LOG_FORMAT'] = '\r%(name)s - %(levelname)s - %(message)s'
         from distributed import Client, LocalCluster, progress
         from dask import delayed
