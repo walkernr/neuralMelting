@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument('-nt', '--threads', help='threads per worker',
                         type=int, default=1)
     parser.add_argument('-mt', '--method', help='parallelization method',
-                        type=str, default='fork'
+                        type=str, default='fork')
     parser.add_argument('-n', '--name', help='simulation name',
                         type=str, default='remcmc_init')
     parser.add_argument('-e', '--element', help='simulation element',
