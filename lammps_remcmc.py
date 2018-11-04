@@ -85,7 +85,7 @@ def parse_args():
             args.restart_dump, args.restart_name, args.restart_step,
             args.queue, args.allocation, args.nodes, args.procs_per_node,
             args.walltime, args.memory,
-            args.workers, args.threads,
+            args.workers, args.threads, args.method,
             args.name, args.element, args.supercell_size,
             args.pressure_number, *args.pressure_range,
             args.temperature_number, *args.temperature_range,
