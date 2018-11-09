@@ -24,7 +24,8 @@ def parse_args():
     parser.add_argument('-v', '--verbose', help='verbose output mode', action='store_true')
     parser.add_argument('-r', '--restart', help='restart run mode', action='store_true')
     parser.add_argument('-p', '--parallel', help='parallel run mode', action='store_true')
-    parser.add_argument('-d', '--distributed', help='distributed run mode', action='store_true')
+    parser.add_argument('-c', '--client', help='dask client run mode', action='store_true')
+    parser.add_argument('-d', '--distributed', help='dask distributed run mode', action='store_true')
     parser.add_argument('-rd', '--restart_dump', help='restart dump frequency',
                         type=int, default=128)
     parser.add_argument('-rn', '--restart_name', help='restart dump simulation name',
@@ -73,7 +74,7 @@ def parse_args():
                         type=float, default=0.25)
     parser.add_argument('-vm', '--volume_move', help='volume monte carlo move probability',
                         type=float, default=0.25)
-    parser.add_argument('-t', '--timesteps', help='hamiltonian monte carlo timesteps',
+    parser.add_argument('-ts', '--timesteps', help='hamiltonian monte carlo timesteps',
                         type=int, default=8)
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
                         type=float, default=0.125)
@@ -82,7 +83,7 @@ def parse_args():
     # parse arguments
     args = parser.parse_args()
     # return arguments
-    return (args.verbose, args.parallel, args.restart, args.distributed,
+    return (args.verbose, args.parallel, args.client, args.distributed, args.restart, 
             args.restart_dump, args.restart_name, args.restart_step,
             args.queue, args.allocation, args.nodes, args.procs_per_node,
             args.walltime, args.memory,
@@ -207,13 +208,15 @@ def init_header(k, output):
 
 def init_headers():
     ''' writes headers for all samples '''
-    if PARALLEL:
+    if DASK:
         operations = [delayed(init_header)(k, OUTPUT[k]) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
             print('initializing headers')
             print('--------------------')
             progress(futures)
+    elif PARALLEL:
+        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(delayed(init_header)(k, OUTPUT[k]) for k in range(NS))
     else:
         if VERBOSE:
             print('initializing headers')
@@ -256,7 +259,7 @@ def write_output(output, state):
 
 def write_outputs():
     ''' writes outputs for all samples '''
-    if PARALLEL:
+    if DASK:
         operations = [delayed(write_output)(OUTPUT[k], STATE[k]) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
@@ -264,6 +267,8 @@ def write_outputs():
             print('writing outputs')
             print('---------------')
             progress(futures)
+    elif PARALLEL:
+        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(delayed(write_output)(OUTPUT[k], STATE[k]) for k in range(NS))
     else:
         if VERBOSE:
             print('writing outputs')
@@ -404,7 +409,7 @@ def init_sample(k):
 
 def init_samples():
     ''' initializes all samples '''
-    if PARALLEL:
+    if DASK:
         operations = [delayed(init_sample)(k) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
@@ -412,6 +417,8 @@ def init_samples():
             print('--------------------')
             progress(futures)
             print('\n')
+    elif PARALLEL:
+        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(delayed(init_sample)(k) for k in range(NS))
     else:
         if VERBOSE:
             print('initializing samples')
@@ -619,7 +626,7 @@ def gen_sample(k, const, state):
 
 def gen_samples():
     ''' generates all monte carlo samples '''
-    if PARALLEL:
+    if DASK:
         # list of delayed operations
         operations = [delayed(gen_sample)(k, CONST[k], STATE[k]) for k in range(NS)]
         # submit futures to client
@@ -630,6 +637,8 @@ def gen_samples():
             print('performing monte carlo')
             print('----------------------')
             progress(futures)
+    elif PARALLEL:
+        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(delayed(gen_sample)(k, CONST[k], STATE[k]) for k in range(NS))
     else:
         # loop through pressures
         if VERBOSE:
@@ -667,7 +676,7 @@ def gen_mc_param(state):
 
 def gen_mc_params():
     ''' generate adaptive monte carlo parameters for all samples '''
-    if PARALLEL:
+    if DASK:
         # list of delayed operations
         operations = [delayed(gen_mc_param)(STATE[k]) for k in range(NS)]
         # submit futures to client
@@ -678,6 +687,8 @@ def gen_mc_params():
             print('updating mc params')
             print('------------------')
             progress(futures)
+    elif PARALLEL:
+        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(delayed(gen_mc_param)(STATE[k]) for k in range(NS))
     else:
         # loop through pressures
         if VERBOSE:
@@ -752,7 +763,7 @@ def dump_samples_restart():
 
 if __name__ == '__main__':
 
-    (VERBOSE, PARALLEL, RESTART, DISTRIBUTED,
+    (VERBOSE, PARALLEL, DASK, DISTRIBUTED, RESTART,
      REFREQ, RENAME, RESTEP,
      QUEUE, ALLOC, NODES, PPN,
      WALLTIME, MEM,
@@ -764,29 +775,27 @@ if __name__ == '__main__':
      PPOS, PVOL, NSTPS,
      PDX, PDL) = parse_args()
 
-    if PARALLEL:
-        os.environ['DASK_ALLOWED_FAILURES'] = '32'
-        os.environ['DASK_WORK_STEALING'] = 'False'
-        os.environ['DASK_MULTIPROCESSING_METHOD'] = MTHD
-        os.environ['DASK_LOG_FORMAT'] = '\r%(name)s - %(levelname)s - %(message)s'
-        from distributed import Client, LocalCluster, progress
-        from dask import delayed
-        from multiprocessing import freeze_support
-    if DISTRIBUTED:
-        from dask_jobqueue import PBSCluster
-
-    # number of simulations
-    NS = NP*NT
-    # total number of monte carlo sweeps
-    NSWPS = NSMPL*MOD
-    # hamiltonian monte carlo probability
-    PHMC = 1-PPOS-PVOL
+   
     
     # set delay after closing lammps
     DELAY = 1e-3
     # set random seed
     SEED = 256
     np.random.seed(SEED)
+    # processing or threading
+    PROC = (NWORKER != 1)
+    # ensure all flags are consistent
+    if DISTRIBUTED and not DASK:
+        DASK = 1
+    if DASK and not PARALLEL:
+        PARALLEL = 1
+
+     # number of simulations
+    NS = NP*NT
+    # total number of monte carlo sweeps
+    NSWPS = NSMPL*MOD
+    # hamiltonian monte carlo probability
+    PHMC = 1-PPOS-PVOL
 
     # -------------------
     # material properties
@@ -828,8 +837,30 @@ if __name__ == '__main__':
     # -----------------
 
     if PARALLEL:
+        from multiprocessing import freeze_support
+    if not DASK:
+        from joblib import Parallel, delayed
+    if DASK:
+        os.environ['DASK_ALLOWED_FAILURES'] = '32'
+        os.environ['DASK_WORK_STEALING'] = 'True'
+        os.environ['DASK_MULTIPROCESSING_METHOD'] = MTHD
+        os.environ['DASK_LOG_FORMAT'] = '\r%(name)s - %(levelname)s - %(message)s'
+        from distributed import Client, LocalCluster, progress
+        from dask import delayed
+    if DISTRIBUTED:
+        from dask_jobqueue import PBSCluster
+
+    if PARALLEL:
         freeze_support()
-        if DISTRIBUTED:
+        if DASK and not DISTRIBUTED:
+            # construct local cluster
+            CLUSTER = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD, processes=PROC)
+            # start client with local cluster
+            CLIENT = Client(CLUSTER)
+            # display client information
+            if VERBOSE:
+                client_info()
+        if DASK and DISTRIBUTED:
             # construct distributed cluster
             CLUSTER = PBSCluster(queue=QUEUE, project=ALLOC,
                                  resource_spec='nodes=%d:ppn=%d' % (NODES, PPN),
@@ -842,19 +873,7 @@ if __name__ == '__main__':
             while 'processes=0 cores=0' in str(CLIENT.scheduler_info):
                 time.sleep(5)
                 if VERBOSE:
-                    print(CLIENT.scheduler_info)
-        else:
-            # construct local cluster
-            if NWORKER == 1:
-                PROC = False
-            else:
-                PROC = True
-            CLUSTER = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD, processes=PROC)
-            # start client with local cluster
-            CLIENT = Client(CLUSTER)
-            # display client information
-            if VERBOSE:
-                client_info()
+                    client_info()
 
     # -----------
     # monte carlo
@@ -871,13 +890,13 @@ if __name__ == '__main__':
         STATE = load_samples_restart()
         replica_exchange()
     else:
-        if PARALLEL:
+        if DASK:
             STATE = CLIENT.gather(init_samples())
         else:
             STATE = init_samples()
     # loop through to number of samples that need to be collected
     for STEP in tqdm(range(NSMPL)):
-        if VERBOSE:
+        if VERBOSE and DASK:
             client_info()
         # generate samples
         STATE[:] = gen_samples()
@@ -886,17 +905,17 @@ if __name__ == '__main__':
         if (STEP+1) > CUTOFF:
             # write data
             write_outputs()
-        if PARALLEL:
+        if DASK:
             # gather results from cluster
             STATE[:] = CLIENT.gather(STATE)
         if (STEP+1) % REFREQ == 0:
             # save state for restart
             dump_samples_restart()
-            if PARALLEL:
+            if DASK:
                 CLIENT.restart()
         # replica exchange markov chain mc
         replica_exchange()
-    if PARALLEL:
+    if DASK:
         # terminate client after completion
         CLIENT.close()
     # consolidate output files
