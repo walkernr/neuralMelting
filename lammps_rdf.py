@@ -122,11 +122,12 @@ def calculate_rdf(natoms, box, pos, gs):
 
 def calculate_rdfs():
     ''' calculate rdfs for all samples '''
+    if VERBOSE:
+        print('computing %s %s samples at pressure %d' % (NS, EL.lower(), PI))
     if DASK:
         operations = [delayed(calculate_rdf)(NATOMS[i], BOX[i], POS[i], GS) for i in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
-            print('computing %s %s samples at pressure %d' % (NS, EL.lower(), PI))
             progress(futures)
             print('\n')
     elif PARALLEL:
@@ -135,7 +136,6 @@ def calculate_rdfs():
                            verbose=VERBOSE)(delayed(calculate_rdf)(NATOMS[i], BOX[i], POS[i], GS) for k in range(NS))
     else:
         if VERBOSE:
-            print('computing %s %s samples at pressure %d' % (NS, EL.lower(), PI))
             futures = [calculate_rdf(NATOMS[i], BOX[i], POS[i], GS) for i in tqdm(range(NS))]
         else:
             futures = [calculate_rdf(NATOMS[i], BOX[i], POS[i], GS) for i in range(NS)]
