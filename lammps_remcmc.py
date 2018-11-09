@@ -270,7 +270,9 @@ def write_outputs():
             print('---------------')
             progress(futures)
     elif PARALLEL:
-        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(delayed(write_output)(OUTPUT[k], STATE[k]) for k in range(NS))
+        futures = Parallel(n_jobs=NTHREAD,
+                           backend='threading',
+                           verbose=VERBOSE)(delayed(write_output)(OUTPUT[k], STATE[k]) for k in range(NS))
     else:
         if VERBOSE:
             print('writing outputs')
@@ -417,7 +419,9 @@ def init_samples():
             progress(futures)
             print('\n')
     elif PARALLEL:
-        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(delayed(init_sample)(k) for k in range(NS))
+        futures = Parallel(n_jobs=NTHREAD,
+                           backend='threading',
+                           verbose=VERBOSE)(delayed(init_sample)(k) for k in range(NS))
     else:
         if VERBOSE:
             print('initializing samples')
@@ -634,7 +638,9 @@ def gen_samples():
             print('----------------------')
             progress(futures)
     elif PARALLEL:
-        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(delayed(gen_sample)(k, CONST[k], STATE[k]) for k in range(NS))
+        futures = Parallel(n_jobs=NTHREAD,
+                           backend='threading',
+                        verbose=VERBOSE)(delayed(gen_sample)(k, CONST[k], STATE[k]) for k in range(NS))
     else:
         # loop through pressures
         if VERBOSE:
@@ -684,7 +690,9 @@ def gen_mc_params():
             print('------------------')
             progress(futures)
     elif PARALLEL:
-        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(delayed(gen_mc_param)(STATE[k]) for k in range(NS))
+        futures = Parallel(n_jobs=NTHREAD,
+                           backend='threading',
+                           verbose=VERBOSE)(delayed(gen_mc_param)(STATE[k]) for k in range(NS))
     else:
         # loop through pressures
         if VERBOSE:
