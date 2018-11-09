@@ -216,7 +216,9 @@ def init_headers():
             print('--------------------')
             progress(futures)
     elif PARALLEL:
-        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(delayed(init_header)(k, OUTPUT[k]) for k in range(NS))
+        futures = Parallel(n_jobs=NTHREAD,
+                           backend='threading',
+                           verbose=VERBOSE)(delayed(init_header)(k, OUTPUT[k]) for k in range(NS))
     else:
         if VERBOSE:
             print('initializing headers')
@@ -397,7 +399,6 @@ def init_sample(k):
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
-    time.sleep(DELAY)
     ntp, nap, ntv, nav, nth, nah, ap, av, ah = np.zeros(9)
     dx, dl, dt = DL, DX, DT
     # return system info and data storage files
@@ -609,7 +610,6 @@ def gen_sample(k, const, state):
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # close lammps and remove input file
     lmps.close()
-    time.sleep(DELAY)
     # acceptation ratios
     with np.errstate(invalid='ignore'):
         ap = np.nan_to_num(np.float32(nap)/np.float32(ntp))
@@ -771,10 +771,6 @@ if __name__ == '__main__':
      PPOS, PVOL, NSTPS,
      PDX, PDL) = parse_args()
 
-   
-    
-    # set delay after closing lammps
-    DELAY = 1e-3
     # set random seed
     SEED = 256
     np.random.seed(SEED)
@@ -913,8 +909,8 @@ if __name__ == '__main__':
         if (STEP+1) % REFREQ == 0:
             # save state for restart
             dump_samples_restart()
-            if DASK:
-                CLIENT.restart()
+            # if DASK:
+                # CLIENT.restart()
         # replica exchange markov chain mc
         replica_exchange()
     if DASK:

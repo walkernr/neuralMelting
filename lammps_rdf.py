@@ -16,6 +16,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
     parser.add_argument('-p', '--parallel', help='parallel run', action='store_true')
+    parser.add_argument('-c', '--client', help='dask client run mode', action='store_true')
     parser.add_argument('-d', '--distributed', help='distributed run', action='store_true')
     parser.add_argument('-q', '--queue', help='submission queue',
                         type=str, default='jobqueue')
@@ -33,6 +34,8 @@ def parse_args():
                         type=int, default=16)
     parser.add_argument('-nt', '--threads', help='threads per worker',
                         type=int, default=1)
+    parser.add_argument('-mt', '--method', help='parallelization method',
+                        type=str, default='fork')
     parser.add_argument('-n', '--name', help='name of simulation',
                         type=str, default='remcmc_init')
     parser.add_argument('-e', '--element', help='element choice',
@@ -40,11 +43,18 @@ def parse_args():
     parser.add_argument('-i', '--pressure_index', help='pressure index',
                         type=int, default=0)
     args = parser.parse_args()
-    return (args.verbose, args.parallel, args.distributed,
+    return (args.verbose, args.parallel, args.client, args.distributed,
             args.queue, args.allocation, args.nodes, args.procs_per_node,
             args.walltime, args.memory,
-            args.workers, args.threads,
+            args.workers, args.threads, args.method,
             args.name, args.element, args.pressure_index)
+
+
+def client_info():
+    ''' print client info '''
+    info = str(CLIENT.scheduler_info)
+    info = info.replace('<', '').replace('>', '').split()[6:8]
+    print('\n%s %s' % tuple(info))
 
 
 def load_data():
@@ -112,13 +122,17 @@ def calculate_rdf(natoms, box, pos, gs):
 
 def calculate_rdfs():
     ''' calculate rdfs for all samples '''
-    if PARALLEL:
+    if DASK:
         operations = [delayed(calculate_rdf)(NATOMS[i], BOX[i], POS[i], GS) for i in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
             print('computing %s %s samples at pressure %d' % (NS, EL.lower(), PI))
             progress(futures)
             print('\n')
+    elif PARALLEL:
+        futures = Parallel(n_jobs=NTHREAD,
+                           backend='threading',
+                           verbose=VERBOSE)(delayed(calculate_rdf)(NATOMS[i], BOX[i], POS[i], GS) for k in range(NS))
     else:
         if VERBOSE:
             print('computing %s %s samples at pressure %d' % (NS, EL.lower(), PI))
@@ -129,24 +143,19 @@ def calculate_rdfs():
 
 if __name__ == '__main__':
 
-    (VERBOSE, PARALLEL, DISTRIBUTED,
+    (VERBOSE, PARALLEL, DASK, DISTRIBUTED,
      QUEUE, ALLOC, NODES, PPN,
      WALLTIME, MEM,
-     NWORKER, NTHREAD,
+     NWORKER, NTHREAD, MTHD
      NAME, EL, PI) = parse_args()
 
-    if VERBOSE:
-        from tqdm import tqdm
-    if PARALLEL:
-        os.environ['DASK_ALLOWED_FAILURES'] = '32'
-        os.environ['DASK_MULTIPROCESSING_METHOD'] = 'fork'
-        os.environ['DASK_LOG_FORMAT'] = '\n%(name)s - %(levelname)s - %(message)s'
-        from distributed import Client, LocalCluster, progress
-        from dask import delayed
-        from multiprocessing import freeze_support
-    if DISTRIBUTED:
-        import time
-        from dask_jobqueue import PBSCluster
+    # processing or threading
+    PROC = (NWORKER != 1)
+    # ensure all flags are consistent
+    if DISTRIBUTED and not DASK:
+        DASK = 1
+    if DASK and not PARALLEL:
+        PARALLEL = 1
 
     # lattice type
     LAT = {'Ti': 'bcc',
@@ -157,33 +166,45 @@ if __name__ == '__main__':
     # file prefix
     PREFIX = os.getcwd()+'/'+'%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL], PI)
 
+    if PARALLEL:
+        from multiprocessing import freeze_support
+    if not DASK:
+        from joblib import Parallel, delayed
+    if DASK:
+        os.environ['DASK_ALLOWED_FAILURES'] = '64'
+        os.environ['DASK_WORK_STEALING'] = 'True'
+        os.environ['DASK_MULTIPROCESSING_METHOD'] = MTHD
+        os.environ['DASK_LOG_FORMAT'] = '\r%(name)s - %(levelname)s - %(message)s'
+        from distributed import Client, LocalCluster, progress
+        from dask import delayed
+    if DISTRIBUTED:
+        from dask_jobqueue import PBSCluster    
+
     # client initialization
     if PARALLEL:
         freeze_support()
-        if DISTRIBUTED:
+        if DASK and not DISTRIBUTED:
+            # construct local cluster
+            CLUSTER = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD, processes=PROC)
+            # start client with local cluster
+            CLIENT = Client(CLUSTER)
+            # display client information
+            if VERBOSE:
+                client_info()
+        if DASK and DISTRIBUTED:
             # construct distributed cluster
             CLUSTER = PBSCluster(queue=QUEUE, project=ALLOC,
                                  resource_spec='nodes=%d:ppn=%d' % (NODES, PPN),
                                  walltime='%d:00:00' % WALLTIME,
-                                 processes=NWORKER, cores=NTHREAD*NWORKER, memory=str(MEM)+'GB')
+                                 processes=NWORKER, cores=NTHREAD*NWORKER, memory=str(MEM)+'GB',
+                                 local_dir=os.getcwd())
             CLUSTER.start_workers(1)
             # start client with distributed cluster
             CLIENT = Client(CLUSTER)
             while 'processes=0 cores=0' in str(CLIENT.scheduler_info):
                 time.sleep(5)
                 if VERBOSE:
-                    print(CLIENT.scheduler_info)
-        else:
-            # construct local cluster
-            if NWORKER == 1:
-                PROC = False
-            else:
-                PROC = True
-            CLUSTER = LocalCluster(n_workers=NWORKER, threads_per_worker=NTHREAD, processes=PROC)
-            # start client with local cluster
-            CLIENT = Client(CLUSTER)
-            if VERBOSE:
-                print(CLIENT.scheduler_info)
+                    client_info()
 
     # get spatial properties
     NS, NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, GS = calculate_spatial()
@@ -191,7 +212,7 @@ if __name__ == '__main__':
         print('data loaded')
     # calculate radial distributions
     G = calculate_rdfs()
-    if PARALLEL:
+    if DASK:
         G = np.array(CLIENT.gather(G), dtype=np.float32)
         CLIENT.close()
     else:
