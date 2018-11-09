@@ -394,7 +394,7 @@ def init_sample(k):
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
-    time.sleep(1e-3)
+    time.sleep(DELAY)
     ntp, nap, ntv, nav, nth, nah, ap, av, ah = np.zeros(9)
     dx, dl, dt = DL, DX, DT
     # return system info and data storage files
@@ -605,7 +605,7 @@ def gen_sample(k, const, state):
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # close lammps and remove input file
     lmps.close()
-    time.sleep(1e-3)
+    time.sleep(DELAY)
     # acceptation ratios
     with np.errstate(invalid='ignore'):
         ap = np.nan_to_num(np.float32(nap)/np.float32(ntp))
@@ -762,6 +762,7 @@ if __name__ == '__main__':
      CUTOFF, NSMPL, MOD,
      PPOS, PVOL, NSTPS,
      PDX, PDL) = parse_args()
+     DELAY = 1.
 
     if PARALLEL:
         os.environ['DASK_ALLOWED_FAILURES'] = '32'
