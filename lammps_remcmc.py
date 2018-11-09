@@ -174,9 +174,9 @@ def init_header(k, output):
     # extract pressure/temperature indices from index
     i, j = np.unravel_index(k, dims=(NP, NT), order='C')
     with open(output[0], 'w') as thrm_out:
-        thrm_out.write('#----------------------\n')
+        thrm_out.write('# ---------------------\n')
         thrm_out.write('# simulation parameters\n')
-        thrm_out.write('#----------------------\n')
+        thrm_out.write('# ---------------------\n')
         thrm_out.write('# nsmpl:    %d\n' % NSMPL)
         thrm_out.write('# cutoff:   %d\n' % CUTOFF)
         thrm_out.write('# mod:      %d\n' % MOD)
@@ -186,9 +186,9 @@ def init_header(k, output):
         thrm_out.write('# phmc:     %f\n' % PHMC)
         thrm_out.write('# nstps:    %d\n' % NSTPS)
         thrm_out.write('# seed:     %d\n' % SEED)
-        thrm_out.write('#----------------------\n')
+        thrm_out.write('# ---------------------\n')
         thrm_out.write('# material properties\n')
-        thrm_out.write('#----------------------\n')
+        thrm_out.write('# ---------------------\n')
         thrm_out.write('# element:  %s\n' % EL)
         thrm_out.write('# units:    %s\n' % UNITS[EL])
         thrm_out.write('# lattice:  %s\n' % LAT[EL][0])
@@ -841,7 +841,7 @@ if __name__ == '__main__':
     if not DASK:
         from joblib import Parallel, delayed
     if DASK:
-        os.environ['DASK_ALLOWED_FAILURES'] = '32'
+        os.environ['DASK_ALLOWED_FAILURES'] = '64'
         os.environ['DASK_WORK_STEALING'] = 'True'
         os.environ['DASK_MULTIPROCESSING_METHOD'] = MTHD
         os.environ['DASK_LOG_FORMAT'] = '\r%(name)s - %(levelname)s - %(message)s'
