@@ -762,7 +762,7 @@ if __name__ == '__main__':
      CUTOFF, NSMPL, MOD,
      PPOS, PVOL, NSTPS,
      PDX, PDL) = parse_args()
-     DELAY = 1.
+    DELAY = 1.
 
     if PARALLEL:
         os.environ['DASK_ALLOWED_FAILURES'] = '32'
