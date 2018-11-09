@@ -99,7 +99,7 @@ def client_info():
     ''' print client info '''
     info = str(CLIENT.scheduler_info)
     info = info.replace('<', '').replace('>', '').split()[6:8]
-    print('\n', *info)
+    print('\n%s %s' % tuple(info))
 
 # ----------------
 # unit definitions
@@ -762,7 +762,6 @@ if __name__ == '__main__':
      CUTOFF, NSMPL, MOD,
      PPOS, PVOL, NSTPS,
      PDX, PDL) = parse_args()
-    DELAY = 1e-3
 
     if PARALLEL:
         os.environ['DASK_ALLOWED_FAILURES'] = '32'
@@ -781,7 +780,9 @@ if __name__ == '__main__':
     NSWPS = NSMPL*MOD
     # hamiltonian monte carlo probability
     PHMC = 1-PPOS-PVOL
-
+    
+    # set delay after closing lammps
+    DELAY = 1e-3
     # set random seed
     SEED = 256
     np.random.seed(SEED)
