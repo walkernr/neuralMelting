@@ -313,11 +313,11 @@ def consolidate_outputs():
 # ------------------------------------------------
 
 
-def lammps_input(i):
+def lammps_input():
     ''' constructs input file for lammps '''
     lj_param = (1.0, 1.0)
     # convert lattice definition list to strings
-    prefix = file_prefix(i)
+    prefix = os.getcwd()+'/%s.%s.%s.lammps' % (NAME, EL.lower(), LAT[EL][0])
     # set lammps file name
     lmpsfile = prefix+'.in'
     # open lammps file
@@ -369,8 +369,8 @@ def lammps_extract(lmps):
     ''' extract system properties from lammps object '''
     # extract all system info
     natoms = lmps.extract_global('natoms', 0)
-    x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
-    v = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('v', 1, 3)))
+    x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
+    v = np.ctypeslib.as_array(lmps.gather_atoms('v', 1, 3))
     temp = lmps.extract_compute('thermo_temp', 0, 0)
     pe = lmps.extract_compute('thermo_pe', 0, 0)
     ke = lmps.extract_compute('thermo_ke', 0, 0)
@@ -385,11 +385,9 @@ def lammps_extract(lmps):
 def init_sample(k):
     ''' initializes sample '''
     i, _ = np.unravel_index(k, dims=(NP, NT), order='C')
-    # generate input file
-    lmpsfile = lammps_input(i)
     # initialize lammps
     lmps = lammps(cmdargs=['-log', 'none', '-screen', 'none'])
-    lmps.file(lmpsfile)
+    lmps.file(LMPSF)
     # minimize lattice structure
     lmps.command('unfix 1')
     lmps.command('fix 1 all box/relax iso %f vmax %f' % (P[i], 0.0009765625))
@@ -429,11 +427,9 @@ def init_samples():
 
 def init_lammps(i, x, v, box):
     ''' initializes lammps '''
-    # generate input file
-    lmpsfile = lammps_input(i)
     # initialize lammps
     lmps = lammps(cmdargs=['-log', 'none', '-screen', 'none'])
-    lmps.file(lmpsfile)
+    lmps.file(LMPSF)
     # set system info
     box_dim = (3*(box,))
     lmps.command('change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box' % box_dim)
@@ -450,7 +446,7 @@ def init_lammps(i, x, v, box):
 def bulk_position_mc(lmps, et, ntp, nap, dx):
     ''' classic position monte carlo (bulk) '''
     ntp += 1
-    x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
+    x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
     pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     seed = np.random.randint(1, 2**16)
     lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(dx,)+(seed,)))
@@ -480,7 +476,7 @@ def iter_position_mc(lmps, et, ntp, nap, dx):
         # update position tries
         ntp += 1
         # save current physical properties
-        x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
+        x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
         pe = lmps.extract_compute('thermo_pe', 0, 0)/et
         xnew = np.copy(x)
         xnew[3*k:3*k+3] += (np.random.rand(3)-0.5)*dx
@@ -510,7 +506,7 @@ def volume_mc(lmps, et, pf, ntv, nav, dl):
     boxmax = lmps.extract_global('boxhi', 1)
     box = boxmax-boxmin
     vol = np.power(box, 3)
-    x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
+    x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
     pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     # save new physical properties
     boxnew = box+(np.random.rand()-0.5)*dl
@@ -549,8 +545,8 @@ def hamiltonian_mc(lmps, et, t, nth, nah, dt):
     lmps.command('timestep %f' % dt)
     lmps.command('run 0')
     # save current physical properties
-    x = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3)))
-    v = np.copy(np.ctypeslib.as_array(lmps.gather_atoms('v', 1, 3)))
+    x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
+    v = np.ctypeslib.as_array(lmps.gather_atoms('v', 1, 3))
     pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     ke = lmps.extract_compute('thermo_ke', 0, 0)/et
     etot = pe+ke
@@ -831,6 +827,12 @@ if __name__ == '__main__':
     DX = PDX*LAT[EL][1]
     DL = PDL*SZ*LAT[EL][1]
     DT = TIMESTEP[UNITS[EL]]
+
+    # -----------------
+    # initialize lammps
+    # -----------------
+
+    LMPSF = lammps_input()
 
     # -----------------
     # initialize client
