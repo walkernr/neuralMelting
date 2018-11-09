@@ -411,6 +411,7 @@ def init_samples():
             print('initializing samples')
             print('--------------------')
             progress(futures)
+            print('\n')
     else:
         if VERBOSE:
             print('initializing samples')
