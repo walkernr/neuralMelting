@@ -8,6 +8,7 @@ Created on Thu Jun 07 04:20:00 2018
 import argparse
 import os
 import pickle
+import time
 import numpy as np
 from tqdm import tqdm
 from lammps import lammps
@@ -393,6 +394,7 @@ def init_sample(k):
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
+    time.sleep(1e-4)
     ntp, nap, ntv, nav, nth, nah, ap, av, ah = np.zeros(9)
     dx, dl, dt = DL, DX, DT
     # return system info and data storage files
@@ -603,6 +605,7 @@ def gen_sample(k, const, state):
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # close lammps and remove input file
     lmps.close()
+    time.sleep(1e-4)
     # acceptation ratios
     with np.errstate(invalid='ignore'):
         ap = np.nan_to_num(np.float32(nap)/np.float32(ntp))
@@ -769,7 +772,6 @@ if __name__ == '__main__':
         from dask import delayed
         from multiprocessing import freeze_support
     if DISTRIBUTED:
-        import time
         from dask_jobqueue import PBSCluster
 
     # number of simulations

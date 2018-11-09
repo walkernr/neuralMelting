@@ -91,7 +91,7 @@ def calculate_spatial():
     # create vector for rdf
     gs = np.zeros(bins, dtype=np.float32)
     # reshape position vector
-    pos = pos.reshape((len(natoms), natoms[0], -1))
+    pos = pos.reshape((ns, natoms[0], -1))
     # return properties
     return ns, natoms, box, pos, br, r, dr, nrho, dni, gs
 
@@ -116,12 +116,12 @@ def calculate_rdfs():
         operations = [delayed(calculate_rdf)(NATOMS[i], BOX[i], POS[i], GS) for i in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
-            print('computing %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
+            print('computing %s %s samples at pressure %d' % (NS, EL.lower(), PI))
             progress(futures)
             print('\n')
     else:
         if VERBOSE:
-            print('computing %s %s samples at pressure %d' % (len(NATOMS), EL.lower(), PI))
+            print('computing %s %s samples at pressure %d' % (NS, EL.lower(), PI))
             futures = [calculate_rdf(NATOMS[i], BOX[i], POS[i], GS) for i in tqdm(range(NS))]
         else:
             futures = [calculate_rdf(NATOMS[i], BOX[i], POS[i], GS) for i in range(NS)]
@@ -139,7 +139,7 @@ if __name__ == '__main__':
         from tqdm import tqdm
     if PARALLEL:
         os.environ['DASK_ALLOWED_FAILURES'] = '32'
-        os.environ['DASK_MULTIPROCESSING_METHOD'] = 'spawn'
+        os.environ['DASK_MULTIPROCESSING_METHOD'] = 'fork'
         os.environ['DASK_LOG_FORMAT'] = '\n%(name)s - %(levelname)s - %(message)s'
         from distributed import Client, LocalCluster, progress
         from dask import delayed

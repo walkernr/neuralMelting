@@ -456,7 +456,7 @@ if PLOT:
         print('colormap and scale defined')
         print('------------------------------------------------------------')
     # plots
-    plot_model(NNS[NN].model, show_shapes=True, show_layer_names=True, to_file=OUTPREF+'.mdl.png')
+    # plot_model(NNS[NN].model, show_shapes=True, show_layer_names=True, to_file=OUTPREF+'.mdl.png')
     plot_phase_probs()
     plot_ftrs()
     if VERBOSE:
