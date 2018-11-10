@@ -169,11 +169,12 @@ def plot_pt():
     ''' plots the pressure as a function of temperature '''
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    for j in range(NP):
-        ax.errorbar(MTEMP[j], MVIRIAL[j], xerr=STEMP[j], yerr=SVIRIAL[j], color=CM(SCALE(j)),
-                    alpha=0.5,
-                    label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[j]), np.mean(SVIRIAL[j])))
-        ax.axvline(TRANS[j, 0], color=CM(SCALE(j)))
+    for i in range(2):
+        for j in range(NP):
+            ax.errorbar(MTEMP[i, j], MVIRIAL[i, j], xerr=STEMP[i, j], yerr=SVIRIAL[i, j], color=CM(SCALE(j)),
+                        alpha=0.5,
+                        label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[i, j]), np.mean(SVIRIAL[i, j])))
+            ax.axvline(TRANS[i, j, 0], color=CM(SCALE(j)))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$P$')
     ax.legend(loc='center right')
@@ -184,10 +185,11 @@ def plot_ut():
     ''' plots the potential energy as a function of temperature '''
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    for j in range(NP):
-        ax.errorbar(MTEMP[j], MPE[j], xerr=STEMP[j], yerr=SPE[j], color=CM(SCALE(j)), alpha=0.5,
-                    label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[j]), np.mean(SVIRIAL[j])))
-        ax.axvline(TRANS[j, 0], color=CM(SCALE(j)))
+    for i in range(2):
+        for j in range(NP):
+            ax.errorbar(MTEMP[i, j], MPE[i, j], xerr=STEMP[i, j], yerr=SPE[i, j], color=CM(SCALE(j)), alpha=0.5,
+                        label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[i, j]), np.mean(SVIRIAL[i, j])))
+            ax.axvline(TRANS[i, j, 0], color=CM(SCALE(j)))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$U$')
     ax.legend(loc='upper left')
@@ -213,11 +215,13 @@ def plot_mc():
         ax.scatter(rt1, rp1, color=CM(0.375), s=240, edgecolors='none', marker='*',
                    label=r'$\mathrm{Literature\enspace} (r_c = 2.5)$')
         ax.plot(rt1, rs1*rt1+ri1, color=CM(0.375))
-    ax.errorbar(TRANS[:, 0], np.mean(MVIRIAL, axis=1), xerr=TRANS[:, 1],
-                yerr=np.mean(SVIRIAL, axis=1), color=CM(0.5), fmt='o',
-                label=r'$\mathrm{Keras\enspace CNN-1D}$')
-    ns, ni = linregress(TRANS[:, 0], np.mean(MVIRIAL, axis=1))[:2]
-    ax.plot(TRANS[:, 0], ns*TRANS[:, 0]+ni, color=CM(0.5))
+    labels = [r'$\mathrm{Keras\enspace CNN-1D}$', r'$\mathrm{TSNE\enspace Agglomerative}$']
+    for i in range(2):
+        ax.errorbar(TRANS[i, :, 0], np.mean(MVIRIAL[i], axis=1), xerr=TRANS[i, :, 1],
+                    yerr=np.mean(SVIRIAL[i], axis=1), color=CM(0.5), fmt='o',
+                    label=labels[i])
+        ns, ni = linregress(TRANS[i, :, 0], np.mean(MVIRIAL[i], axis=1))[:2]
+        ax.plot(TRANS[i, :, 0], ns*TRANS[i, :, 0]+ni, color=CM(0.5))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$P$')
     ax.legend(loc='upper left')
