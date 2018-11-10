@@ -23,7 +23,7 @@ PARSER.add_argument('-pt', '--plot', help='plot results', action='store_true')
 PARSER.add_argument('-nt', '--threads', help='number of threads',
                     type=int, default=16)
 PARSER.add_argument('-b', '--backend', help='keras backend',
-                    type=str, default='theano')
+                    type=str, default='tensorflow')
 PARSER.add_argument('-n', '--name', help='name of simulation',
                     type=str, default='remcmc_init')
 PARSER.add_argument('-e', '--element', help='element choice',
