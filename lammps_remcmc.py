@@ -917,8 +917,6 @@ if __name__ == '__main__':
         if (STEP+1) % REFREQ == 0:
             # save state for restart
             dump_samples_restart()
-            # if DASK:
-                # CLIENT.restart()
         # replica exchange markov chain mc
         replica_exchange()
     if DASK:
