@@ -33,9 +33,9 @@ def parse_args():
     parser.add_argument('-rs', '--restart_step', help='restart dump start step',
                         type=int, default=1024)
     parser.add_argument('-q', '--queue', help='job submission queue',
-                        type=str, default='lasigma')
+                        type=str, default='jobqueue')
     parser.add_argument('-a', '--allocation', help='job submission allocation',
-                        type=str, default='hpc_lasigma01')
+                        type=str, default='startup')
     parser.add_argument('-nn', '--nodes', help='job node count',
                         type=int, default=1)
     parser.add_argument('-np', '--procs_per_node', help='number of processors per node',
