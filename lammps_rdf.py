@@ -146,7 +146,7 @@ if __name__ == '__main__':
     (VERBOSE, PARALLEL, DASK, DISTRIBUTED,
      QUEUE, ALLOC, NODES, PPN,
      WALLTIME, MEM,
-     NWORKER, NTHREAD, MTHD
+     NWORKER, NTHREAD, MTHD,
      NAME, EL, PI) = parse_args()
 
     # processing or threading
