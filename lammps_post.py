@@ -137,7 +137,7 @@ PREFIX = '%s.%s.%s' % (NAME, EL.lower(), LAT[EL])
 SPREFS = ['%s.%02d.lammps.%s.%s.%s.%s.%s' % (PREFIX, i,
                                              SFTR, SSCLR, SRDCN, NN, SFF) for i in range(NP)]
 UPREFS = ['%s.%02d.lammps.%s.%s.%s.%s.%s' % (PREFIX, i,
-                                             UFTR, USCLR, URDCN, NN, UFF) for i in range(NP)]
+                                             UFTR, USCLR, URDCN, CLST, UFF) for i in range(NP)]
 
 if VERBOSE:
     print('neural network transitions')
