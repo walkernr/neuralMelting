@@ -218,10 +218,10 @@ def plot_mc():
     labels = [r'$\mathrm{Keras\enspace CNN-1D}$', r'$\mathrm{TSNE\enspace Agglomerative}$']
     for i in range(2):
         ax.errorbar(TRANS[i, :, 0], np.mean(MVIRIAL[i], axis=1), xerr=TRANS[i, :, 1],
-                    yerr=np.mean(SVIRIAL[i], axis=1), color=CM(0.5), fmt='o',
+                    yerr=np.mean(SVIRIAL[i], axis=1), color=CM(0.5+0.125*i), fmt='o',
                     label=labels[i])
         ns, ni = linregress(TRANS[i, :, 0], np.mean(MVIRIAL[i], axis=1))[:2]
-        ax.plot(TRANS[i, :, 0], ns*TRANS[i, :, 0]+ni, color=CM(0.5))
+        ax.plot(TRANS[i, :, 0], ns*TRANS[i, :, 0]+ni, color=CM(0.5+0.125*i))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$P$')
     ax.legend(loc='upper left')
