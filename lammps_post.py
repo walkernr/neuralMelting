@@ -105,7 +105,8 @@ if VERBOSE:
     print('sreduction:                  %s' % SRDCN)
     print('ureduction:                  %s' % URDCN)
     print('network:                     %s' % NN)
-    print('fitting function:            %s' % FF)
+    print('fitting sfunction:           %s' % SFF)
+    print('fitting ufunction:           %s' % UFF)
     print('------------------------------------------------------------')
 
 
