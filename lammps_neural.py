@@ -37,7 +37,7 @@ PARSER.add_argument('-sn', '--sample_number', help='sample number per temperatur
 PARSER.add_argument('-ln', '--learning_number', help='number of samples to learn per temperature',
                     type=int, default=1024)
 PARSER.add_argument('-ts', '--training_sets', help='number of training sets per phase',
-                    type=int, default=16)
+                    type=int, default=8)
 PARSER.add_argument('-ep', '--epochs', help='number of epochs',
                     type=int, default=1)
 PARSER.add_argument('-f', '--feature', help='feature to learn',
