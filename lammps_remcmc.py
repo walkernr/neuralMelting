@@ -925,4 +925,5 @@ if __name__ == '__main__':
         # terminate client after completion
         CLIENT.close()
     # consolidate output files
-    consolidate_outputs()
+    if CUTOFF < NSMPL:
+        consolidate_outputs()
