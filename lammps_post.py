@@ -133,7 +133,7 @@ MTEMP = np.zeros((2, NP, NT), dtype=float)
 STEMP = np.zeros((2, NP, NT), dtype=float)
 
 # file prefixes
-PREFIX = '%s.%s.%s.lammps' % (NAME, EL.lower(), LAT[EL])
+PREFIX = '%s.%s.%s' % (NAME, EL.lower(), LAT[EL])
 SPREFS = ['%s.%02d.lammps.%s.%s.%s.%s.%s' % (PREFIX, i,
                                              SFTR, SSCLR, SRDCN, NN, SFF) for i in range(NP)]
 UPREFS = ['%s.%02d.lammps.%s.%s.%s.%s.%s' % (PREFIX, i,
