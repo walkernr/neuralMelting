@@ -220,8 +220,8 @@ def plot_mc():
         ax.errorbar(TRANS[i, :, 0], np.mean(MVIRIAL[i], axis=1), xerr=TRANS[i, :, 1],
                     yerr=np.mean(SVIRIAL[i], axis=1), color=CM(0.5+0.125*i), fmt='o',
                     label=labels[i])
-        # ns, ni = linregress(TRANS[i, :, 0], np.mean(MVIRIAL[i], axis=1))[:2]
-        # ax.plot(TRANS[i, :, 0], ns*TRANS[i, :, 0]+ni, color=CM(0.5+0.125*i))
+        ns, ni = linregress(TRANS[i, :, 0], np.mean(MVIRIAL[i], axis=1))[:2]
+        ax.plot(TRANS[i, :, 0], ns*TRANS[i, :, 0]+ni, color=CM(0.5+0.125*i))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$P$')
     ax.legend(loc='upper left')
