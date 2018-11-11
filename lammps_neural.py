@@ -152,6 +152,7 @@ if VERBOSE:
     print('scaler:                      %s' % SCLR)
     print('reduction:                   %s' % RDCN)
     print('network:                     %s' % NN)
+    print('epochs:                      %d' % EP)
     print('fitting function:            %s' % FF)
     print('------------------------------------------------------------')
 
@@ -365,6 +366,7 @@ with open(OUTPREF+'.out', 'w') as output:
     output.write('# scaler:                      %s\n' % SCLR)
     output.write('# reduction:                   %s\n' % RDCN)
     output.write('# network:                     %s\n' % NN)
+    output.write('# epochs:                      %d\n' % EP)
     output.write('# fitting function:            %s\n' % FF)
     output.write('# ------------------------------------------------------------\n')
     output.write('# transition | standard error\n')
