@@ -392,12 +392,10 @@ def init_sample(k):
     # initialize lammps
     lmps = lammps(cmdargs=['-log', 'none', '-screen', 'none'])
     lmps.file(LMPSF)
-    # minimize then randomize lattice structure
+    # minimize lattice structure
     lmps.command('unfix 1')
     lmps.command('fix 1 all box/relax iso %f vmax %f' % (P[i], 0.0009765625))
     lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
-    seed = np.random.randint(1, 2**16)
-    lmps.command('displace_atoms all random %f %f %f %d units lattice' % (3*(DX,)+(seed,)))
     lmps.command('run 0')
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
@@ -409,6 +407,11 @@ def init_sample(k):
     box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
     lmps.command(box_cmd % (3*(boxnew,)))
     lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
+    lmps.command('run 0')
+    # randomize positions
+    seed = np.random.randint(1, 2**16)
+    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(DX,)+(seed,)))
+    lmps.command('run 0')
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
     ntp, nap, ntv, nav, nth, nah, ap, av, ah = np.zeros(9)
@@ -464,7 +467,7 @@ def bulk_position_mc(lmps, et, ntp, nap, dx):
     x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
     pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     seed = np.random.randint(1, 2**16)
-    lmps.command('displace_atoms all random %f %f %f %d units lattice' % (3*(dx,)+(seed,)))
+    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(dx,)+(seed,)))
     lmps.command('run 0')
     penew = lmps.extract_compute('thermo_pe', 0, 0)/et
     de = penew-pe
@@ -494,7 +497,7 @@ def iter_position_mc(lmps, et, ntp, nap, dx):
         x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
         pe = lmps.extract_compute('thermo_pe', 0, 0)/et
         xnew = np.copy(x)
-        xnew[3*k:3*k+3] += (np.random.rand(3)-0.5)*dx
+        xnew[3*k:3*k+3] += 2*(np.random.rand(3)-0.5)*dx
         xnew[3*k:3*k+3] -= np.floor(xnew[3*k:3*k+3]/box)*box
         lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
         lmps.command('run 0')
@@ -524,7 +527,7 @@ def volume_mc(lmps, et, pf, ntv, nav, dl):
     x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
     pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     # save new physical properties
-    boxnew = box+(np.random.rand()-0.5)*dl
+    boxnew = box+2*(np.random.rand()-0.5)*dl
     volnew = np.power(boxnew, 3)
     scalef = boxnew/box
     xnew = scalef*x
