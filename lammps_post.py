@@ -169,7 +169,7 @@ def plot_pt():
     ''' plots the pressure as a function of temperature '''
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    for i in range(2):
+    for i in range(1):
         for j in range(NP):
             ax.errorbar(MTEMP[i, j], MVIRIAL[i, j], xerr=STEMP[i, j], yerr=SVIRIAL[i, j], color=CM(SCALE(j)),
                         alpha=0.5,
@@ -185,7 +185,7 @@ def plot_ut():
     ''' plots the potential energy as a function of temperature '''
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    for i in range(2):
+    for i in range(1):
         for j in range(NP):
             ax.errorbar(MTEMP[i, j], MPE[i, j], xerr=STEMP[i, j], yerr=SPE[i, j], color=CM(SCALE(j)), alpha=0.5,
                         label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[i, j]), np.mean(SVIRIAL[i, j])))
