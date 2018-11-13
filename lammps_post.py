@@ -216,7 +216,7 @@ def plot_mc():
                    label=r'$\mathrm{Literature\enspace} (r_c = 2.5)$')
         ax.plot(rt1, rs1*rt1+ri1, color=CM(0.375))
     labels = [r'$\mathrm{Keras\enspace CNN-1D}$', r'$\mathrm{TSNE\enspace Agglomerative}$']
-    for i in range(2):
+    for i in range(1):
         ax.errorbar(TRANS[i, :, 0], np.mean(MVIRIAL[i], axis=1), xerr=TRANS[i, :, 1],
                     yerr=np.mean(SVIRIAL[i], axis=1), color=CM(0.5+0.125*i), fmt='o',
                     label=labels[i])
