@@ -111,6 +111,7 @@ def init_constant(k):
     ''' calculates thermodynamic constants for a sample '''
     # extract pressure/temperature indices from index
     i, j = np.unravel_index(k, dims=(NP, NT), order='C')
+    n = STATE[k][0]
     if UNITS[EL] == 'real':
         na = 6.0221409e23                              # avagadro number [num/mol]
         kb = 3.29983e-27                               # boltzmann constant [kcal/K]
@@ -123,8 +124,8 @@ def init_constant(k):
         pf = 1e-30*(1e5*P[i])/(1.60218e-19*kb*T[j])    # metropolis prefactor [1/A^3]
     if UNITS[EL] == 'lj':
         kb = 1.0                                       # boltzmann constant (unitless)
-        et = kb*T[j]                                   # thermal energy [T*]
-        pf = P[i]/(kb*T[j])                            # metropolis prefactor [1/r*^3]
+        et = n*kb*T[j]                                 # thermal energy [T*]
+        pf = P[i]/(n*kb*T[j])                          # metropolis prefactor [1/r*^3]
     return et, pf
 
 
@@ -898,12 +899,6 @@ if __name__ == '__main__':
     # monte carlo
     # -----------
 
-    # define thermodynamic constants
-    CONST = init_constants()
-    # define output file names
-    OUTPUT = init_outputs()
-    if CUTOFF < NSMPL:
-        init_headers()
     # initialize simulation
     if RESTART:
         STATE = load_samples_restart()
@@ -913,6 +908,12 @@ if __name__ == '__main__':
             STATE = CLIENT.gather(init_samples())
         else:
             STATE = init_samples()
+    # define thermodynamic constants
+    CONST = init_constants()
+    # define output file names
+    OUTPUT = init_outputs()
+    if CUTOFF < NSMPL:
+        init_headers()
     # loop through to number of samples that need to be collected
     for STEP in tqdm(range(NSMPL)):
         if VERBOSE and DASK:
