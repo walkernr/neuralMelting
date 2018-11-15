@@ -125,8 +125,8 @@ def init_constant(k):
         pf = 1e-30*(1e5*P[i])/(1.60218e-19*kb*T[j])    # metropolis prefactor [1/A^3]
     if UNITS[EL] == 'lj':
         kb = 1.0                                       # boltzmann constant (unitless)
-        et = kb*T[j]                                 # thermal energy [T*]
-        pf = P[i]/(kb*T[j])                          # metropolis prefactor [1/r*^3]
+        et = kb*T[j]                                   # thermal energy [T*]
+        pf = P[i]/(kb*T[j])                            # metropolis prefactor [1/r*^3]
     return et, pf
 
 
@@ -225,8 +225,11 @@ def init_headers():
         if VERBOSE:
             print('initializing headers')
             print('--------------------')
-        for k in range(NS):
-            init_header(k, OUTPUT[k])
+            for k in tqdm(range(NS)):
+                init_header(k, OUTPUT[k])
+        else:
+            for k in range(NS):
+                init_header(k, OUTPUT[k])
     return
 
 
@@ -279,8 +282,11 @@ def write_outputs():
         if VERBOSE:
             print('writing outputs')
             print('---------------')
-        for k in range(NS):
-            write_output(OUTPUT[k], STATE[k])
+            for k in tqdm(range(NS)):
+                write_output(OUTPUT[k], STATE[k])
+        else:
+            for k in range(NS):
+                write_output(OUTPUT[k], STATE[k])
     return
 
 
@@ -442,7 +448,9 @@ def init_samples():
         if VERBOSE:
             print('initializing samples')
             print('--------------------')
-        futures = [init_sample(k) for k in range(NS)]
+            futures = [init_sample(k) for k in tqdm(range(NS))]
+        else:
+            futures = [init_sample(k) for k in range(NS)]
     return futures
 
 
@@ -502,11 +510,14 @@ def iter_position_mc(lmps, et, ntp, nap, dx):
         x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
         pe = lmps.extract_compute('thermo_pe', 0, 0)/et
         xnew = np.copy(x)
+        # generate proposed positions
         xnew[3*k:3*k+3] += 2*(np.random.rand(3)-0.5)*dx
         xnew[3*k:3*k+3] -= np.floor(xnew[3*k:3*k+3]/box)*box
         lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
         lmps.command('run 0')
+        # save new physical properties
         penew = lmps.extract_compute('thermo_pe', 0, 0)/et
+        # calculate energy criterion
         de = penew-pe
         if np.random.rand() <= np.min([1, np.exp(-de)]):
             # update pos acceptations
@@ -667,7 +678,9 @@ def gen_samples():
             print('----------------------')
             print('performing monte carlo')
             print('----------------------')
-        futures = [gen_sample(k, CONST[k], STATE[k]) for k in range(NS)]
+            futures = [gen_sample(k, CONST[k], STATE[k]) for k in tqdm(range(NS))]
+        else:
+            futures = [gen_sample(k, CONST[k], STATE[k]) for k in range(NS)]
     return futures
 
 # ----------------------------
