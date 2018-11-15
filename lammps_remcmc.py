@@ -125,8 +125,8 @@ def init_constant(k):
         pf = 1e-30*(1e5*P[i])/(1.60218e-19*kb*T[j])    # metropolis prefactor [1/A^3]
     if UNITS[EL] == 'lj':
         kb = 1.0                                       # boltzmann constant (unitless)
-        et = n*kb*T[j]                                 # thermal energy [T*]
-        pf = P[i]/(n*kb*T[j])                          # metropolis prefactor [1/r*^3]
+        et = kb*T[j]                                 # thermal energy [T*]
+        pf = P[i]/(kb*T[j])                          # metropolis prefactor [1/r*^3]
     return et, pf
 
 
