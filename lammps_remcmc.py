@@ -10,6 +10,7 @@ import os
 import pickle
 import time
 import numpy as np
+import numba as nb
 from tqdm import tqdm
 from lammps import lammps
 
@@ -387,6 +388,7 @@ def lammps_extract(lmps):
     return natoms, x, v, temp, pe, ke, virial, box, vol
 
 
+@nb.jit
 def init_sample(k):
     ''' initializes sample '''
     i, j = np.unravel_index(k, dims=(NP, NT), order='C')
@@ -462,6 +464,7 @@ def init_lammps(i, x, v, box):
 # -----------------
 
 
+@nb.jit
 def bulk_position_mc(lmps, et, ntp, nap, dx):
     ''' classic position monte carlo (bulk) '''
     ntp += 1
@@ -483,6 +486,7 @@ def bulk_position_mc(lmps, et, ntp, nap, dx):
     return lmps, ntp, nap
 
 
+@nb.jit
 def iter_position_mc(lmps, et, ntp, nap, dx):
     ''' classic position monte carlo (iterative) '''
     # get number of atoms
@@ -515,6 +519,7 @@ def iter_position_mc(lmps, et, ntp, nap, dx):
     return lmps, ntp, nap
 
 
+@nb.jit
 def volume_mc(lmps, et, pf, ntv, nav, dl):
     ''' isobaric-isothermal volume monte carlo '''
     # update volume tries
@@ -552,6 +557,7 @@ def volume_mc(lmps, et, pf, ntv, nav, dl):
     return lmps, ntv, nav
 
 
+@nb.jit
 def hamiltonian_mc(lmps, et, t, nth, nah, dt):
     ''' hamiltionian monte carlo '''
     # update hmc tries
@@ -719,7 +725,7 @@ def gen_mc_params():
 # replica exchange markov chain monte carlo
 # -----------------------------------------
 
-
+nb.jit
 def replica_exchange():
     ''' performs parallel tempering across temperature samples for each pressure '''
     # catalog swaps
