@@ -600,8 +600,8 @@ def move_mc(lmps, et, pf, t, ntp, nap, ntv, nav, nth, nah, dx, dl, dt):
     roll = np.random.rand()
     # position monte carlo
     if roll <= PPOS:
-        # lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
-        lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
+        lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
+        # lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
     # volume monte carlo
     elif roll <= (PPOS+PVOL):
         lmps, ntv, nav = volume_mc(lmps, et, pf, ntv, nav, dl)
