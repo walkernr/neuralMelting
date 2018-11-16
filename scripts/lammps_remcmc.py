@@ -426,6 +426,7 @@ def init_samples():
         operations = [delayed(init_sample)(k) for k in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
+            print('--------------------')
             print('initializing samples')
             print('--------------------')
             progress(futures)
@@ -435,6 +436,7 @@ def init_samples():
         futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(operations)
     else:
         if VERBOSE:
+            print('--------------------')
             print('initializing samples')
             print('--------------------')
             futures = [init_sample(k) for k in tqdm(range(NS))]
