@@ -399,7 +399,9 @@ def init_sample(k):
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # resize box
-    boxnew = box+np.random.rand()*DL*(np.random.rand()+j/NT)
+    # boxnew = box+np.random.rand()*DL*(np.random.rand()+j/NT)
+    volnew = np.exp(np.log(vol)+np.random.rand()*DL*(np.random.rand()+j/NT))
+    boxnew = np.cbrt(volnew)
     scalef = boxnew/box
     xnew = scalef*x
     box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
@@ -532,8 +534,10 @@ def volume_mc(lmps, et, pf, ntv, nav, dl):
     x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
     pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     # save new physical properties
-    boxnew = box+2*(np.random.rand()-0.5)*dl
-    volnew = np.power(boxnew, 3)
+    # boxnew = box+2*(np.random.rand()-0.5)*dl
+    # volnew = np.power(boxnew, 3)
+    volnew = np.exp(np.log(vol)+2*(np.random.rand()-0.5)*DL)
+    boxnew = np.cbrt(volnew)
     scalef = boxnew/box
     xnew = scalef*x
     # apply new physical properties
