@@ -79,8 +79,8 @@ def parse_args():
                         type=int, default=8)
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
                         type=float, default=0.125)
-    parser.add_argument('-dl', '--box_displace', help='box displacement (box proportion)',
-                        type=float, default=0.0625)
+    parser.add_argument('-dv', '--vol_displace', help='logarithmic volume displacement',
+                        type=float, default=0.03125)
     # parse arguments
     args = parser.parse_args()
     # return arguments
@@ -94,7 +94,7 @@ def parse_args():
             args.temperature_number, *args.temperature_range,
             args.sample_cutoff, args.sample_number, args.sample_mod,
             args.position_move, args.volume_move, args.timesteps,
-            args.pos_displace, args.box_displace)
+            args.pos_displace, args.vol_displace)
 
 
 def client_info():
@@ -199,7 +199,7 @@ def init_header(k, output):
         thrm_out.write('# press:    %f\n' % P[i])
         thrm_out.write('# temp:     %f\n' % T[j])
         thrm_out.write('# dx:       %f\n' % DX)
-        thrm_out.write('# dl:       %f\n' % DL)
+        thrm_out.write('# dv:       %f\n' % DV)
         thrm_out.write('# dt:       %f\n' % DT)
         thrm_out.write('# ------------------------------------------------------------\n')
         thrm_out.write('# | temp | pe | ke | virial | vol | accpos | accvol | acchmc |\n')
@@ -399,8 +399,7 @@ def init_sample(k):
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # resize box
-    # boxnew = box+np.random.rand()*DL*(np.random.rand()+j/NT)
-    volnew = np.exp(np.log(vol)+np.random.rand()*DL*(np.random.rand()+j/NT))
+    volnew = np.exp(np.log(vol)+0.5*(np.random.rand()+j/NT)*DV)
     boxnew = np.cbrt(volnew)
     scalef = boxnew/box
     xnew = scalef*x
@@ -410,15 +409,15 @@ def init_sample(k):
     lmps.command('run 0')
     # randomize positions
     seed = np.random.randint(1, 2**16)
-    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(scalef*DX,)+(seed,)))
+    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(DX,)+(seed,)))
     lmps.command('run 0')
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
     ntp, nap, ntv, nav, nth, nah, ap, av, ah = np.zeros(9)
-    dx, dl, dt = DL, DX, DT
+    dx, dv, dt = DX, DV, DT
     # return system info and data storage files
     return [natoms, x, v, temp, pe, ke, virial, box, vol,
-            ntp, nap, ntv, nav, nth, nah, ap, av, ah, dx, dl, dt]
+            ntp, nap, ntv, nav, nth, nah, ap, av, ah, dx, dv, dt]
 
 
 def init_samples():
@@ -521,7 +520,7 @@ def iter_position_mc(lmps, et, ntp, nap, dx):
 
 
 @nb.jit
-def volume_mc(lmps, et, pf, ntv, nav, dl):
+def volume_mc(lmps, et, pf, ntv, nav, dv):
     ''' isobaric-isothermal volume monte carlo '''
     # update volume tries
     ntv += 1
@@ -534,9 +533,7 @@ def volume_mc(lmps, et, pf, ntv, nav, dl):
     x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
     pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     # save new physical properties
-    # boxnew = box+2*(np.random.rand()-0.5)*dl
-    # volnew = np.power(boxnew, 3)
-    volnew = np.exp(np.log(vol)+2*(np.random.rand()-0.5)*DL)
+    volnew = np.exp(np.log(vol)+2*(np.random.rand()-0.5)*DV)
     boxnew = np.cbrt(volnew)
     scalef = boxnew/box
     xnew = scalef*x
@@ -598,7 +595,7 @@ def hamiltonian_mc(lmps, et, t, nth, nah, dt):
     return lmps, nth, nah
 
 
-def move_mc(lmps, et, pf, t, ntp, nap, ntv, nav, nth, nah, dx, dl, dt):
+def move_mc(lmps, et, pf, t, ntp, nap, ntv, nav, nth, nah, dx, dv, dt):
     ''' performs monte carlo moves '''
     roll = np.random.rand()
     # position monte carlo
@@ -607,7 +604,7 @@ def move_mc(lmps, et, pf, t, ntp, nap, ntv, nav, nth, nah, dx, dl, dt):
         # lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
     # volume monte carlo
     elif roll <= (PPOS+PVOL):
-        lmps, ntv, nav = volume_mc(lmps, et, pf, ntv, nav, dl)
+        lmps, ntv, nav = volume_mc(lmps, et, pf, ntv, nav, dv)
     # hamiltonian monte carlo
     else:
         lmps, nth, nah = hamiltonian_mc(lmps, et, t, nth, nah, dt)
@@ -627,12 +624,12 @@ def gen_sample(k, const, state):
     x, v = state[1:3]
     box = state[7]
     ntp, nap, ntv, nav, nth, nah = state[9:15]
-    dx, dl, dt = state[18:21]
+    dx, dv, dt = state[18:21]
     lmps = init_lammps(x, v, box)
     # loop through monte carlo moves
     for _ in range(MOD):
         lmps, ntp, nap, ntv, nav, nth, nah = move_mc(lmps, et, pf, t,
-                                                     ntp, nap, ntv, nav, nth, nah, dx, dl, dt)
+                                                     ntp, nap, ntv, nav, nth, nah, dx, dv, dt)
     # extract system properties
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # close lammps and remove input file
@@ -644,7 +641,7 @@ def gen_sample(k, const, state):
         ah = np.nan_to_num(np.float32(nah)/np.float32(nth))
     # return lammps object, tries/acceptation counts, and mc params
     return [natoms, x, v, temp, pe, ke, virial, box, vol,
-            ntp, nap, ntv, nav, nth, nah, ap, av, ah, dx, dl, dt]
+            ntp, nap, ntv, nav, nth, nah, ap, av, ah, dx, dv, dt]
 
 
 def gen_samples():
@@ -682,22 +679,22 @@ def gen_samples():
 def gen_mc_param(state):
     ''' generate adaptive monte carlo parameters for a sample '''
     # update position displacment for pos-mc
-    ap, av, ah, dx, dl, dt = state[-6:]
+    ap, av, ah, dx, dv, dt = state[-6:]
     if ap < 0.5:
         dx = 0.9375*dx
     else:
         dx = 1.0625*dx
     # update box displacement for vol-mc
     if av < 0.5:
-        dl = 0.9375*dl
+        dv = 0.9375*dv
     else:
-        dl = 1.0625*dl
+        dv = 1.0625*dv
     # update timestep for hmc
     if ah < 0.5:
         dt = 0.9375*dt
     else:
         dt = 1.0625*dt
-    return state[:-6]+[ap, av, ah, dx, dl, dt]
+    return state[:-6]+[ap, av, ah, dx, dv, dt]
 
 
 def gen_mc_params():
@@ -798,7 +795,7 @@ if __name__ == '__main__':
      NT, LT, HT,
      CUTOFF, NSMPL, MOD,
      PPOS, PVOL, NSTPS,
-     PDX, PDL) = parse_args()
+     PDX, PDV) = parse_args()
 
     # set random seed
     SEED = 256
@@ -850,7 +847,7 @@ if __name__ == '__main__':
     T = np.linspace(LT, HT, NT, dtype=np.float32)
     # inital position variation, volume variation, and timestep
     DX = PDX*LAT[EL][1]
-    DL = PDL*SZ*LAT[EL][1]
+    DV = PDV
     DT = TIMESTEP[UNITS[EL]]
 
     # -----------------
