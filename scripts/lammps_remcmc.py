@@ -547,7 +547,7 @@ def volume_mc(lmps, et, pf, ntv, nav, dl):
     lmps.command('run 0')
     penew = lmps.extract_compute('thermo_pe', 0, 0)/et
     # calculate enthalpy criterion
-    dh = (penew-pe)+pf*(volnew-vol)-natoms*np.log(volnew/vol)
+    dh = (penew-pe)+pf*(volnew-vol)-(natoms+1)*np.log(volnew/vol)
     if np.random.rand() <= np.min([1, np.exp(-dh)]):
         # update volume acceptations
         nav += 1
