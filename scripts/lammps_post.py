@@ -236,6 +236,6 @@ def plot_mc():
     ax.legend(loc='upper left')
     fig.savefig(PREFIX+'.mc.png')
 
-plot_pt()
-plot_ut()
+# plot_pt()
+# plot_ut()
 plot_mc()
