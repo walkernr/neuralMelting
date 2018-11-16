@@ -51,7 +51,7 @@ In order to use LAMMPS in Python, it must be compiled as a shared library. The i
 Installation and Execution
 ==========================
 
-Once all of the required packages have been installed, simply cloning the directory and running the scripts is all that is needed. A shell script showing a convenient way to run the scripts is provided as `run.sh`.
+Once all of the required packages have been installed, simply cloning the directory and running the scripts is all that is needed. Use `--help` or `-h` for help. A shell script showing a convenient way to run the scripts is provided as `run.sh`.
 
 Sample Results
 ==============
@@ -60,25 +60,36 @@ Here are some sample results for a small Lennard-Jones system of 108 atoms.
 
 ![Neural Network Classification](https://github.com/walkernr/neuralMelting/blob/master/images/neural_classification_probability.png)
 
+
 These are the liquid phase predictions from a 1-dimensional convolutional neural network on the entropic fingerprints of 1024 samples across 48 temperatures for P = 1.
+
 
 ![Neural Network Classified Feature Averages](https://github.com/walkernr/neuralMelting/blob/master/images/neural_classified_feature_average.png)
 
+
 These are the average entropic fingerprints for the phases from both the training and classification data.
+
 
 ![Neural Network Melting Curve](https://github.com/walkernr/neuralMelting/blob/master/images/neural_melting_curve.png)
 
+
 This is the P-T melting curve for the system.
+
 
 ![Clustering Classification](https://github.com/walkernr/neuralMelting/blob/master/images/cluster_classification_probability.png)
 
+
 These are the liquid phase predictions from agglomerative clustering done on the t-SNE feature reduced data.
+
 
 ![Clustering Classified Feature Averages](https://github.com/walkernr/neuralMelting/blob/master/images/cluster_classified_feature_average.png)
 
+
 These are the average entropic fingerprints from each phase according to the agglomerative clustering.
 
+
 ![t-SNE Sample Embedding with Clustering](https://github.com/walkernr/neuralMelting/blob/master/images/cluster_reduced_feature_embedding.png)
+
 
 This is the t-SNE feature reduced projection of the original data into two dimensions with the original data in the left panel and clustering results in the right panel.
 
