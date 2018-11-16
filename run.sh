@@ -13,5 +13,5 @@ do
   python ../../scripts/lammps_neural.py -v -p -pt -n remcmc_run_3 -i $i -ep 2
   python ../../scripts/lammps_cluster.py -v -pt -n remcmc_run_3 -i $i
 done
-python ../..scripts/lammps_post.py -v -n remcmc_run_3
+python ../../scripts/lammps_post.py -v -n remcmc_run_3
 
