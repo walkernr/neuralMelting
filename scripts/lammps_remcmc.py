@@ -410,7 +410,7 @@ def init_sample(k):
     lmps.command('run 0')
     # randomize positions
     seed = np.random.randint(1, 2**16)
-    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(DX,)+(seed,)))
+    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(scalef*DX,)+(seed,)))
     lmps.command('run 0')
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
