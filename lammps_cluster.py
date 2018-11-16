@@ -9,12 +9,12 @@ import argparse
 import pickle
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA, KernelPCA
 from sklearn.manifold import Isomap, LocallyLinearEmbedding
 from MulticoreTSNE import MulticoreTSNE as TSNE
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 from scipy.odr import ODR, Model, RealData
+from TanhScaler import TanhScaler
 
 # parse command line
 PARSER = argparse.ArgumentParser()
@@ -176,7 +176,7 @@ SCLRS = {'standard':StandardScaler(),
 NPCA = FTRS[FTR].shape[-1]
 NNLN = 2
 # temperature distribution
-PLXTY= NS
+PLXTY = NS
 RDCNS = {'pca':PCA(n_components=NPCA),
          'kpca':KernelPCA(n_components=NNLN, n_jobs=THREADS),
          'isomap':Isomap(n_components=NNLN, n_jobs=THREADS),
@@ -301,11 +301,11 @@ def plot_reduction():
                      cbar_mode="single",
                      cbar_size="4%",
                      cbar_pad=0.4)
-    for i in range(len(grid)):
-        grid[i].spines['right'].set_visible(False)
-        grid[i].spines['top'].set_visible(False)
-        grid[i].xaxis.set_ticks_position('bottom')
-        grid[i].yaxis.set_ticks_position('left')
+    for j in range(len(grid)):
+        grid[j].spines['right'].set_visible(False)
+        grid[j].spines['top'].set_visible(False)
+        grid[j].xaxis.set_ticks_position('bottom')
+        grid[j].yaxis.set_ticks_position('left')
     cbd = grid[0].scatter(RDATA[:, 0], RDATA[:, 1], c=TEMP.reshape(NT*LN),
                           cmap=CM, s=120, alpha=0.05, edgecolors='none')
     grid[0].set_aspect('equal', 'datalim')

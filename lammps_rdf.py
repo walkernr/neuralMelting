@@ -10,6 +10,7 @@ import os
 import pickle
 import numpy as np
 import numba as nb
+from tqdm import tqdm
 
 def parse_args():
     ''' parse command line arguments '''
@@ -131,9 +132,8 @@ def calculate_rdfs():
             progress(futures)
             print('\n')
     elif PARALLEL:
-        futures = Parallel(n_jobs=NTHREAD,
-                           backend='threading',
-                           verbose=VERBOSE)(delayed(calculate_rdf)(NATOMS[i], BOX[i], POS[i], GS) for k in range(NS))
+        operations = [delayed(calculate_rdf)(NATOMS[i], BOX[i], POS[i], GS) for i in range(NS)]
+        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(operations)
     else:
         if VERBOSE:
             futures = [calculate_rdf(NATOMS[i], BOX[i], POS[i], GS) for i in tqdm(range(NS))]
@@ -178,7 +178,8 @@ if __name__ == '__main__':
         from distributed import Client, LocalCluster, progress
         from dask import delayed
     if DISTRIBUTED:
-        from dask_jobqueue import PBSCluster    
+        from dask_jobqueue import PBSCluster
+        import time
 
     # client initialization
     if PARALLEL:

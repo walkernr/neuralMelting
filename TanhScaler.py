@@ -16,23 +16,23 @@ tanhScaler = lambda x: 0.5*(np.tanh(x)+1)
 # tanh scaler class
 class TanhScaler:
     ''' this scaler feeds the z-scre from the standard scaler into a tanh function
-    
+
         the tanh function allows for the output to be less sensitive to outliers and maps
         all features to a common numerical domain '''
-    
+
     def __init__(self):
         ''' initialize standard scaler '''
         self.standard = StandardScaler()
-        
+
     def fit(self, X):
         ''' fit standard scaler to data X '''
         self.standard.fit(X)
-        
+
     def transform(self, X):
         ''' transform data X '''
         zscore = self.standard.transform(X)  # tranform with standard scaler first
         return tanhScaler(zscore)  # return tanh scaled data
-        
+
     def fit_transform(self, X):
         ''' simultaneously fit and transform data '''
         self.fit(X)  # fit first

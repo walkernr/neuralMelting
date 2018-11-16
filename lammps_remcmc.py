@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument('-r', '--restart', help='restart run mode', action='store_true')
     parser.add_argument('-p', '--parallel', help='parallel run mode', action='store_true')
     parser.add_argument('-c', '--client', help='dask client run mode', action='store_true')
-    parser.add_argument('-d', '--distributed', help='dask distributed run mode', action='store_true')
+    parser.add_argument('-d', '--distributed', help='distributed run mode', action='store_true')
     parser.add_argument('-rd', '--restart_dump', help='restart dump frequency',
                         type=int, default=128)
     parser.add_argument('-rn', '--restart_name', help='restart dump simulation name',
@@ -84,7 +84,7 @@ def parse_args():
     # parse arguments
     args = parser.parse_args()
     # return arguments
-    return (args.verbose, args.parallel, args.client, args.distributed, args.restart, 
+    return (args.verbose, args.parallel, args.client, args.distributed, args.restart,
             args.restart_dump, args.restart_name, args.restart_step,
             args.queue, args.allocation, args.nodes, args.procs_per_node,
             args.walltime, args.memory,
@@ -112,7 +112,6 @@ def init_constant(k):
     ''' calculates thermodynamic constants for a sample '''
     # extract pressure/temperature indices from index
     i, j = np.unravel_index(k, dims=(NP, NT), order='C')
-    n = STATE[k][0]
     if UNITS[EL] == 'real':
         na = 6.0221409e23                              # avagadro number [num/mol]
         kb = 3.29983e-27                               # boltzmann constant [kcal/K]
@@ -205,7 +204,6 @@ def init_header(k, output):
         thrm_out.write('# ------------------------------------------------------------\n')
         thrm_out.write('# | temp | pe | ke | virial | vol | accpos | accvol | acchmc |\n')
         thrm_out.write('# ------------------------------------------------------------\n')
-    return
 
 
 def init_headers():
@@ -218,9 +216,8 @@ def init_headers():
             print('--------------------')
             progress(futures)
     elif PARALLEL:
-        futures = Parallel(n_jobs=NTHREAD,
-                           backend='threading',
-                           verbose=VERBOSE)(delayed(init_header)(k, OUTPUT[k]) for k in range(NS))
+        operations = [delayed(init_header)(k, OUTPUT[k]) for k in range(NS)]
+        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(operations)
     else:
         if VERBOSE:
             print('initializing headers')
@@ -230,7 +227,6 @@ def init_headers():
         else:
             for k in range(NS):
                 init_header(k, OUTPUT[k])
-    return
 
 
 def write_thrm(output, state):
@@ -242,7 +238,6 @@ def write_thrm(output, state):
     args = temp, pe, ke, virial, vol, ap, av, ah
     with open(thrm, 'a') as thrm_out:
         thrm_out.write('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E\n' % args)
-    return
 
 
 def write_traj(output, state):
@@ -254,14 +249,12 @@ def write_traj(output, state):
         traj_out.write('%d %.4E\n' % (natoms, box))
         for i in range(natoms):
             traj_out.write('%.4E %.4E %.4E\n' % tuple(x[3*i:3*i+3]))
-    return
 
 
 def write_output(output, state):
     ''' writes output for a sample '''
     write_thrm(output, state)
     write_traj(output, state)
-    return
 
 
 def write_outputs():
@@ -275,9 +268,8 @@ def write_outputs():
             print('---------------')
             progress(futures)
     elif PARALLEL:
-        futures = Parallel(n_jobs=NTHREAD,
-                           backend='threading',
-                           verbose=VERBOSE)(delayed(write_output)(OUTPUT[k], STATE[k]) for k in range(NS))
+        operations = [delayed(write_output)(OUTPUT[k], STATE[k]) for k in range(NS)]
+        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(operations)
     else:
         if VERBOSE:
             print('writing outputs')
@@ -287,7 +279,6 @@ def write_outputs():
         else:
             for k in range(NS):
                 write_output(OUTPUT[k], STATE[k])
-    return
 
 
 def consolidate_outputs():
@@ -318,7 +309,6 @@ def consolidate_outputs():
     for k in range(NS):
         os.remove(thrm[k])
         os.remove(traj[k])
-    return
 
 # ------------------------------------------------
 # sample initialization and information extraction
@@ -410,7 +400,6 @@ def init_sample(k):
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # resize box
     boxnew = box+np.random.rand()*DL*(np.random.rand()+j/NT)
-    volnew = np.power(boxnew, 3)
     scalef = boxnew/box
     xnew = scalef*x
     box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
@@ -441,9 +430,8 @@ def init_samples():
             progress(futures)
             print('\n')
     elif PARALLEL:
-        futures = Parallel(n_jobs=NTHREAD,
-                           backend='threading',
-                           verbose=VERBOSE)(delayed(init_sample)(k) for k in range(NS))
+        operations = [delayed(init_sample)(k) for k in range(NS)]
+        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(operations)
     else:
         if VERBOSE:
             print('initializing samples')
@@ -454,7 +442,7 @@ def init_samples():
     return futures
 
 
-def init_lammps(i, x, v, box):
+def init_lammps(x, v, box):
     ''' initializes lammps '''
     # initialize lammps
     lmps = lammps(cmdargs=['-log', 'none', '-screen', 'none'])
@@ -629,14 +617,14 @@ def move_mc(lmps, et, pf, t, ntp, nap, ntv, nav, nth, nah, dx, dl, dt):
 def gen_sample(k, const, state):
     ''' generates a monte carlo sample '''
     # initialize lammps object
-    i, j = np.unravel_index(k, dims=(NP, NT), order='C')
+    _, j = np.unravel_index(k, dims=(NP, NT), order='C')
     t = T[j]
     et, pf = const
     x, v = state[1:3]
     box = state[7]
     ntp, nap, ntv, nav, nth, nah = state[9:15]
     dx, dl, dt = state[18:21]
-    lmps = init_lammps(i, x, v, box)
+    lmps = init_lammps(x, v, box)
     # loop through monte carlo moves
     for _ in range(MOD):
         lmps, ntp, nap, ntv, nav, nth, nah = move_mc(lmps, et, pf, t,
@@ -669,9 +657,8 @@ def gen_samples():
             print('----------------------')
             progress(futures)
     elif PARALLEL:
-        futures = Parallel(n_jobs=NTHREAD,
-                           backend='threading',
-                        verbose=VERBOSE)(delayed(gen_sample)(k, CONST[k], STATE[k]) for k in range(NS))
+        operations = [delayed(gen_sample)(k, CONST[k], STATE[k]) for k in range(NS)]
+        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(operations)
     else:
         # loop through pressures
         if VERBOSE:
@@ -723,9 +710,8 @@ def gen_mc_params():
             print('------------------')
             progress(futures)
     elif PARALLEL:
-        futures = Parallel(n_jobs=NTHREAD,
-                           backend='threading',
-                           verbose=VERBOSE)(delayed(gen_mc_param)(STATE[k]) for k in range(NS))
+        operations = [delayed(gen_mc_param)(STATE[k]) for k in range(NS)]
+        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(operations)
     else:
         # loop through pressures
         if VERBOSE:
@@ -738,7 +724,7 @@ def gen_mc_params():
 # replica exchange markov chain monte carlo
 # -----------------------------------------
 
-nb.jit
+@nb.jit
 def replica_exchange():
     ''' performs parallel tempering across temperature samples for each pressure '''
     # catalog swaps
@@ -766,7 +752,6 @@ def replica_exchange():
             print('\n-------------------------------')
         print('%d replica exchanges performed' % swaps)
         print('-------------------------------')
-    return
 
 # -------------
 # restart files
@@ -792,7 +777,6 @@ def dump_samples_restart():
         print('dumping samples')
     rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], STEP+1)
     pickle.dump(STATE, open(rf, 'wb'))
-    return
 
 # ----
 # main

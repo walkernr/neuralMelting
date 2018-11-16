@@ -135,9 +135,11 @@ STEMP = np.zeros((2, NP, NT), dtype=float)
 # file prefixes
 PREFIX = '%s.%s.%s' % (NAME, EL.lower(), LAT[EL])
 SPREFS = ['%s.%02d.lammps.%s.%s.%s.%s.%s' % (PREFIX, i,
-                                             SFTR, SSCLR, SRDCN, NN, SFF) for i in range(NP)]
+                                             SFTR, SSCLR, SRDCN,
+                                             NN, SFF) for i in range(NP)]
 UPREFS = ['%s.%02d.lammps.%s.%s.%s.%s.%s' % (PREFIX, i,
-                                             UFTR, USCLR, URDCN, CLST, UFF) for i in range(NP)]
+                                             UFTR, USCLR, URDCN,
+                                             CLST, UFF) for i in range(NP)]
 
 if VERBOSE:
     print('neural network transitions')
@@ -157,10 +159,14 @@ if VERBOSE:
 with open(PREFIX+'.pst', 'w') as fo:
     fo.write('# virial | virial standard error | transition | transition standard error\n')
     for i in range(NP):
-        fo.write('%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f' % (np.mean(MVIRIAL[0, i]), TRANS[0, i, 0],
-                                                              np.mean(SVIRIAL[0, i]), TRANS[0, i, 1],
-                                                              np.mean(MVIRIAL[1, i]), TRANS[1, i, 0],
-                                                              np.mean(SVIRIAL[1, i]), TRANS[1, i, 1]))
+        fo.write('%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f' % (np.mean(MVIRIAL[0, i]),
+                                                              TRANS[0, i, 0],
+                                                              np.mean(SVIRIAL[0, i]),
+                                                              TRANS[0, i, 1],
+                                                              np.mean(MVIRIAL[1, i]),
+                                                              TRANS[1, i, 0],
+                                                              np.mean(SVIRIAL[1, i]),
+                                                              TRANS[1, i, 1]))
 CM = plt.get_cmap('plasma')
 SCALE = lambda i: (np.mean(MVIRIAL[0, i])-np.min(MVIRIAL[0]))/np.max(MVIRIAL[0])
 
@@ -171,9 +177,10 @@ def plot_pt():
     ax = fig.add_subplot(111)
     for i in range(1):
         for j in range(NP):
-            ax.errorbar(MTEMP[i, j], MVIRIAL[i, j], xerr=STEMP[i, j], yerr=SVIRIAL[i, j], color=CM(SCALE(j)),
-                        alpha=0.5,
-                        label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[i, j]), np.mean(SVIRIAL[i, j])))
+            ax.errorbar(MTEMP[i, j], MVIRIAL[i, j], xerr=STEMP[i, j], yerr=SVIRIAL[i, j],
+                        color=CM(SCALE(j)), alpha=0.5,
+                        label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[i, j]),
+                                                        np.mean(SVIRIAL[i, j])))
             ax.axvline(TRANS[i, j, 0], color=CM(SCALE(j)))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$P$')
@@ -187,8 +194,10 @@ def plot_ut():
     ax = fig.add_subplot(111)
     for i in range(1):
         for j in range(NP):
-            ax.errorbar(MTEMP[i, j], MPE[i, j], xerr=STEMP[i, j], yerr=SPE[i, j], color=CM(SCALE(j)), alpha=0.5,
-                        label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[i, j]), np.mean(SVIRIAL[i, j])))
+            ax.errorbar(MTEMP[i, j], MPE[i, j], xerr=STEMP[i, j], yerr=SPE[i, j],
+                        color=CM(SCALE(j)), alpha=0.5,
+                        label=r'$P = %.1f \pm %.1f$' % (np.mean(MVIRIAL[i, j]),
+                                                        np.mean(SVIRIAL[i, j])))
             ax.axvline(TRANS[i, j, 0], color=CM(SCALE(j)))
     ax.set_xlabel(r'$T$')
     ax.set_ylabel(r'$U$')

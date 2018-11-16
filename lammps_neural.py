@@ -10,10 +10,10 @@ import os
 import pickle
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-from TanhScaler import TanhScaler
 from sklearn.decomposition import PCA, KernelPCA
 from sklearn.manifold import Isomap, LocallyLinearEmbedding
 from scipy.odr import ODR, Model, RealData
+from TanhScaler import TanhScaler
 
 # parse command line
 PARSER = argparse.ArgumentParser()
@@ -77,7 +77,6 @@ from keras.models import Sequential
 from keras.layers import Conv1D, MaxPooling1D, GlobalAveragePooling1D, Dropout, Dense
 from keras.optimizers import Nadam
 from keras.wrappers.scikit_learn import KerasClassifier
-from keras.utils import plot_model
 
 if PLOT:
     import matplotlib as mpl
