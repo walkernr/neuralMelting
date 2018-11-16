@@ -1,4 +1,4 @@
-s = 3
+s=3
 # make and move to directory for output data
 mkdir ./output/remcmc_$s
 cd ./output/remcmc_$s
