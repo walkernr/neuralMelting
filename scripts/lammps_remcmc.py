@@ -399,7 +399,7 @@ def init_sample(k):
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # resize box
-    volnew = np.exp(np.log(vol)+0.5*(np.random.rand()+j/NT)*DV)
+    volnew = np.exp(np.log(vol)+0.25*(np.random.rand()+j/NT)*DV)
     boxnew = np.cbrt(volnew)
     scalef = boxnew/box
     xnew = scalef*x
