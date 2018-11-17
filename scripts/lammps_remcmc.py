@@ -409,7 +409,7 @@ def init_sample(k):
     lmps.command('run 0')
     # randomize positions
     seed = np.random.randint(1, 2**16)
-    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(DX,)+(seed,)))
+    lmps.command('displace_atoms all random %f %f %f %d units lattice' % (3*(DX,)+(seed,)))
     lmps.command('run 0')
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
@@ -470,7 +470,7 @@ def bulk_position_mc(lmps, et, ntp, nap, dx):
     x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
     pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     seed = np.random.randint(1, 2**16)
-    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(dx,)+(seed,)))
+    lmps.command('displace_atoms all random %f %f %f %d units lattice' % (3*(dx,)+(seed,)))
     lmps.command('run 0')
     penew = lmps.extract_compute('thermo_pe', 0, 0)/et
     de = penew-pe
@@ -797,7 +797,7 @@ if __name__ == '__main__':
      NT, LT, HT,
      CUTOFF, NSMPL, MOD,
      PPOS, PVOL, NSTPS,
-     PDX, PDV) = parse_args()
+     DX, DV) = parse_args()
 
     # set random seed
     SEED = 256
@@ -847,9 +847,7 @@ if __name__ == '__main__':
     P = np.linspace(LP, HP, NP, dtype=np.float32)
     # temperature
     T = np.linspace(LT, HT, NT, dtype=np.float32)
-    # inital position variation, volume variation, and timestep
-    DX = PDX*LAT[EL][1]
-    DV = PDV
+    # inital timestep
     DT = TIMESTEP[UNITS[EL]]
 
     # -----------------
