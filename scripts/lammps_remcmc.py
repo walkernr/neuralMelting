@@ -866,7 +866,7 @@ if __name__ == '__main__':
         from joblib import Parallel, delayed
     if DASK:
         os.environ['DASK_ALLOWED_FAILURES'] = '64'
-        os.environ['DASK_WORK_STEALING'] = 'True'
+        os.environ['DASK_WORK_STEALING'] = 'False'
         os.environ['DASK_MULTIPROCESSING_METHOD'] = MTHD
         os.environ['DASK_LOG_FORMAT'] = '\r%(name)s - %(levelname)s - %(message)s'
         from distributed import Client, LocalCluster, progress
