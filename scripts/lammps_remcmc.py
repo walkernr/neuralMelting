@@ -397,16 +397,16 @@ def init_sample(k):
     lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
     lmps.command('run 0')
     # extract all system info
-    natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
-    # resize box
-    volnew = np.exp(np.log(vol)+0.25*(np.random.rand()+j/NT)*DV)
-    boxnew = np.cbrt(volnew)
-    scalef = boxnew/box
-    xnew = scalef*x
-    box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
-    lmps.command(box_cmd % (3*(boxnew,)))
-    lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
-    lmps.command('run 0')
+    # natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
+    # # resize box
+    # volnew = np.exp(np.log(vol)+0.25*(np.random.rand()+j/NT)*DV)
+    # boxnew = np.cbrt(volnew)
+    # scalef = boxnew/box
+    # xnew = scalef*x
+    # box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
+    # lmps.command(box_cmd % (3*(boxnew,)))
+    # lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
+    # lmps.command('run 0')
     # randomize positions
     seed = np.random.randint(1, 2**16)
     lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(DX,)+(seed,)))
