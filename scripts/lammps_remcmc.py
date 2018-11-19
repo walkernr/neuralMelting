@@ -913,6 +913,8 @@ if __name__ == '__main__':
     CONST = init_constants()
     # define output file names
     OUTPUT = init_outputs()
+    if CUTOFF < NSMPL:
+        init_headers()
     # initialize simulation
     if RESTART:
         STATE = load_samples_restart()
@@ -922,8 +924,6 @@ if __name__ == '__main__':
             STATE = CLIENT.gather(init_samples())
         else:
             STATE = init_samples()
-    if CUTOFF < NSMPL:
-        init_headers()
     # write_outputs()
     # loop through to number of samples that need to be collected
     for STEP in tqdm(range(NSMPL)):
