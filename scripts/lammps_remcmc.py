@@ -338,22 +338,24 @@ def lammps_input():
         lf.write('create_atoms 1 box\n\n')
         # potential definitions
         pc_pref = 'pair_coeff * *'
+        pot_dir = '../potentials/'
+        pot_inp = (pc_pref, pot_dir, pot_dir, EL)
         if EL == 'Ti':
             lf.write('pair_style meam/c\n')
             lf.write('mass 1 47.867\n')
-            lf.write('%s library.meam Ti Al TiAl_Kim_Kim_Jung_Lee_2016.meam %s\n\n' % (pc_pref, EL))
+            lf.write('%s %slibrary.meam Ti Al %sTiAl_Kim_Kim_Jung_Lee_2016.meam %s\n\n' % pot_inp)
         if EL == 'Al':
             lf.write('pair_style meam/c\n')
             lf.write('mass 1 %f\n' % MASS[EL])
-            lf.write('%s library.meam Ti Al TiAl_Kim_Kim_Jung_Lee_2016.meam %s\n\n' % (pc_pref, EL))
+            lf.write('%s %slibrary.meam Ti Al %sTiAl_Kim_Kim_Jung_Lee_2016.meam %s\n\n' % pot_inp)
         if EL == 'Ni':
             lf.write('pair_style meam/c\n')
             lf.write('mass 1 %f\n' % MASS[EL])
-            lf.write('%s library.Ni.meam Ni Ni.meam %s\n\n' % (pc_pref, EL))
+            lf.write('%s %slibrary.Ni.meam Ni %sNi.meam %s\n\n' % pot_inp)
         if EL == 'Cu':
             lf.write('pair_style meam/c\n')
             lf.write('mass 1 %f\n' % MASS[EL])
-            lf.write('%s library.Cu.meam Cu Cu.meam %s\n\n' % (pc_pref, EL))
+            lf.write('%s %slibrary.Cu.meam Cu %sCu.meam %s\n\n' % pot_inp)
         if EL == 'LJ':
             lf.write('pair_style lj/cut 2.5\n')
             lf.write('mass 1 %f\n' % MASS[EL])
@@ -395,7 +397,6 @@ def init_sample(k):
     lmps.command('unfix 1')
     lmps.command('fix 1 all box/relax iso %f vmax %f' % (P[i], 0.0009765625))
     lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
-    lmps.command('run 0')
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # resize box
