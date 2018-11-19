@@ -80,7 +80,7 @@ def parse_args():
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
                         type=float, default=0.125)
     parser.add_argument('-dv', '--vol_displace', help='logarithmic volume displacement',
-                        type=float, default=0.0625)
+                        type=float, default=0.125)
     # parse arguments
     args = parser.parse_args()
     # return arguments
@@ -394,25 +394,25 @@ def init_sample(k):
     lmps = lammps(cmdargs=['-log', 'none', '-screen', 'none'])
     lmps.file(LMPSF)
     # minimize lattice structure
-    lmps.command('unfix 1')
-    lmps.command('fix 1 all box/relax iso %f vmax %f' % (P[i], 0.0009765625))
-    lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
+    # lmps.command('unfix 1')
+    # lmps.command('fix 1 all box/relax iso %f vmax %f' % (P[i], 0.0009765625))
+    # lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
-    # resize box
-    # volnew = np.exp(np.log(vol)+0.5*(np.random.rand()+j/NT)*DV)
-    # boxnew = np.cbrt(volnew)
-    # boxnew = box+0.5*(np.random.rand()+j/NT)*DV
-    # volnew = boxnew**3
-    # scalef = boxnew/box
-    # xnew = scalef*x
-    # box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
-    # lmps.command(box_cmd % (3*(boxnew,)))
-    # lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
-    # lmps.command('run 0')
     # randomize positions
     seed = np.random.randint(1, 2**16)
     lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(DX,)+(seed,)))
+    lmps.command('run 0')
+    # resize box
+    volnew = np.exp(np.log(vol)+0.5*(np.random.rand()+j/NT)*DV)
+    boxnew = np.cbrt(volnew)
+    # boxnew = box+0.5*(np.random.rand()+j/NT)*DV
+    # volnew = boxnew**3
+    scalef = boxnew/box
+    xnew = scalef*x
+    box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
+    lmps.command(box_cmd % (3*(boxnew,)))
+    lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
     lmps.command('run 0')
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
@@ -538,10 +538,10 @@ def volume_mc(lmps, et, pf, ntv, nav, dv):
     x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
     pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     # save new physical properties
-    # volnew = np.exp(np.log(vol)+2*(np.random.rand()-0.5)*dv)
-    # boxnew = np.cbrt(volnew)
-    boxnew = box+2*(np.random.rand()-0.5)*dv
-    volnew = boxnew**3
+    volnew = np.exp(np.log(vol)+2*(np.random.rand()-0.5)*dv)
+    boxnew = np.cbrt(volnew)
+    # boxnew = box+2*(np.random.rand()-0.5)*dv
+    # volnew = boxnew**3
     scalef = boxnew/box
     xnew = scalef*x
     # apply new physical properties
@@ -551,8 +551,8 @@ def volume_mc(lmps, et, pf, ntv, nav, dv):
     lmps.command('run 0')
     penew = lmps.extract_compute('thermo_pe', 0, 0)/et
     # calculate enthalpy criterion
-    # dh = (penew-pe)+pf*(volnew-vol)-(natoms+1)*np.log(volnew/vol)
-    dh = (penew-pe)+pf*(volnew-vol)-natoms*np.log(volnew/vol)
+    dh = (penew-pe)+pf*(volnew-vol)-(natoms+1)*np.log(volnew/vol)
+    # dh = (penew-pe)+pf*(volnew-vol)-natoms*np.log(volnew/vol)
     if np.random.rand() <= np.min([1, np.exp(-dh)]):
         # update volume acceptations
         nav += 1
@@ -856,7 +856,7 @@ if __name__ == '__main__':
     # inital position increment and time step
     DX = DX*LAT[EL][1]
     DT = TIMESTEP[UNITS[EL]]
-    DV = SZ*LAT[EL][1]*DV
+    # DV = SZ*LAT[EL][1]*DV
 
     # -----------------
     # initialize lammps
@@ -911,6 +911,10 @@ if __name__ == '__main__':
     # monte carlo
     # -----------
 
+    # define thermodynamic constants
+    CONST = init_constants()
+    # define output file names
+    OUTPUT = init_outputs()
     # initialize simulation
     if RESTART:
         STATE = load_samples_restart()
@@ -920,12 +924,9 @@ if __name__ == '__main__':
             STATE = CLIENT.gather(init_samples())
         else:
             STATE = init_samples()
-    # define thermodynamic constants
-    CONST = init_constants()
-    # define output file names
-    OUTPUT = init_outputs()
     if CUTOFF < NSMPL:
         init_headers()
+    write_outputs()
     # loop through to number of samples that need to be collected
     for STEP in tqdm(range(NSMPL)):
         if VERBOSE and DASK:
