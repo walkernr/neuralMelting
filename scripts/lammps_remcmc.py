@@ -80,7 +80,7 @@ def parse_args():
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
                         type=float, default=0.125)
     parser.add_argument('-dv', '--vol_displace', help='logarithmic volume displacement',
-                        type=float, default=0.03125)
+                        type=float, default=0.125)
     # parse arguments
     args = parser.parse_args()
     # return arguments
@@ -120,7 +120,7 @@ def init_constant(k):
         pf = 1e-30*(1.01325e5*P[i])/(4.184e3*kb*T[j])  # metropolis prefactor [1/A^3]
     if UNITS[EL] == 'metal':
         kb = 8.61733e-5                                # boltzmann constant [eV/K]
-        et = kb*T[i]                                   # thermal energy [eV]
+        et = kb*T[j]                                   # thermal energy [eV]
         pf = 1e-30*(1e5*P[i])/(1.60218e-19*kb*T[j])    # metropolis prefactor [1/A^3]
     if UNITS[EL] == 'lj':
         kb = 1.0                                       # boltzmann constant (unitless)
@@ -396,17 +396,17 @@ def init_sample(k):
     lmps.command('fix 1 all box/relax iso %f vmax %f' % (P[i], 0.0009765625))
     lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
     lmps.command('run 0')
-    # extract all system info
-    # natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
-    # # resize box
-    # volnew = np.exp(np.log(vol)+0.25*(np.random.rand()+j/NT)*DV)
-    # boxnew = np.cbrt(volnew)
-    # scalef = boxnew/box
-    # xnew = scalef*x
-    # box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
-    # lmps.command(box_cmd % (3*(boxnew,)))
-    # lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
-    # lmps.command('run 0')
+    extract all system info
+    natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
+    # resize box
+    volnew = np.exp(np.log(vol)+0.5*(np.random.rand()+j/NT)*DV)
+    boxnew = np.cbrt(volnew)
+    scalef = boxnew/box
+    xnew = scalef*x
+    box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
+    lmps.command(box_cmd % (3*(boxnew,)))
+    lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
+    lmps.command('run 0')
     # randomize positions
     seed = np.random.randint(1, 2**16)
     lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(DX,)+(seed,)))
