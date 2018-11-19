@@ -78,9 +78,9 @@ def parse_args():
     parser.add_argument('-ts', '--timesteps', help='hamiltonian monte carlo timesteps',
                         type=int, default=8)
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
-                        type=float, default=0.125)
+                        type=float, default=0.25)
     parser.add_argument('-dv', '--vol_displace', help='logarithmic volume displacement',
-                        type=float, default=0.125)
+                        type=float, default=0.25)
     # parse arguments
     args = parser.parse_args()
     # return arguments
@@ -606,8 +606,8 @@ def move_mc(lmps, et, pf, t, ntp, nap, ntv, nav, nth, nah, dx, dv, dt):
     roll = np.random.rand()
     # position monte carlo
     if roll <= PPOS:
-        lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
-        # lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
+        # lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
+        lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
     # volume monte carlo
     elif roll <= (PPOS+PVOL):
         lmps, ntv, nav = volume_mc(lmps, et, pf, ntv, nav, dv)
