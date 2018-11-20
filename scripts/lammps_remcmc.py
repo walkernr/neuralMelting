@@ -78,9 +78,9 @@ def parse_args():
     parser.add_argument('-ts', '--timesteps', help='hamiltonian monte carlo timesteps',
                         type=int, default=8)
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
-                        type=float, default=0.25)
+                        type=float, default=0.1875)
     parser.add_argument('-dv', '--vol_displace', help='logarithmic volume displacement',
-                        type=float, default=0.25)
+                        type=float, default=0.03125)
     # parse arguments
     args = parser.parse_args()
     # return arguments
@@ -397,23 +397,23 @@ def init_sample(k):
     # lmps.command('unfix 1')
     # lmps.command('fix 1 all box/relax iso %f vmax %f' % (P[i], 0.0009765625))
     # lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
-    # extract all system info
-    natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # randomize positions
     seed = np.random.randint(1, 2**16)
     lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(DX,)+(seed,)))
     # lmps.command('run 0')
     # resize box
+    # natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     # volnew = np.exp(np.log(vol)+0.5*(np.random.rand()+j/NT)*DV)
     # boxnew = np.cbrt(volnew)
-    boxnew = box+0.5*(np.random.rand()+j/NT)*DV
-    volnew = boxnew**3
-    scalef = boxnew/box
-    xnew = scalef*x
-    box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
-    lmps.command(box_cmd % (3*(boxnew,)))
-    lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
-    lmps.command('run 0')
+    # boxnew = box+0.5*(np.random.rand()+j/NT)*DV
+    # volnew = boxnew**3
+    # scalef = boxnew/box
+    # xnew = scalef*x
+    # box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
+    # lmps.command(box_cmd % (3*(boxnew,)))
+    # lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
+    # lmps.command('run 0')
+    # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
     ntp, nap, ntv, nav, nth, nah, ap, av, ah = np.zeros(9)
@@ -853,7 +853,7 @@ if __name__ == '__main__':
     T = np.linspace(LT, HT, NT, dtype=np.float32)
     # inital position increment and time step
     DX = DX*LAT[EL][1]
-    # DV = SZ*LAT[EL][1]*DV
+    DV = SZ*LAT[EL][1]*DV
     DT = TIMESTEP[UNITS[EL]]
 
     # -----------------
@@ -872,7 +872,7 @@ if __name__ == '__main__':
         from joblib import Parallel, delayed
     if DASK:
         os.environ['DASK_ALLOWED_FAILURES'] = '64'
-        os.environ['DASK_WORK_STEALING'] = 'False'
+        os.environ['DASK_WORK_STEALING'] = 'True'
         os.environ['DASK_MULTIPROCESSING_METHOD'] = MTHD
         os.environ['DASK_LOG_FORMAT'] = '\r%(name)s - %(levelname)s - %(message)s'
         from distributed import Client, LocalCluster, progress
@@ -924,6 +924,7 @@ if __name__ == '__main__':
             STATE = CLIENT.gather(init_samples())
         else:
             STATE = init_samples()
+    write_outputs()
     # loop through to number of samples that need to be collected
     for STEP in tqdm(range(NSMPL)):
         if VERBOSE and DASK:
@@ -942,7 +943,7 @@ if __name__ == '__main__':
             # save state for restart
             dump_samples_restart()
         # replica exchange markov chain mc
-        replica_exchange()
+        # replica_exchange()
     if DASK:
         # terminate client after completion
         CLIENT.close()
