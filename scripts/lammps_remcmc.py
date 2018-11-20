@@ -72,15 +72,15 @@ def parse_args():
     parser.add_argument('-sm', '--sample_mod', help='sample collection frequency',
                         type=int, default=128)
     parser.add_argument('-pm', '--position_move', help='position monte carlo move probability',
-                        type=float, default=0.25)
+                        type=float, default=0.125)
     parser.add_argument('-vm', '--volume_move', help='volume monte carlo move probability',
-                        type=float, default=0.25)
+                        type=float, default=0.125)
     parser.add_argument('-ts', '--timesteps', help='hamiltonian monte carlo timesteps',
                         type=int, default=8)
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
-                        type=float, default=0.1875)
+                        type=float, default=0.015625)
     parser.add_argument('-dv', '--vol_displace', help='logarithmic volume displacement',
-                        type=float, default=0.03125)
+                        type=float, default=0.015625)
     # parse arguments
     args = parser.parse_args()
     # return arguments
@@ -390,29 +390,36 @@ def lammps_extract(lmps):
 def init_sample(k):
     ''' initializes sample '''
     i, j = np.unravel_index(k, dims=(NP, NT), order='C')
+    seed = np.random.randint(1, 2**16)
     # initialize lammps
     lmps = lammps(cmdargs=['-log', 'none', '-screen', 'none'])
     lmps.file(LMPSF)
     # minimize lattice structure
-    # lmps.command('unfix 1')
-    # lmps.command('fix 1 all box/relax iso %f vmax %f' % (P[i], 0.0009765625))
-    # lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
+    lmps.command('unfix 1')
+    lmps.command('fix 1 all box/relax iso %f vmax %f' % (P[i], 0.0009765625))
+    lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
+    lmps.command('run 0')
     # randomize positions
-    seed = np.random.randint(1, 2**16)
-    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(DX,)+(seed,)))
-    # lmps.command('run 0')
+    lmps.command('displace_atoms all random %f %f %f %d units lattice' % (3*(0.09375,)+(seed,)))
+    lmps.command('run 0')
     # resize box
-    # natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
-    # volnew = np.exp(np.log(vol)+0.5*(np.random.rand()+j/NT)*DV)
-    # boxnew = np.cbrt(volnew)
+    natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
+    volnew = np.exp(np.log(vol)+2*(np.random.rand()*j/NT)+0.125)
+    boxnew = np.cbrt(volnew)
     # boxnew = box+0.5*(np.random.rand()+j/NT)*DV
     # volnew = boxnew**3
-    # scalef = boxnew/box
-    # xnew = scalef*x
-    # box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
-    # lmps.command(box_cmd % (3*(boxnew,)))
-    # lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
-    # lmps.command('run 0')
+    scale = boxnew/box
+    xnew = scale*x
+    box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
+    lmps.command(box_cmd % (3*(boxnew,)))
+    lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
+    lmps.command('run 0')
+    # run dynamics
+    lmps.command('velocity all create %f %d dist gaussian' % (T[j], seed))
+    lmps.command('velocity all zero linear')
+    lmps.command('velocity all zero angular')
+    lmps.command('timestep %f' % DT)
+    lmps.command('run 1024')
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
@@ -491,21 +498,24 @@ def iter_position_mc(lmps, et, ntp, nap, dx):
     ''' classic position monte carlo (iterative) '''
     # get number of atoms
     natoms = lmps.extract_global('natoms', 0)
+    # get box dimensions
     boxmin = lmps.extract_global('boxlo', 1)
     boxmax = lmps.extract_global('boxhi', 1)
     box = boxmax-boxmin
+    # get positions
+    x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
     # loop through atoms
     for k in range(natoms):
         # update position tries
         ntp += 1
-        # save current physical properties
-        x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
+        # save potential energy
         pe = lmps.extract_compute('thermo_pe', 0, 0)/et
-        xnew = np.copy(x)
         # generate proposed positions
-        xnew[3*k:3*k+3] += 2*(np.random.rand(3)-0.5)*dx
-        xnew[3*k:3*k+3] -= np.floor(xnew[3*k:3*k+3]/box)*box
-        lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
+        od = x[3*k:3*k+3]
+        nd = od+2*(np.random.rand(3)-0.5)*dx
+        nd -= np.floor(nd/box)*box
+        x[3*k:3*k+3] = nd
+        lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
         lmps.command('run 0')
         # save new physical properties
         penew = lmps.extract_compute('thermo_pe', 0, 0)/et
@@ -516,6 +526,7 @@ def iter_position_mc(lmps, et, ntp, nap, dx):
             nap += 1
         else:
             # revert physical properties
+            x[3*k:3*k+3] = od
             lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
             lmps.command('run 0')
     # return lammps object and tries/acceptations
@@ -536,12 +547,12 @@ def volume_mc(lmps, et, pf, ntv, nav, dv):
     x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
     pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     # save new physical properties
-    # volnew = np.exp(np.log(vol)+2*(np.random.rand()-0.5)*dv)
-    # boxnew = np.cbrt(volnew)
-    boxnew = box+2*(np.random.rand()-0.5)*dv
-    volnew = boxnew**3
-    scalef = boxnew/box
-    xnew = scalef*x
+    volnew = np.exp(np.log(vol)+2*(np.random.rand()-0.5)*dv)
+    boxnew = np.cbrt(volnew)
+    # boxnew = box+2*(np.random.rand()-0.5)*dv
+    # volnew = boxnew**3
+    scale = boxnew/box
+    xnew = scale*x
     # apply new physical properties
     box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
     lmps.command(box_cmd % (3*(boxnew,)))
@@ -549,8 +560,8 @@ def volume_mc(lmps, et, pf, ntv, nav, dv):
     lmps.command('run 0')
     penew = lmps.extract_compute('thermo_pe', 0, 0)/et
     # calculate enthalpy criterion
-    # dh = (penew-pe)+pf*(volnew-vol)-(natoms+1)*np.log(volnew/vol)
-    dh = (penew-pe)+pf*(volnew-vol)-natoms*np.log(volnew/vol)
+    dh = (penew-pe)+pf*(volnew-vol)-(natoms+1)*np.log(volnew/vol)
+    # dh = (penew-pe)+pf*(volnew-vol)-natoms*np.log(volnew/vol)
     if np.random.rand() <= np.min([1, np.exp(-dh)]):
         # update volume acceptations
         nav += 1
@@ -606,8 +617,8 @@ def move_mc(lmps, et, pf, t, ntp, nap, ntv, nav, nth, nah, dx, dv, dt):
     roll = np.random.rand()
     # position monte carlo
     if roll <= PPOS:
-        lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
-        # lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
+        # lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
+        lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
     # volume monte carlo
     elif roll <= (PPOS+PVOL):
         lmps, ntv, nav = volume_mc(lmps, et, pf, ntv, nav, dv)
@@ -853,7 +864,7 @@ if __name__ == '__main__':
     T = np.linspace(LT, HT, NT, dtype=np.float32)
     # inital position increment and time step
     DX = DX*LAT[EL][1]
-    DV = SZ*LAT[EL][1]*DV
+    # DV = DV*SZ*LAT[EL][1]
     DT = TIMESTEP[UNITS[EL]]
 
     # -----------------
@@ -924,7 +935,7 @@ if __name__ == '__main__':
             STATE = CLIENT.gather(init_samples())
         else:
             STATE = init_samples()
-    # write_outputs()
+    write_outputs()
     # loop through to number of samples that need to be collected
     for STEP in tqdm(range(NSMPL)):
         if VERBOSE and DASK:
