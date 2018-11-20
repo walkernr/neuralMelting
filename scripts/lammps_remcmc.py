@@ -924,7 +924,7 @@ if __name__ == '__main__':
             STATE = CLIENT.gather(init_samples())
         else:
             STATE = init_samples()
-    write_outputs()
+    # write_outputs()
     # loop through to number of samples that need to be collected
     for STEP in tqdm(range(NSMPL)):
         if VERBOSE and DASK:
