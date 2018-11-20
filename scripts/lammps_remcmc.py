@@ -406,8 +406,6 @@ def init_sample(k):
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     volnew = np.exp(np.log(vol)+2*(np.random.rand()*j/NT)+0.125)
     boxnew = np.cbrt(volnew)
-    # boxnew = box+0.5*(np.random.rand()+j/NT)*DV
-    # volnew = boxnew**3
     scale = boxnew/box
     xnew = scale*x
     box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
@@ -549,8 +547,6 @@ def volume_mc(lmps, et, pf, ntv, nav, dv):
     # save new physical properties
     volnew = np.exp(np.log(vol)+2*(np.random.rand()-0.5)*dv)
     boxnew = np.cbrt(volnew)
-    # boxnew = box+2*(np.random.rand()-0.5)*dv
-    # volnew = boxnew**3
     scale = boxnew/box
     xnew = scale*x
     # apply new physical properties
@@ -864,7 +860,6 @@ if __name__ == '__main__':
     T = np.linspace(LT, HT, NT, dtype=np.float32)
     # inital position increment and time step
     DX = DX*LAT[EL][1]
-    # DV = DV*SZ*LAT[EL][1]
     DT = TIMESTEP[UNITS[EL]]
 
     # -----------------
@@ -935,7 +930,6 @@ if __name__ == '__main__':
             STATE = CLIENT.gather(init_samples())
         else:
             STATE = init_samples()
-    write_outputs()
     # loop through to number of samples that need to be collected
     for STEP in tqdm(range(NSMPL)):
         if VERBOSE and DASK:
@@ -954,7 +948,8 @@ if __name__ == '__main__':
             # save state for restart
             dump_samples_restart()
         # replica exchange markov chain mc
-        replica_exchange()
+        if (STEP+1) != NSMPL:
+            replica_exchange()
     if DASK:
         # terminate client after completion
         CLIENT.close()
