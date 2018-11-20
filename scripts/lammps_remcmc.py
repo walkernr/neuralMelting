@@ -402,12 +402,12 @@ def init_sample(k):
     # randomize positions
     seed = np.random.randint(1, 2**16)
     lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(DX,)+(seed,)))
-    lmps.command('run 0')
+    # lmps.command('run 0')
     # resize box
-    volnew = np.exp(np.log(vol)+0.5*(np.random.rand()+j/NT)*DV)
-    boxnew = np.cbrt(volnew)
-    # boxnew = box+0.5*(np.random.rand()+j/NT)*DV
-    # volnew = boxnew**3
+    # volnew = np.exp(np.log(vol)+0.5*(np.random.rand()+j/NT)*DV)
+    # boxnew = np.cbrt(volnew)
+    boxnew = box+0.5*(np.random.rand()+j/NT)*DV
+    volnew = boxnew**3
     scalef = boxnew/box
     xnew = scalef*x
     box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
@@ -536,10 +536,10 @@ def volume_mc(lmps, et, pf, ntv, nav, dv):
     x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
     pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     # save new physical properties
-    volnew = np.exp(np.log(vol)+2*(np.random.rand()-0.5)*dv)
-    boxnew = np.cbrt(volnew)
-    # boxnew = box+2*(np.random.rand()-0.5)*dv
-    # volnew = boxnew**3
+    # volnew = np.exp(np.log(vol)+2*(np.random.rand()-0.5)*dv)
+    # boxnew = np.cbrt(volnew)
+    boxnew = box+2*(np.random.rand()-0.5)*dv
+    volnew = boxnew**3
     scalef = boxnew/box
     xnew = scalef*x
     # apply new physical properties
@@ -549,8 +549,8 @@ def volume_mc(lmps, et, pf, ntv, nav, dv):
     lmps.command('run 0')
     penew = lmps.extract_compute('thermo_pe', 0, 0)/et
     # calculate enthalpy criterion
-    dh = (penew-pe)+pf*(volnew-vol)-(natoms+1)*np.log(volnew/vol)
-    # dh = (penew-pe)+pf*(volnew-vol)-natoms*np.log(volnew/vol)
+    # dh = (penew-pe)+pf*(volnew-vol)-(natoms+1)*np.log(volnew/vol)
+    dh = (penew-pe)+pf*(volnew-vol)-natoms*np.log(volnew/vol)
     if np.random.rand() <= np.min([1, np.exp(-dh)]):
         # update volume acceptations
         nav += 1
@@ -606,8 +606,8 @@ def move_mc(lmps, et, pf, t, ntp, nap, ntv, nav, nth, nah, dx, dv, dt):
     roll = np.random.rand()
     # position monte carlo
     if roll <= PPOS:
-        # lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
-        lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
+        lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
+        # lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
     # volume monte carlo
     elif roll <= (PPOS+PVOL):
         lmps, ntv, nav = volume_mc(lmps, et, pf, ntv, nav, dv)
@@ -814,7 +814,7 @@ if __name__ == '__main__':
     if DASK and not PARALLEL:
         PARALLEL = 1
 
-     # number of simulations
+    # number of simulations
     NS = NP*NT
     # total number of monte carlo sweeps
     NSWPS = NSMPL*MOD
@@ -853,8 +853,8 @@ if __name__ == '__main__':
     T = np.linspace(LT, HT, NT, dtype=np.float32)
     # inital position increment and time step
     DX = DX*LAT[EL][1]
-    DT = TIMESTEP[UNITS[EL]]
     # DV = SZ*LAT[EL][1]*DV
+    DT = TIMESTEP[UNITS[EL]]
 
     # -----------------
     # initialize lammps
@@ -924,7 +924,6 @@ if __name__ == '__main__':
             STATE = CLIENT.gather(init_samples())
         else:
             STATE = init_samples()
-    # write_outputs()
     # loop through to number of samples that need to be collected
     for STEP in tqdm(range(NSMPL)):
         if VERBOSE and DASK:
