@@ -943,7 +943,7 @@ if __name__ == '__main__':
             # save state for restart
             dump_samples_restart()
         # replica exchange markov chain mc
-        # replica_exchange()
+        replica_exchange()
     if DASK:
         # terminate client after completion
         CLIENT.close()
