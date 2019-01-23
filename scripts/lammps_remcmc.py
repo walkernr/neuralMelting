@@ -78,9 +78,9 @@ def parse_args():
     parser.add_argument('-ts', '--timesteps', help='hamiltonian monte carlo timesteps',
                         type=int, default=8)
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
-                        type=float, default=0.015625)
-    parser.add_argument('-dv', '--vol_displace', help='logarithmic volume displacement',
-                        type=float, default=0.015625)
+                        type=float, default=0.09375)
+    parser.add_argument('-dv', '--vol_displace', help='logarithmic volume displacement (logarithmic volume proportion)',
+                        type=float, default=0.03125)
     # parse arguments
     args = parser.parse_args()
     # return arguments
@@ -400,11 +400,11 @@ def init_sample(k):
     lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
     lmps.command('run 0')
     # randomize positions
-    lmps.command('displace_atoms all random %f %f %f %d units lattice' % (3*(0.09375,)+(seed,)))
+    lmps.command('displace_atoms all random %f %f %f %d units lattice' % (3*(DX,)+(seed,)))
     lmps.command('run 0')
     # resize box
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
-    volnew = np.exp(np.log(vol)+2*(np.random.rand()*j/NT)+0.125)
+    volnew = np.exp(np.log(vol)+0.75*(j+1)/NT)
     boxnew = np.cbrt(volnew)
     scale = boxnew/box
     xnew = scale*x
@@ -476,7 +476,7 @@ def bulk_position_mc(lmps, et, ntp, nap, dx):
     x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
     pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     seed = np.random.randint(1, 2**16)
-    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(dx,)+(seed,)))
+    lmps.command('displace_atoms all random %f %f %f %d units lattice' % (3*(dx,)+(seed,)))
     lmps.command('run 0')
     penew = lmps.extract_compute('thermo_pe', 0, 0)/et
     de = penew-pe
@@ -510,7 +510,7 @@ def iter_position_mc(lmps, et, ntp, nap, dx):
         pe = lmps.extract_compute('thermo_pe', 0, 0)/et
         # generate proposed positions
         od = x[3*k:3*k+3]
-        nd = od+2*(np.random.rand(3)-0.5)*dx
+        nd = od+2*(np.random.rand(3)-0.5)*dx*LAT[EL][1]
         nd -= np.floor(nd/box)*box
         x[3*k:3*k+3] = nd
         lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
@@ -613,8 +613,8 @@ def move_mc(lmps, et, pf, t, ntp, nap, ntv, nav, nth, nah, dx, dv, dt):
     roll = np.random.rand()
     # position monte carlo
     if roll <= PPOS:
-        # lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
-        lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
+        lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
+        # lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
     # volume monte carlo
     elif roll <= (PPOS+PVOL):
         lmps, ntv, nav = volume_mc(lmps, et, pf, ntv, nav, dv)
@@ -695,19 +695,19 @@ def gen_mc_param(state):
     ap, av, ah, dx, dv, dt = state[-6:]
     if ap < 0.5:
         dx = 0.9375*dx
-    else:
+    if ap > 0.5:
         dx = 1.0625*dx
     # update box displacement for vol-mc
     if av < 0.5:
         dv = 0.9375*dv
-    else:
+    if av > 0.5:
         dv = 1.0625*dv
     # update timestep for hmc
     if ah < 0.5:
         dt = 0.9375*dt
-    else:
+    if ah > 0.5:
         dt = 1.0625*dt
-    return state[:-6]+[ap, av, ah, dx, dv, dt]
+    return state[:-12]+list(np.zeros(9))+[dx, dv, dt]
 
 
 def gen_mc_params():
@@ -858,8 +858,7 @@ if __name__ == '__main__':
     P = np.linspace(LP, HP, NP, dtype=np.float32)
     # temperature
     T = np.linspace(LT, HT, NT, dtype=np.float32)
-    # inital position increment and time step
-    DX = DX*LAT[EL][1]
+    # inital time step
     DT = TIMESTEP[UNITS[EL]]
 
     # -----------------
@@ -937,10 +936,10 @@ if __name__ == '__main__':
         # generate samples
         STATE[:] = gen_samples()
         # generate mc parameters
-        STATE[:] = gen_mc_params()
         if (STEP+1) > CUTOFF:
             # write data
             write_outputs()
+        STATE[:] = gen_mc_params()
         if DASK:
             # gather results from cluster
             STATE[:] = CLIENT.gather(STATE)
