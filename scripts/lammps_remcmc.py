@@ -402,22 +402,22 @@ def init_sample(k):
     # randomize positions
     lmps.command('displace_atoms all random %f %f %f %d units lattice' % (3*(DX,)+(seed,)))
     lmps.command('run 0')
-    # resize box
-    natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
-    volnew = np.exp(np.log(vol)+0.75*(j+1)/NT)
-    boxnew = np.cbrt(volnew)
-    scale = boxnew/box
-    xnew = scale*x
-    box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
-    lmps.command(box_cmd % (3*(boxnew,)))
-    lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
-    lmps.command('run 0')
-    # run dynamics
-    lmps.command('velocity all create %f %d dist gaussian' % (T[j], seed))
-    lmps.command('velocity all zero linear')
-    lmps.command('velocity all zero angular')
-    lmps.command('timestep %f' % DT)
-    lmps.command('run 1024')
+    # # resize box
+    # natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
+    # volnew = np.exp(np.log(vol)+0.75*(j+1)/NT)
+    # boxnew = np.cbrt(volnew)
+    # scale = boxnew/box
+    # xnew = scale*x
+    # box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
+    # lmps.command(box_cmd % (3*(boxnew,)))
+    # lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
+    # lmps.command('run 0')
+    # # run dynamics
+    # lmps.command('velocity all create %f %d dist gaussian' % (T[j], seed))
+    # lmps.command('velocity all zero linear')
+    # lmps.command('velocity all zero angular')
+    # lmps.command('timestep %f' % DT)
+    # lmps.command('run 1024')
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
@@ -613,8 +613,8 @@ def move_mc(lmps, et, pf, t, ntp, nap, ntv, nav, nth, nah, dx, dv, dt):
     roll = np.random.rand()
     # position monte carlo
     if roll <= PPOS:
-        lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
-        # lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
+        # lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
+        lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
     # volume monte carlo
     elif roll <= (PPOS+PVOL):
         lmps, ntv, nav = volume_mc(lmps, et, pf, ntv, nav, dv)
