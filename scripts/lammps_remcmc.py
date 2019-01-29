@@ -939,7 +939,7 @@ if __name__ == '__main__':
         if (STEP+1) > CUTOFF:
             # write data
             write_outputs()
-        STATE[:] = gen_mc_params()
+        # STATE[:] = gen_mc_params()
         if DASK:
             # gather results from cluster
             STATE[:] = CLIENT.gather(STATE)
