@@ -201,9 +201,9 @@ def init_header(k, output):
         thrm_out.write('# dx:       %f\n' % DX)
         thrm_out.write('# dv:       %f\n' % DV)
         thrm_out.write('# dt:       %f\n' % DT)
-        thrm_out.write('# ------------------------------------------------------------\n')
-        thrm_out.write('# | temp | pe | ke | virial | vol | accpos | accvol | acchmc |\n')
-        thrm_out.write('# ------------------------------------------------------------\n')
+        thrm_out.write('# -----------------------------------------------------------------------------------------------\n')
+        thrm_out.write('# | tmp | pe | ke | vir | vol | dx | dv | dt | ntp | nap | ntv | nav | nth | nah | ap | av | ah |\n')
+        thrm_out.write('# -----------------------------------------------------------------------------------------------\n')
 
 
 def init_headers():
@@ -234,10 +234,12 @@ def write_thrm(output, state):
     thrm = output[0]
     temp, pe, ke, virial = state[3:7]
     vol = state[8]
-    ap, av, ah = state[15:18]
-    args = temp, pe, ke, virial, vol, ap, av, ah
+    dx, dv, dt = state[9:12]
+    ntp, nap, ntv, nav, nth, nah = state[12:18]
+    ap, av, ah = state[18:21]
+    args = temp, pe, ke, virial, vol, dx, dv, dt, ntp, nap, ntv, nav, nth, nah, ap, av, ah
     with open(thrm, 'a') as thrm_out:
-        thrm_out.write('%.4E %.4E %.4E %.4E %.4E %.4E %.4E %.4E\n' % args)
+        thrm_out.write(len(args)*' %.4E' % args +'\n')
 
 
 def write_traj(output, state):
@@ -248,7 +250,7 @@ def write_traj(output, state):
     with open(traj, 'a') as traj_out:
         traj_out.write('%d %.4E\n' % (natoms, box))
         for i in range(natoms):
-            traj_out.write('%.4E %.4E %.4E\n' % tuple(x[3*i:3*i+3]))
+            traj_out.write(3*' %.4E' % tuple(x[3*i:3*i+3])+'\n')
 
 
 def write_output(output, state):
@@ -424,8 +426,8 @@ def init_sample(k):
     ntp, nap, ntv, nav, nth, nah, ap, av, ah = np.zeros(9)
     dx, dv, dt = DX, DV, DT
     # return system info and data storage files
-    return [natoms, x, v, temp, pe, ke, virial, box, vol,
-            ntp, nap, ntv, nav, nth, nah, ap, av, ah, dx, dv, dt]
+    return [natoms, x, v, temp, pe, ke, virial, box, vol, dx, dv, dt,
+            ntp, nap, ntv, nav, nth, nah, ap, av, ah]
 
 
 def init_samples():
@@ -636,8 +638,8 @@ def gen_sample(k, const, state):
     et, pf = const
     x, v = state[1:3]
     box = state[7]
-    ntp, nap, ntv, nav, nth, nah = state[9:15]
-    dx, dv, dt = state[18:21]
+    dx, dv, dt = state[9:12]
+    ntp, nap, ntv, nav, nth, nah = state[12:18]
     lmps = init_lammps(x, v, box)
     # loop through monte carlo moves
     for _ in range(MOD):
@@ -653,8 +655,8 @@ def gen_sample(k, const, state):
         av = np.nan_to_num(np.float32(nav)/np.float32(ntv))
         ah = np.nan_to_num(np.float32(nah)/np.float32(nth))
     # return lammps object, tries/acceptation counts, and mc params
-    return [natoms, x, v, temp, pe, ke, virial, box, vol,
-            ntp, nap, ntv, nav, nth, nah, ap, av, ah, dx, dv, dt]
+    return [natoms, x, v, temp, pe, ke, virial, box, vol, dx, dv, dt,
+            ntp, nap, ntv, nav, nth, nah, ap, av, ah]
 
 
 def gen_samples():
@@ -692,7 +694,8 @@ def gen_samples():
 def gen_mc_param(state):
     ''' generate adaptive monte carlo parameters for a sample '''
     # update position displacment for pos-mc
-    ap, av, ah, dx, dv, dt = state[-6:]
+    dx, dv, dt = state[9:12]
+    ap, av, ah = state[-3:]
     if ap < 0.5:
         dx = 0.9375*dx
     if ap > 0.5:
@@ -707,7 +710,7 @@ def gen_mc_param(state):
         dt = 0.9375*dt
     if ah > 0.5:
         dt = 1.0625*dt
-    return state[:-12]+list(np.zeros(9))+[dx, dv, dt]
+    return state[:9]+[dx, dv, dt]+list(np.zeros(9))
 
 
 def gen_mc_params():
@@ -760,7 +763,7 @@ def replica_exchange():
                 if np.random.rand() <= np.min([1, np.exp(dh)]):
                     swaps += 1
                     # swap states
-                    STATE[j][:9], STATE[i][:9] = STATE[i][:9], STATE[j][:9]
+                    STATE[j][:12], STATE[i][:12] = STATE[i][:12], STATE[j][:12]
     if VERBOSE:
         if PARALLEL:
             print('\n-------------------------------')
@@ -939,7 +942,7 @@ if __name__ == '__main__':
         if (STEP+1) > CUTOFF:
             # write data
             write_outputs()
-        # STATE[:] = gen_mc_params()
+        STATE[:] = gen_mc_params()
         if DASK:
             # gather results from cluster
             STATE[:] = CLIENT.gather(STATE)

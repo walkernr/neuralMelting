@@ -42,12 +42,22 @@ PREFIX = os.getcwd()+'/'+'%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL], PI
 if VERBOSE:
     print('parsing data for %s at pressure index %d' % (EL.lower(), PI))
 # parse thermo file
-TEMP, PE, KE, VIRIAL, VOL, AP, AV, AH = np.split(np.loadtxt(PREFIX+'.thrm', dtype=np.float32), 8, 1)
+(TEMP, PE, KE, VIRIAL, VOL, DX, DV, DT,
+ NTP, NAP, NTV, NAP, NTH, NAH, AP, AV, AH) = np.split(np.loadtxt(PREFIX+'.thrm', dtype=np.float32), 17, 1)
 TEMP = TEMP[:, 0]
 PE = PE[:, 0]
 KE = KE[:, 0]
 VIRIAL = VIRIAL[:, 0]
 VOL = VOL[:, 0]
+DX = DX[:, 0]
+DV = DV[:, 0]
+DT = DT[:, 0]
+NTP = NTP[:, 0]
+NAP = NAP[:, 0]
+NTV = NTV[:, 0]
+NAV = NAV[:, 0]
+NTH = NTH[:, 0]
+NAH = NAH[:, 0]
 AP = AP[:, 0]
 AV = AV[:, 0]
 AH = AH[:, 0]
@@ -71,6 +81,15 @@ pickle.dump(PE, open(PREFIX+'.pe.pickle', 'wb'))
 pickle.dump(KE, open(PREFIX+'.ke.pickle', 'wb'))
 pickle.dump(VIRIAL, open(PREFIX+'.virial.pickle', 'wb'))
 pickle.dump(VOL, open(PREFIX+'.vol.pickle', 'wb'))
+pickle.dump(DX, open(PREFIX+'.dx.pickle', 'wb'))
+pickle.dump(DV, open(PREFIX+'.dv.pickle', 'wb'))
+pickle.dump(DT, open(PREFIX+'.dt.pickle', 'wb'))
+pickle.dump(NTP, open(PREFIX+'.ntp.pickle', 'wb'))
+pickle.dump(NAP, open(PREFIX+'.nap.pickle', 'wb'))
+pickle.dump(NTV, open(PREFIX+'.ntv.pickle', 'wb'))
+pickle.dump(NAV, open(PREFIX+'.nav.pickle', 'wb'))
+pickle.dump(NTH, open(PREFIX+'.nth.pickle', 'wb'))
+pickle.dump(NAH, open(PREFIX+'.nah.pickle', 'wb'))
 pickle.dump(AP, open(PREFIX+'.ap.pickle', 'wb'))
 pickle.dump(AV, open(PREFIX+'.av.pickle', 'wb'))
 pickle.dump(AH, open(PREFIX+'.ah.pickle', 'wb'))
