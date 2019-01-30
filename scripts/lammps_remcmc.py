@@ -80,7 +80,7 @@ def parse_args():
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
                         type=float, default=0.09375)
     parser.add_argument('-dv', '--vol_displace', help='logarithmic volume displacement (logarithmic volume proportion)',
-                        type=float, default=0.03125)
+                        type=float, default=0.015625)
     # parse arguments
     args = parser.parse_args()
     # return arguments
