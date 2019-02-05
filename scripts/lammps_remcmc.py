@@ -402,7 +402,7 @@ def init_sample(k):
     lmps.command('minimize 0.0 %f %d %d' % (1.49011612e-8, 1024, 8192))
     lmps.command('run 0')
     # randomize positions
-    lmps.command('displace_atoms all random %f %f %f %d units lattice' % (3*(DX,)+(seed,)))
+    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(DX*LAT[EL][1],)+(seed,)))
     lmps.command('run 0')
     # # resize box
     # natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
@@ -478,7 +478,7 @@ def bulk_position_mc(lmps, et, ntp, nap, dx):
     x = np.ctypeslib.as_array(lmps.gather_atoms('x', 1, 3))
     pe = lmps.extract_compute('thermo_pe', 0, 0)/et
     seed = np.random.randint(1, 2**16)
-    lmps.command('displace_atoms all random %f %f %f %d units lattice' % (3*(dx,)+(seed,)))
+    lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(dx*LAT[EL][1],)+(seed,)))
     lmps.command('run 0')
     penew = lmps.extract_compute('thermo_pe', 0, 0)/et
     de = penew-pe
