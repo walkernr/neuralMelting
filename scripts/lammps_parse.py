@@ -43,7 +43,7 @@ if VERBOSE:
     print('parsing data for %s at pressure index %d' % (EL.lower(), PI))
 # parse thermo file
 (TEMP, PE, KE, VIRIAL, VOL, DX, DV, DT,
- NTP, NAP, NTV, NAP, NTH, NAH, AP, AV, AH) = np.split(np.loadtxt(PREFIX+'.thrm', dtype=np.float32), 17, 1)
+ NTP, NAP, NTV, NAV, NTH, NAH, AP, AV, AH) = np.split(np.loadtxt(PREFIX+'.thrm', dtype=np.float32), 17, 1)
 TEMP = TEMP[:, 0]
 PE = PE[:, 0]
 KE = KE[:, 0]
