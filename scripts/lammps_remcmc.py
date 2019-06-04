@@ -41,13 +41,13 @@ def parse_args():
     parser.add_argument('-nn', '--nodes', help='job node count',
                         type=int, default=1)
     parser.add_argument('-np', '--procs_per_node', help='number of processors per node',
-                        type=int, default=16)
+                        type=int, default=20)
     parser.add_argument('-w', '--walltime', help='job walltime',
                         type=int, default=72)
     parser.add_argument('-m', '--memory', help='job memory (total)',
                         type=int, default=32)
     parser.add_argument('-nw', '--workers', help='job worker count (total)',
-                        type=int, default=16)
+                        type=int, default=20)
     parser.add_argument('-nt', '--threads', help='threads per worker',
                         type=int, default=1)
     parser.add_argument('-mt', '--method', help='parallelization method',
@@ -79,9 +79,9 @@ def parse_args():
     parser.add_argument('-ts', '--timesteps', help='hamiltonian monte carlo timesteps',
                         type=int, default=8)
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
-                        type=float, default=0.015625)
+                        type=float, default=0.125)
     parser.add_argument('-dv', '--vol_displace', help='logarithmic volume displacement (logarithmic volume proportion)',
-                        type=float, default=0.015625)
+                        type=float, default=0.03125)
     # parse arguments
     args = parser.parse_args()
     # return arguments

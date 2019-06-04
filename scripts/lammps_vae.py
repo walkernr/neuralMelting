@@ -34,7 +34,7 @@ def parse_args():
     parser.add_argument('-e', '--element', help='element choice',
                         type=str, default='LJ')
     parser.add_argument('-un', '--unsuper_samples', help='number of samples per phase point (manifold)',
-                        type=int, default=256)
+                        type=int, default=512)
     parser.add_argument('-sn', '--super_samples', help='number of samples per phase point (variational autoencoder)',
                         type=int, default=1024)
     parser.add_argument('-sc', '--scaler', help='feature scaler',
@@ -54,9 +54,9 @@ def parse_args():
     parser.add_argument('-lss', '--loss', help='loss function',
                         type=str, default='mse')
     parser.add_argument('-ep', '--epochs', help='number of epochs',
-                        type=int, default=32)
+                        type=int, default=1024)
     parser.add_argument('-lr', '--learning_rate', help='learning rate for neural network',
-                        type=float, default=1e-3)
+                        type=float, default=1e-4)
     parser.add_argument('-sd', '--random_seed', help='random seed for sample selection and learning',
                         type=int, default=256)
     args = parser.parse_args()
@@ -589,18 +589,7 @@ if __name__ == '__main__':
             out.write(100*'-'+'\n')
 
     def vae_plots():
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
-        ax.xaxis.set_ticks_position('bottom')
-        ax.yaxis.set_ticks_position('left')
-        ax.scatter(ZENC[:, 0, 0], ZENC[:, 1, 0],
-                   cmap=plt.get_cmap('plasma'),
-                   s=64, alpha=0.5, edgecolors='')
-        plt.xlabel('mu')
-        plt.ylabel('sigma')
-        fig.savefig(OUTPREF+'.vae.prj.ld.png')
+        pref = PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d' % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED)
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -608,12 +597,24 @@ if __name__ == '__main__':
         ax.spines['top'].set_visible(False)
         ax.xaxis.set_ticks_position('bottom')
         ax.yaxis.set_ticks_position('left')
-        ax.scatter(PZENC[:, 0, 0], PZENC[:, 1, 0],
-                   cmap=plt.get_cmap('plasma'),
-                   s=64, alpha=0.5, edgecolors='')
-        plt.xlabel('mu')
-        plt.ylabel('sigma')
-        fig.savefig(OUTPREF+'.vae.pca.prj.ld.png')
+        ax.scatter(ZENC[:, 0, 0], ZENC[:, 1, 0], c=CT.reshape(-1),
+                   cmap=plt.get_cmap('plasma'), s=64, alpha=0.5, edgecolors='')
+        plt.xlabel('VAE MU 0')
+        plt.ylabel('VAE SIGMA 0')
+        fig.savefig(pref+'.vae.prj.ld.png')
+        plt.close()
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.xaxis.set_ticks_position('bottom')
+        ax.yaxis.set_ticks_position('left')
+        ax.scatter(PZENC[:, 0, 0], PZENC[:, 1, 0], c=CT.reshape(-1),
+                   cmap=plt.get_cmap('plasma'), s=64, alpha=0.5, edgecolors='')
+        plt.xlabel('PCA VAE MU 0')
+        plt.ylabel('PCA SIGMA 0')
+        fig.savefig(pref+'.vae.pca.prj.ld.png')
         plt.close()
 
         DIAGMLV = SCLRS['minmax'].fit_transform(np.mean(ZENC.reshape(NP, NT, SNS, 2*LD), 2).reshape(NP*NT, 2*LD)).reshape(NP, NT, 2, LD)
@@ -649,7 +650,7 @@ if __name__ == '__main__':
                     plt.yticks(np.arange(TP.size), np.round(TP, 2))
                     plt.xlabel('TEMP')
                     plt.ylabel('PRESS')
-                    fig.savefig(OUTPREF+'.vae.diag.ld.%d.%d.%d.png' % (i, j, k))
+                    fig.savefig(pref+'.vae.diag.ld.%d.%d.%d.png' % (i, j, k))
                     plt.close()
         for i in range(2):
             for j in range(2):
@@ -671,71 +672,96 @@ if __name__ == '__main__':
                     plt.yticks(np.arange(TP.size), np.round(TP, 2))
                     plt.xlabel('TEMP')
                     plt.ylabel('PRESS')
-                    fig.savefig(OUTPREF+'.vae.diag.ld.pca.%d.%d.%d.png' % (i, j, k))
+                    fig.savefig(pref+'.vae.diag.ld.pca.%d.%d.%d.png' % (i, j, k))
                     plt.close()
 
     if PLOT:
         vae_plots()
 
-    # try:
-    #     SLPZENC = np.load(CWD+'/results/%s.%d.%d.%d.%d.%d.%s.%s.%s.%d.%d.%.0e.%d.%d.%d.%d.zenc.pca.prj.inl.npy' \
-    #                       % (NAME, NT, NK, CD, SNI, SNS, SCLR, OPT, LSS, LD, EP, LR, UNI, UNS, AD, SEED))
-    #     # del PZENC, CZENC, VZENC, CDAT
-    #     if VERBOSE:
-    #         print('inlier selected z encodings loaded from file')
-    #         print(100*'-')
-    # except:
-    #     SLPZENC = inlier_selection(PZENC.reshape(SNFL, SNBETA, SNS, 2, LD), UNI, UNS)
-    #     np.save(CWD+'/results/%s.%d.%d.%d.%d.%d.%s.%s.%s.%d.%d.%.0e.%d.%d.%d.%d.zenc.pca.prj.inl.npy' \
-    #             % (NAME, NT, NK, CD, SNI, SNS, SCLR, OPT, LSS, LD, EP, LR, UNI, UNS, AD, SEED), SLPZENC)
-    #     # del PZENC, CZENC, VZENC, CDAT
-    #     if VERBOSE:
-    #         print('inlier selected z encodings computed')
-    #         print(100*'-')
+    try:
+        SLPZENC = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.zenc.pca.prj.inl.npy' \
+                          % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+        UP = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.p.u.npy' \
+                     % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+        UT = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.t.u.npy' \
+                     % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+        UPE = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.pe.u.npy' \
+                      % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+        UKE = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.ke.u.npy' \
+                      % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+        UVOL = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.vol.u.npy' \
+                       % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+        UNRHO = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.nrho.u.npy' \
+                        % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+        # del PZENC, CZENC, VZENC, CDAT
+        if VERBOSE:
+            print('inlier selected z encodings loaded from file')
+            print(100*'-')
+    except:
+        SLPZENC, UP, UT, UPE, UKE, UVOL, UNRHO = inlier_selection(PZENC.reshape(*SSHP3), CP, CT, CPE, CKE, CVOL, CNRHO, UNS)
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.zenc.pca.prj.inl.npy' \
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), SLPZENC)
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.p.u.npy' \
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UP)
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.t.u.npy' \
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UT)
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.pe.u.npy' \
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UPE)
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.ke.u.npy' \
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UKE)
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.vol.u.npy' \
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UVOL)
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.nrho.u.npy' \
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UNRHO)
+        # del PZENC, CZENC, VZENC, CDAT
+        if VERBOSE:
+            print('inlier selected z encodings computed')
+            print(100*'-')
 
-    # UFL, UBETA = CFL[::UNI], CBETA[::UNI]
-    # UNFL, UNBETA = UFL.size, UBETA.size
+    USHP0 = (NP, NT, UNS, 2, LD)
+    USHP1 = (NP*NT*UNS, 2, LD)
+    USHP2 = (NP, NT, UNS, LD)
+    USHP3 = (NP*NT*UNS, LD)
 
-    # # reduction dictionary
-    # MNFLDS = {'pca':PCA(n_components=2),
-    #           'kpca':KernelPCA(n_components=2, n_jobs=THREADS),
-    #           'isomap':Isomap(n_components=2, n_jobs=THREADS),
-    #           'lle':LocallyLinearEmbedding(n_components=2, n_jobs=THREADS),
-    #           'tsne':TSNE(n_components=2, perplexity=UNS,
-    #                       early_exaggeration=24, learning_rate=200, n_iter=1000,
-    #                       verbose=VERBOSE, n_jobs=THREADS)}
+    # reduction dictionary
+    MNFLDS = {'pca':PCA(n_components=2),
+              'kpca':KernelPCA(n_components=2, n_jobs=THREADS),
+              'isomap':Isomap(n_components=2, n_jobs=THREADS),
+              'lle':LocallyLinearEmbedding(n_components=2, n_jobs=THREADS),
+              'tsne':TSNE(n_components=2, perplexity=UNS,
+                          early_exaggeration=24, learning_rate=200, n_iter=1000,
+                          verbose=VERBOSE, n_jobs=THREADS)}
 
-    # try:
-    #     MSLZENC = np.load(CWD+'/results/%s.%d.%d.%d.%d.%d.%s.%s.%s.%d.%d.%.0e.%d.%d.%s.%d.%d.zenc.mfld.inl.npy' \
-    #                       % (NAME, NT, NK, CD, SNI, SNS, SCLR, OPT, LSS, LD, EP, LR, UNI, UNS, MNFLD, AD, SEED))
-    #     if VERBOSE:
-    #         print('inlier selected z encoding manifold loaded from file')
-    #         print(100*'-')
-    # except:
-    #     MSLZENC = np.zeros((UNFL*UNBETA*UNS, 2, 2))
-    #     for i in range(ED):
-    #         MSLZENC[:, i, :] = MNFLDS[MNFLD].fit_transform(SLPZENC[:, :, :, i, :].reshape(UNFL*UNBETA*UNS, LD))
-    #     np.save(CWD+'/results/%s.%d.%d.%d.%d.%d.%s.%s.%s.%d.%d.%.0e.%d.%d.%s.%d.%d.zenc.mfld.inl.npy' \
-    #             % (NAME, NT, NK, CD, SNI, SNS, SCLR, OPT, LSS, LD, EP, LR, UNI, UNS, MNFLD, AD, SEED), MSLZENC)
-    #     if VERBOSE:
-    #         if MNFLD == 'tsne':
-    #             print(100*'-')
-    #         print('inlier selected z encoding manifold computed')
-    #         print(100*'-')
+    try:
+        MSLZENC = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%s.%d.%04d.zenc.mfld.inl.npy' \
+                          % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, MNFLD, AD, SEED))
+        if VERBOSE:
+            print('inlier selected z encoding manifold loaded from file')
+            print(100*'-')
+    except:
+        MSLZENC = np.zeros((NP*NT*UNS, 2, 2))
+        for i in range(ED):
+            MSLZENC[:, i, :] = MNFLDS[MNFLD].fit_transform(SLPZENC[:, :, :, i, :].reshape(*USHP3))
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%s.%d.%04d.zenc.mfld.inl.npy' \
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, MNFLD, AD, SEED), MSLZENC)
+        if VERBOSE:
+            if MNFLD == 'tsne':
+                print(100*'-')
+            print('inlier selected z encoding manifold computed')
+            print(100*'-')
 
-    # if PLOT:
-    #     outpref = CWD+'/results/%s.%d.%d.%d.%d.%d.%s.%s.%s.%d.%d.%.0e.%d.%d.%d.%s.%d' % \
-    #               (NAME, NT, NK, CD, SNI, SNS, SCLR, OPT, LSS, LD, EP, LR, UNI, UNS, AD, MNFLD, SEED)
-    #     for i in range(2):
-    #         fig = plt.figure()
-    #         ax = fig.add_subplot(111)
-    #         ax.spines['right'].set_visible(False)
-    #         ax.spines['top'].set_visible(False)
-    #         ax.xaxis.set_ticks_position('bottom')
-    #         ax.yaxis.set_ticks_position('left')
-    #         ax.scatter(MSLZENC[:, i, 0], MSLZENC[:, i, 1],
-    #                    cmap=plt.get_cmap('plasma'),
-    #                    s=64, alpha=0.5, edgecolors='')
-    #         plt.xlabel('mu')
-    #         plt.ylabel('sigma')
-    #         fig.savefig(OUTPREF+'.vae.mnfld.prj.ld.%02d.png' % i)
+    if PLOT:
+        outpref = PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%s.%d.%04d' \
+                  % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, MNFLD, AD, SEED)
+        for i in range(2):
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax.spines['right'].set_visible(False)
+            ax.spines['top'].set_visible(False)
+            ax.xaxis.set_ticks_position('bottom')
+            ax.yaxis.set_ticks_position('left')
+            ax.scatter(MSLZENC[:, i, 0], MSLZENC[:, i, 1], c=UT.reshape(-1),
+                       cmap=plt.get_cmap('plasma'), s=64, alpha=0.5, edgecolors='')
+            plt.xlabel('NL VAE %d0' % i)
+            plt.ylabel('NL VAE %d1' % i)
+            fig.savefig(outpref+'.vae.mnfld.prj.ld.%02d.png' % i)
