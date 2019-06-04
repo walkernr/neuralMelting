@@ -17,8 +17,6 @@ PARSER.add_argument('-n', '--name', help='name of simulation',
                     type=str, default='remcmc_init')
 PARSER.add_argument('-e', '--element', help='element choice',
                     type=str, default='LJ')
-PARSER.add_argument('-i', '--pressure_index', help='pressure index',
-                    type=int, default=0)
 # parse arguments
 ARGS = PARSER.parse_args()
 # verbosity of output
@@ -27,8 +25,6 @@ VERBOSE = ARGS.verbose
 NAME = ARGS.name
 # element choice
 EL = ARGS.element
-# pressure value
-PI = ARGS.pressure_index
 
 # lattice type
 LAT = {'Ti': 'bcc',
@@ -37,32 +33,36 @@ LAT = {'Ti': 'bcc',
        'Cu': 'fcc',
        'LJ': 'fcc'}
 # file prefix
-PREFIX = os.getcwd()+'/'+'%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL], PI)
+PREFIX = os.getcwd()+'/'+'%s.%s.%s.lammps' % (NAME, EL.lower(), LAT[EL])
+P = np.load(PREFIX+'.virial.trgt.npy')
+T = np.load(PREFIX+'.temp.trgt.npy')
+PN, TN = P.size, T.size
 
 if VERBOSE:
-    print('parsing data for %s at pressure index %d' % (EL.lower(), PI))
+    print('parsing data for %s for %d pressure indices and %d temperature indices' % (EL.lower(), PN, TN))
 # parse thermo file
 (TEMP, PE, KE, VIRIAL, VOL, DX, DV, DT,
  NTP, NAP, NTV, NAV, NTH, NAH, AP, AV, AH) = np.split(np.loadtxt(PREFIX+'.thrm', dtype=np.float32), 17, 1)
-TEMP = TEMP[:, 0]
-PE = PE[:, 0]
-KE = KE[:, 0]
-VIRIAL = VIRIAL[:, 0]
-VOL = VOL[:, 0]
-DX = DX[:, 0]
-DV = DV[:, 0]
-DT = DT[:, 0]
-NTP = NTP[:, 0]
-NAP = NAP[:, 0]
-NTV = NTV[:, 0]
-NAV = NAV[:, 0]
-NTH = NTH[:, 0]
-NAH = NAH[:, 0]
-AP = AP[:, 0]
-AV = AV[:, 0]
-AH = AH[:, 0]
+TEMP = TEMP[:, 0].reshape(PN, TN, -1)
+PE = PE[:, 0].reshape(PN, TN, -1)
+KE = KE[:, 0].reshape(PN, TN, -1)
+VIRIAL = VIRIAL[:, 0].reshape(PN, TN, -1)
+VOL = VOL[:, 0].reshape(PN, TN, -1)
+DX = DX[:, 0].reshape(PN, TN, -1)
+DV = DV[:, 0].reshape(PN, TN, -1)
+DT = DT[:, 0].reshape(PN, TN, -1)
+NTP = NTP[:, 0].reshape(PN, TN, -1)
+NAP = NAP[:, 0].reshape(PN, TN, -1)
+NTV = NTV[:, 0].reshape(PN, TN, -1)
+NAV = NAV[:, 0].reshape(PN, TN, -1)
+NTH = NTH[:, 0].reshape(PN, TN, -1)
+NAH = NAH[:, 0].reshape(PN, TN, -1)
+AP = AP[:, 0].reshape(PN, TN, -1)
+AV = AV[:, 0].reshape(PN, TN, -1)
+AH = AH[:, 0].reshape(PN, TN, -1)
+SN = TEMP.shape[2]
 if VERBOSE:
-    print('%d thermodynamic property steps parsed' % len(TEMP))
+    print('%d thermodynamic property steps parsed' % (PN*TN*SN))
 
 # parse trajectory file
 with open(PREFIX+'.traj', 'r') as traj_in:
@@ -71,31 +71,33 @@ with open(PREFIX+'.traj', 'r') as traj_in:
     NATOMS = NATOMS.astype(np.uint16)[:, 0]
     BOX = BOX.astype(np.float32)[:, 0]
     X = [np.array(values).astype(np.float32) for values in DATA if len(values) == 3]
-    X = np.concatenate(tuple(X), 0).reshape(NATOMS.size, 3*NATOMS[0])
+    X = np.concatenate(tuple(X), 0)
+    NATOMS = NATOMS.reshape(PN, TN, -1)
+    X = X.reshape(PN, TN, NATOMS.shape[2], NATOMS[0, 0, 0], 3)
 if VERBOSE:
-    print('%d trajectory steps parsed' % len(NATOMS))
+    print('%d trajectory steps parsed' % (PN*TN*SN))
 
-# pickle data
-pickle.dump(TEMP, open(PREFIX+'.temp.pickle', 'wb'))
-pickle.dump(PE, open(PREFIX+'.pe.pickle', 'wb'))
-pickle.dump(KE, open(PREFIX+'.ke.pickle', 'wb'))
-pickle.dump(VIRIAL, open(PREFIX+'.virial.pickle', 'wb'))
-pickle.dump(VOL, open(PREFIX+'.vol.pickle', 'wb'))
-pickle.dump(DX, open(PREFIX+'.dx.pickle', 'wb'))
-pickle.dump(DV, open(PREFIX+'.dv.pickle', 'wb'))
-pickle.dump(DT, open(PREFIX+'.dt.pickle', 'wb'))
-pickle.dump(NTP, open(PREFIX+'.ntp.pickle', 'wb'))
-pickle.dump(NAP, open(PREFIX+'.nap.pickle', 'wb'))
-pickle.dump(NTV, open(PREFIX+'.ntv.pickle', 'wb'))
-pickle.dump(NAV, open(PREFIX+'.nav.pickle', 'wb'))
-pickle.dump(NTH, open(PREFIX+'.nth.pickle', 'wb'))
-pickle.dump(NAH, open(PREFIX+'.nah.pickle', 'wb'))
-pickle.dump(AP, open(PREFIX+'.ap.pickle', 'wb'))
-pickle.dump(AV, open(PREFIX+'.av.pickle', 'wb'))
-pickle.dump(AH, open(PREFIX+'.ah.pickle', 'wb'))
-pickle.dump(NATOMS, open(PREFIX+'.natoms.pickle', 'wb'))
-pickle.dump(BOX, open(PREFIX+'.box.pickle', 'wb'))
-pickle.dump(X, open(PREFIX+'.pos.pickle', 'wb'))
+# dump data
+np.save(PREFIX+'.temp.npy', TEMP)
+np.save(PREFIX+'.pe.npy', PE)
+np.save(PREFIX+'.ke.npy', KE)
+np.save(PREFIX+'.virial.npy', VIRIAL)
+np.save(PREFIX+'.vol.npy', VOL)
+np.save(PREFIX+'.dx.npy', DX)
+np.save(PREFIX+'.dv.npy', DV)
+np.save(PREFIX+'.dt.npy', DT)
+np.save(PREFIX+'.ntp.npy', NTP)
+np.save(PREFIX+'.nap.npy', NAP)
+np.save(PREFIX+'.ntv.npy', NTV)
+np.save(PREFIX+'.nav.npy', NAV)
+np.save(PREFIX+'.nth.npy', NTH)
+np.save(PREFIX+'.nah.npy', NAH)
+np.save(PREFIX+'.ap.npy', AP)
+np.save(PREFIX+'.av.npy', AV)
+np.save(PREFIX+'.ah.npy', AH)
+np.save(PREFIX+'.natoms.npy', NATOMS)
+np.save(PREFIX+'.box.npy', BOX)
+np.save(PREFIX+'.pos.npy', X)
 
 if VERBOSE:
     print('all properties pickled')

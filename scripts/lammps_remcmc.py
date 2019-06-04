@@ -7,7 +7,7 @@ Created on Thu Jun 07 04:20:00 2018
 
 import argparse
 import os
-import pickle
+import warnings
 import time
 import numpy as np
 import numba as nb
@@ -27,6 +27,7 @@ def parse_args():
     parser.add_argument('-p', '--parallel', help='parallel run mode', action='store_true')
     parser.add_argument('-c', '--client', help='dask client run mode', action='store_true')
     parser.add_argument('-d', '--distributed', help='distributed run mode', action='store_true')
+    parser.add_argument('-is', '--interpolate_states', help='interpolate initial states', action='store_true')
     parser.add_argument('-rd', '--restart_dump', help='restart dump frequency',
                         type=int, default=128)
     parser.add_argument('-rn', '--restart_name', help='restart dump simulation name',
@@ -56,13 +57,13 @@ def parse_args():
     parser.add_argument('-e', '--element', help='simulation element',
                         type=str, default='LJ')
     parser.add_argument('-ss', '--supercell_size', help='simulation supercell size',
-                        type=int, default=4)
+                        type=int, default=5)
     parser.add_argument('-pn', '--pressure_number', help='number of pressures',
-                        type=int, default=8)
+                        type=int, default=16)
     parser.add_argument('-pr', '--pressure_range', help='pressure range (low and high)',
                         type=float, nargs=2, default=[1, 8])
     parser.add_argument('-tn', '--temperature_number', help='number of temperatures',
-                        type=int, default=48)
+                        type=int, default=16)
     parser.add_argument('-tr', '--temperature_range', help='temperature range (low and high)',
                         type=float, nargs=2, default=[0.25, 2.5])
     parser.add_argument('-sc', '--sample_cutoff', help='sample recording cutoff',
@@ -78,13 +79,13 @@ def parse_args():
     parser.add_argument('-ts', '--timesteps', help='hamiltonian monte carlo timesteps',
                         type=int, default=8)
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
-                        type=float, default=0.09375)
+                        type=float, default=0.015625)
     parser.add_argument('-dv', '--vol_displace', help='logarithmic volume displacement (logarithmic volume proportion)',
                         type=float, default=0.015625)
     # parse arguments
     args = parser.parse_args()
     # return arguments
-    return (args.verbose, args.parallel, args.client, args.distributed, args.restart,
+    return (args.verbose, args.restart, args.parallel, args.client, args.distributed, args.interpolate_states,
             args.restart_dump, args.restart_name, args.restart_step,
             args.queue, args.allocation, args.nodes, args.procs_per_node,
             args.walltime, args.memory,
@@ -142,9 +143,9 @@ def init_constants():
 # -----------------------------
 
 
-def file_prefix(i):
+def file_prefix(i, j):
     ''' returns filename prefix for simulation '''
-    prefix = os.getcwd()+'/%s.%s.%s.%02d.lammps' % (NAME, EL.lower(), LAT[EL][0], i)
+    prefix = os.getcwd()+'/%s.%s.%s.%02d.%02d.lammps' % (NAME, EL.lower(), LAT[EL][0], i, j)
     return prefix
 
 
@@ -152,7 +153,7 @@ def init_output(k):
     ''' initializes output filenames for a sample '''
     # extract pressure/temperature indices from index
     i, j = np.unravel_index(k, dims=(NP, NT), order='C')
-    thrm = file_prefix(i)+'.%02d.thrm' % j
+    thrm = file_prefix(i, j)+'.thrm'
     traj = thrm.replace('thrm', 'traj')
     # clean old output files if they exist
     if os.path.isfile(thrm):
@@ -291,15 +292,15 @@ def consolidate_outputs():
         print('---------------------')
     thrm = [OUTPUT[k][0] for k in range(NS)]
     traj = [OUTPUT[k][1] for k in range(NS)]
-    for i in range(NP):
-        with open(file_prefix(i)+'.thrm', 'w') as thrm_out:
+    with open(PREF+'.thrm', 'w') as thrm_out:
+        for i in range(NP):
             for j in range(NT):
                 k = np.ravel_multi_index((i, j), (NP, NT), order='C')
                 with open(thrm[k], 'r') as thrm_in:
                     for line in thrm_in:
                         thrm_out.write(line)
-    for i in range(NP):
-        with open(file_prefix(i)+'.traj', 'w') as traj_out:
+    with open(PREF+'.traj', 'w') as traj_out:
+        for i in range(NP):
             for j in range(NT):
                 k = np.ravel_multi_index((i, j), (NP, NT), order='C')
                 with open(traj[k], 'r') as traj_in:
@@ -388,7 +389,6 @@ def lammps_extract(lmps):
     return natoms, x, v, temp, pe, ke, virial, box, vol
 
 
-@nb.jit
 def init_sample(k):
     ''' initializes sample '''
     i, j = np.unravel_index(k, dims=(NP, NT), order='C')
@@ -404,22 +404,23 @@ def init_sample(k):
     # randomize positions
     lmps.command('displace_atoms all random %f %f %f %d units box' % (3*(DX*LAT[EL][1],)+(seed,)))
     lmps.command('run 0')
-    # # resize box
-    # natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
-    # volnew = np.exp(np.log(vol)+0.75*(j+1)/NT)
-    # boxnew = np.cbrt(volnew)
-    # scale = boxnew/box
-    # xnew = scale*x
-    # box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
-    # lmps.command(box_cmd % (3*(boxnew,)))
-    # lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
-    # lmps.command('run 0')
-    # # run dynamics
-    # lmps.command('velocity all create %f %d dist gaussian' % (T[j], seed))
-    # lmps.command('velocity all zero linear')
-    # lmps.command('velocity all zero angular')
-    # lmps.command('timestep %f' % DT)
-    # lmps.command('run 1024')
+    if INTSTS:
+        # resize box
+        natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
+        volnew = np.exp(np.log(vol)+0.75*(j+1)/NT)
+        boxnew = np.cbrt(volnew)
+        scale = boxnew/box
+        xnew = scale*x
+        box_cmd = 'change_box all x final 0.0 %f y final 0.0 %f z final 0.0 %f units box'
+        lmps.command(box_cmd % (3*(boxnew,)))
+        lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(xnew))
+        lmps.command('run 0')
+        # run dynamics
+        lmps.command('velocity all create %f %d dist gaussian' % (T[j], seed))
+        lmps.command('velocity all zero linear')
+        lmps.command('velocity all zero angular')
+        lmps.command('timestep %f' % DT)
+        lmps.command('run 1024')
     # extract all system info
     natoms, x, v, temp, pe, ke, virial, box, vol = lammps_extract(lmps)
     lmps.close()
@@ -471,7 +472,6 @@ def init_lammps(x, v, box):
 # -----------------
 
 
-@nb.jit
 def bulk_position_mc(lmps, et, ntp, nap, dx):
     ''' classic position monte carlo (bulk) '''
     ntp += 1
@@ -482,18 +482,24 @@ def bulk_position_mc(lmps, et, ntp, nap, dx):
     lmps.command('run 0')
     penew = lmps.extract_compute('thermo_pe', 0, 0)/et
     de = penew-pe
-    if np.random.rand() <= np.min([1, np.exp(-de)]):
-        # update pos acceptations
-        nap += 1
-    else:
-        # revert physical properties
-        lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
-        lmps.command('run 0')
+    with np.errstate(over='ignore'):
+        metcrit = np.exp(-de)
+        if not np.isinf(metcrit):
+            if np.random.rand() <= np.min([1, np.exp(-de)]):
+                # update pos acceptations
+                nap += 1
+            else:
+                # revert physical properties
+                lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
+                lmps.command('run 0')
+        else:
+            # revert physical properties
+            lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
+            lmps.command('run 0')
     # return lammps object and tries/acceptations
     return lmps, ntp, nap
 
 
-@nb.jit
 def iter_position_mc(lmps, et, ntp, nap, dx):
     ''' classic position monte carlo (iterative) '''
     # get number of atoms
@@ -521,19 +527,26 @@ def iter_position_mc(lmps, et, ntp, nap, dx):
         penew = lmps.extract_compute('thermo_pe', 0, 0)/et
         # calculate energy criterion
         de = penew-pe
-        if np.random.rand() <= np.min([1, np.exp(-de)]):
-            # update pos acceptations
-            nap += 1
-        else:
-            # revert physical properties
-            x[3*k:3*k+3] = od
-            lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
-            lmps.command('run 0')
+        with np.errstate(over='ignore'):
+            metcrit = np.exp(-de)
+            if not np.isinf(metcrit):
+                if np.random.rand() <= np.min([1, np.exp(-de)]):
+                    # update pos acceptations
+                    nap += 1
+                else:
+                    # revert physical properties
+                    x[3*k:3*k+3] = od
+                    lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
+                    lmps.command('run 0')
+            else:
+                # revert physical properties
+                x[3*k:3*k+3] = od
+                lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
+                lmps.command('run 0')
     # return lammps object and tries/acceptations
     return lmps, ntp, nap
 
 
-@nb.jit
 def volume_mc(lmps, et, pf, ntv, nav, dv):
     ''' isobaric-isothermal volume monte carlo '''
     # update volume tries
@@ -560,19 +573,26 @@ def volume_mc(lmps, et, pf, ntv, nav, dv):
     # calculate enthalpy criterion
     dh = (penew-pe)+pf*(volnew-vol)-(natoms+1)*np.log(volnew/vol)
     # dh = (penew-pe)+pf*(volnew-vol)-natoms*np.log(volnew/vol)
-    if np.random.rand() <= np.min([1, np.exp(-dh)]):
-        # update volume acceptations
-        nav += 1
-    else:
-        # revert physical properties
-        lmps.command(box_cmd % (3*(box,)))
-        lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
-        lmps.command('run 0')
+    with np.errstate(over='ignore'):
+        metcrit = np.exp(-dh)
+        if not np.isinf(metcrit):
+            if np.random.rand() <= np.min([1, np.exp(-dh)]):
+                # update volume acceptations
+                nav += 1
+            else:
+                # revert physical properties
+                lmps.command(box_cmd % (3*(box,)))
+                lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
+                lmps.command('run 0')
+        else:
+            # revert physical properties
+            lmps.command(box_cmd % (3*(box,)))
+            lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
+            lmps.command('run 0')
     # return lammps object and tries/acceptations
     return lmps, ntv, nav
 
 
-@nb.jit
 def hamiltonian_mc(lmps, et, t, nth, nah, dt):
     ''' hamiltionian monte carlo '''
     # update hmc tries
@@ -598,14 +618,22 @@ def hamiltonian_mc(lmps, et, t, nth, nah, dt):
     etotnew = penew+kenew
     # calculate hamiltonian criterion
     de = etotnew-etot
-    if np.random.rand() <= np.min([1, np.exp(-de)]):
-        # update hamiltonian acceptations
-        nah += 1
-    else:
-        # revert physical properties
-        lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
-        lmps.scatter_atoms('v', 1, 3, np.ctypeslib.as_ctypes(v))
-        lmps.command('run 0')
+    with np.errstate(over='ignore'):
+        metcrit = np.exp(-de)
+        if not np.isinf(metcrit):
+            if np.random.rand() <= np.min([1, metcrit]):
+                # update hamiltonian acceptations
+                nah += 1
+            else:
+                # revert physical properties
+                lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
+                lmps.scatter_atoms('v', 1, 3, np.ctypeslib.as_ctypes(v))
+                lmps.command('run 0')
+        else:
+            # revert physical properties
+            lmps.scatter_atoms('x', 1, 3, np.ctypeslib.as_ctypes(x))
+            lmps.scatter_atoms('v', 1, 3, np.ctypeslib.as_ctypes(v))
+            lmps.command('run 0')
     # return lammps object and tries/acceptations
     return lmps, nth, nah
 
@@ -782,8 +810,8 @@ def load_samples_restart():
             print('\n----------------------------------')
         print('loading samples from previous dump')
         print('----------------------------------')
-    rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (RENAME, EL.lower(), LAT[EL][0], RESTEP)
-    return pickle.load(open(rf, 'rb'))
+    rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.npy' % (RENAME, EL.lower(), LAT[EL][0], RESTEP)
+    return np.load(rf)
 
 
 def dump_samples_restart():
@@ -792,8 +820,8 @@ def dump_samples_restart():
         if PARALLEL:
             print('\n---------------')
         print('dumping samples')
-    rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.pickle' % (NAME, EL.lower(), LAT[EL][0], STEP+1)
-    pickle.dump(STATE, open(rf, 'wb'))
+    rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.npy' % (NAME, EL.lower(), LAT[EL][0], STEP+1)
+    np.save(rf, np.array(STATE, dtype=object))
 
 # ----
 # main
@@ -801,7 +829,7 @@ def dump_samples_restart():
 
 if __name__ == '__main__':
 
-    (VERBOSE, PARALLEL, DASK, DISTRIBUTED, RESTART,
+    (VERBOSE, RESTART, PARALLEL, DASK, DISTRIBUTED, INTSTS,
      REFREQ, RENAME, RESTEP,
      QUEUE, ALLOC, NODES, PPN,
      WALLTIME, MEM,
@@ -863,6 +891,11 @@ if __name__ == '__main__':
     T = np.linspace(LT, HT, NT, dtype=np.float32)
     # inital time step
     DT = TIMESTEP[UNITS[EL]]
+    # prefix
+    PREF = os.getcwd()+'/%s.%s.%s.lammps' % (NAME, EL.lower(), LAT[EL][0])
+    # dump params
+    np.save(PREF+'.virial.trgt.npy', P)
+    np.save(PREF+'.temp.trgt.npy', T)
 
     # -----------------
     # initialize lammps
@@ -933,6 +966,8 @@ if __name__ == '__main__':
         else:
             STATE = init_samples()
     # loop through to number of samples that need to be collected
+    STEP = -1
+    dump_samples_restart()
     for STEP in tqdm(range(NSMPL)):
         if VERBOSE and DASK:
             client_info()
