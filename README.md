@@ -53,35 +53,6 @@ Installation and Execution
 
 Once all of the required packages have been installed, simply cloning the directory and running the scripts is all that is needed. Use `--help` or `-h` for help. A shell script showing a convenient way to run the scripts is provided as `run.sh`.
 
-Sample Results
-==============
-
-Here are some sample results for a small Lennard-Jones system of 108 atoms.
-
-![Neural Network Classification](https://github.com/walkernr/neuralMelting/blob/master/images/neural_classification_probability.png)
-
-These are the liquid phase predictions from a 1-dimensional convolutional neural network on the entropic fingerprints of 1024 samples across 48 temperatures for P = 1.
-
-![Neural Network Classified Feature Averages](https://github.com/walkernr/neuralMelting/blob/master/images/neural_classified_feature_average.png)
-
-These are the average entropic fingerprints for the phases from both the training and classification data.
-
-![Neural Network Melting Curve](https://github.com/walkernr/neuralMelting/blob/master/images/neural_melting_curve.png)
-
-This is the P-T melting curve for the system.
-
-![Clustering Classification](https://github.com/walkernr/neuralMelting/blob/master/images/cluster_classification_probability.png)
-
-These are the liquid phase predictions from agglomerative clustering done on the t-SNE feature reduced data.
-
-![Clustering Classified Feature Averages](https://github.com/walkernr/neuralMelting/blob/master/images/cluster_classified_feature_average.png)
-
-These are the average entropic fingerprints from each phase according to the agglomerative clustering.
-
-![t-SNE Sample Embedding with Clustering](https://github.com/walkernr/neuralMelting/blob/master/images/cluster_reduced_feature_embedding.png)
-
-This is the t-SNE feature reduced projection of the original data into two dimensions with the original data in the left panel and clustering results in the right panel.
-
 File Descriptions
 =================
 
@@ -99,91 +70,56 @@ Two output files are written to during the data collection cycles (assuming a lo
 lammps_parse.py
 ---------------
 
-This program parses the output from Monte Carlo simulations and pickles the data. The pickled data includes the temperatures, potential energies, kinetic energies, virial pressures, volumes, acceptation ratios for each MC move, and trajectories for each sample.
+This program parses the output from Monte Carlo simulations and dumps the data. The dumped data includes the temperatures, potential energies, kinetic energies, virial pressures, volumes, acceptation ratios for each MC move, and trajectories for each sample.
 
-lammps_rdf.py
+lammps_distr.py
 -------------------------
 
-This program calculates the radial distributions, structure factors, and entropic fingerprints, and densities alongside the domains for each structural function for each sample using the pickled trajectory information from the parsing script. The calculations can be run in parallel using a multiprocessing or multithreading approach on local or distributed clusters. The parallelism is implemented with the Dask Distributed library. Since Dask uses Bokeh, multiprocessing runs may be monitored at localhost:8787/status assuming the default Bokeh TCP port is used. The rdf calculations are also optimized using a combination of vectorized code by way of NumPy alongside a JIT compiler by way of Numba.
+This program calculates the radial distributions, structure factors, and entropic fingerprints, densities, and cartesian volume densities alongside the domains for each structural function for each sample using the dumped trajectory information from the parsing script. The calculations can be run in parallel using a multiprocessing or multithreading approach on local or distributed clusters. The parallelism is implemented with the Dask Distributed library. Since Dask uses Bokeh, multiprocessing runs may be monitored at localhost:8787/status assuming the default Bokeh TCP port is used. The rdf calculations are also optimized using a combination of vectorized code by way of NumPy alongside a JIT compiler by way of Numba.
 
-lammps_neural.py
+lammps_vae.py
 ----------------
 
-This program classifies samples as either solids or liquids by passing structural information through a multi-layer perceptron neural network.
+This program encodes the sample structure information with a variational autoencoder implemented with a tunable latent dimension and 3-dimensional convolution layers in the encoder and decoder networks. Further unsupervised analysis is performed on the latent encodings.
 
 ### Structural Features
-- Radial distribution
-- Structure factor
-- Entropic fingerprint
+- Cartesian volume densities
 
 ### Feature Scalers
 - Standard: very common, vulnerable to outliers, does not guarantee a map to a common numerical range
 - MinMax: also common, vulnerable to outliers, guarantees a map to a common numerical range
 - Robust: resilient to outliers, does not guarantee a map to a common numerical range
 - Tanh: resilient to outliers, guarantees a map to a common numerical range
-
-### Feature Space Reducers
-- None: use the raw scaled data
-- PCA: common and fast, orthogonal linear transformation into new basis that maximizes variance of data along new projections
-- Kernal PCA: slower than PCA, nonlinear reduction in the sample space rather than feature space
-- Isomap: slower than PCA, a nonlinear reduction considered to be an extension of the Kernel PCA algorithm
-- Locally Linear Embedding: slower than PCA, can be considered as a series of local PCA reductions that are globally stiched together
 
 ### Neural Networks
-- 1-D Convolutional Neural Network Classifier
+- 3-dimensional convolutional variational autoencoder with a Gaussian prior (KL-divergence used as regularizer)
 
-### Fitting Functions
-- Logistic: well-behaved and easily extracted transition temperature estimate, symmetric
+### Optimizers
+- SGD: standard stochastic gradient descent
+- Adadelta: an optimizer (extension of Adagrad) with parameter-specific adaptive learning rates based on past gradient updates
+- Adam: an optimizer (combination of Adagrad and RMSprop) with parameter-specific adaptive learning rates based on parameter update frequency and rate of change
+- Nadam: and optmizer that implements Nesterov momentum in the Adam optmizer
 
-### Future Plans
-- Refine neural network structures and hyperparameters with grid searching
-- Add more neural networks
-- Add more fitting functions
+### Loss Functions
+- MSE: mean squared error difference between target and prediction
+- Binary Crossentropy: cross entropy between target and prediction (ranges from 0 to 1)
 
-Since the structural features, feature scalers, feature space reducers, neural networks, and fitting functions are contained in libraries, the user may feel free to add their own.
-
-lammps_cluster.py
------------------
-
-This program classifies samples as either solids or liquid by passing structural information through an unsupervised clustering algorithm following data scaling and feature space reduction into 2 dimensions. PCA reduction always performed with an option for further nonlinear feature space reduction.
-
-### Structure Features
-- Radial distribution
-- Structure factor
-- Entropic fingerprint
-
-### Feature Scalers
-- Standard: very common, vulnerable to outliers, does not guarantee a map to a common numerical range
-- MinMax: also common, vulnerable to outliers, guarantees a map to a common numerical range
-- Robust: resilient to outliers, does not guarantee a map to a common numerical range
-- Tanh: resilient to outliers, guarantees a map to a common numerical range
-
-### Feature Space Reducers
-- None: use the PCA reduced data
+### Manifold Learning
 - PCA: common and fast, orthogonal linear transformation into new basis that maximizes variance of data along new projections
 - Kernal PCA: slower than PCA, nonlinear reduction in the sample space rather than feature space
 - Isomap: slower than PCA, a nonlinear reduction considered to be an extension of the Kernel PCA algorithm
 - Locally Linear Embedding: slower than PCA, can be considered as a series of local PCA reductions that are globally stiched together
-- t-distributed Stochastic Neighbor Embedding: slowest method, treat affinities in original space as Gaussian distributed and transforms the data such that the new affinities are Student's t-distributed
-
-### Clustering Methods
-- K-Means: Good for globular data, struggles on elongated data sets and irregular cluster boundaries (including concentric clusters)
-- Agglomerative: Good for globular data, struggles with low density clusters and concentric clusters
-- Spectral: Good for connected data (including concentric), struggles with edges of globular data
+- t-distributed Stochastic Neighbor Embedding: slowest method, treat affinities in original space as Gaussian distributed and transforms the data such that the new affinities are Student's t-distributed in a lower dimensional space with identical affinities to the original space
 
 ### Fitting Functions
 - Logistic: well-behaved and easily extracted transition temperature estimate, symmetric
 
 ### Future Plans
-- Refine tuning of clustering method parameters
-- Add more fitting functions
+- Add support for more structural functions
+- Refine neural network structures and hyperparameters with grid searching
+- Add more neural network structures
 
-Since the structural features, feature scalers, feature space reducers, clustering methods, and fitting functions are contained in libraries, the user may feel free to add their own.
-
-lammps_post.py
---------------
-
-This program does post-processing on the transition predictions at multiple different pressures to extract the melting curve.
+Dictionaries are used for many of the options, so the user is free to add more
 
 TanhScaler.py
 -------------
