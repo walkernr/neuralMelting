@@ -810,7 +810,7 @@ def load_samples_restart():
             print('\n----------------------------------')
         print('loading samples from previous dump')
         print('----------------------------------')
-    rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.npy' % (RENAME, EL.lower(), LAT[EL][0], RESTEP)
+    rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%04d.npy' % (RENAME, EL.lower(), LAT[EL][0], RESTEP)
     return np.load(rf)
 
 
@@ -820,7 +820,7 @@ def dump_samples_restart():
         if PARALLEL:
             print('\n---------------')
         print('dumping samples')
-    rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%d.npy' % (NAME, EL.lower(), LAT[EL][0], STEP+1)
+    rf = os.getcwd()+'/%s.%s.%s.lammps.rstrt.%04d.npy' % (NAME, EL.lower(), LAT[EL][0], STEP+1)
     np.save(rf, np.array(STATE, dtype=object))
 
 # ----
