@@ -41,12 +41,16 @@ def parse_args():
                         type=str, default='remcmc_init')
     parser.add_argument('-e', '--element', help='element choice',
                         type=str, default='LJ')
+    parser.add_argument('-sb', '--spherical_bins', help='number of bins for spherical distributions',
+                        type=int, default=256)
+    parser.add_argument('-cb', '--cartesian_bins', help='number of bins for cartesian distributions',
+                        type=int, default=16)
     args = parser.parse_args()
     return (args.verbose, args.parallel, args.client, args.distributed,
             args.queue, args.allocation, args.nodes, args.procs_per_node,
             args.walltime, args.memory,
             args.workers, args.threads, args.method,
-            args.name, args.element)
+            args.name, args.element, args.spherical_bins, args.cartesian_bins)
 
 
 def client_info():
@@ -78,12 +82,10 @@ def calculate_spatial():
     l = np.min(box)
     # maximum radius for rdf
     mr = 1/2
-    # bin count for rdf
-    gbins = 256
     # domain for rdf
-    r = np.linspace(1e-16, mr, gbins)
+    r = np.linspace(1e-16, mr, SBINS)
     # domain for adf
-    a = np.linspace(1e-16, np.pi, gbins)
+    a = np.linspace(1e-16, np.pi, SBINS)
     # domain spacing for rdf
     dr = r[1]-r[0]
     # differential volume contained by shell at distance r
@@ -102,11 +104,11 @@ def calculate_spatial():
     br = np.array([[b[i], b[j], b[k]] for i in range(3) for j in range(3) for k in range(3)],
                   dtype=np.int8)
     # create vector for rdf
-    rd = np.zeros(gbins, dtype=np.float32)
+    rd = np.zeros(SBINS, dtype=np.float32)
     # create vector for adf
-    ad = np.zeros(gbins, dtype=np.float32)
+    ad = np.zeros(SBINS, dtype=np.float32)
     # bins for cartesian density
-    cbins = np.array([17, 17, 17])
+    cbins = np.array(3*(CBINS,))
     rv = np.array([np.linspace(0, l, cbins[i]) for i in range(len(cbins))])
     rv -= l/2
     drv = rv[0, 1]-rv[0, 0]
@@ -237,7 +239,7 @@ if __name__ == '__main__':
      QUEUE, ALLOC, NODES, PPN,
      WALLTIME, MEM,
      NWORKER, NTHREAD, MTHD,
-     NAME, EL) = parse_args()
+     NAME, EL, SBINS, CBINS) = parse_args()
 
     # processing or threading
     PROC = (NWORKER != 1)
