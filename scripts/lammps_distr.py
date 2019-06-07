@@ -108,7 +108,7 @@ def calculate_spatial():
     # create vector for adf
     ad = np.zeros(SBINS, dtype=np.float32)
     # bins for cartesian density
-    cbins = np.array(3*(CBINS,))
+    cbins = np.array(3*(CBINS+1,))
     rv = np.array([np.linspace(0, l, cbins[i]) for i in range(len(cbins))])
     rv -= l/2
     drv = rv[0, 1]-rv[0, 0]
