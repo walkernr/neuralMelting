@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument('-c', '--client', help='dask client run mode', action='store_true')
     parser.add_argument('-d', '--distributed', help='distributed run mode', action='store_true')
     parser.add_argument('-is', '--interpolate_states', help='interpolate initial states', action='store_true')
+    parser.add_argument('-bm', '--bulk_move', help='bulk position monte carlo moves', action='store_true')
     parser.add_argument('-rd', '--restart_dump', help='restart dump frequency',
                         type=int, default=128)
     parser.add_argument('-rn', '--restart_name', help='restart dump simulation name',
@@ -85,7 +86,8 @@ def parse_args():
     # parse arguments
     args = parser.parse_args()
     # return arguments
-    return (args.verbose, args.restart, args.parallel, args.client, args.distributed, args.interpolate_states,
+    return (args.verbose, args.restart, args.parallel, args.client, args.distributed,
+            args.interpolate_states, args.bulk_move
             args.restart_dump, args.restart_name, args.restart_step,
             args.queue, args.allocation, args.nodes, args.procs_per_node,
             args.walltime, args.memory,
@@ -643,8 +645,10 @@ def move_mc(lmps, et, pf, t, ntp, nap, ntv, nav, nth, nah, dx, dv, dt):
     roll = np.random.rand()
     # position monte carlo
     if roll <= PPOS:
-        lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
-        # lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
+        if BM:
+            lmps, ntp, nap = bulk_position_mc(lmps, et, ntp, nap, dx)
+        else:
+            lmps, ntp, nap = iter_position_mc(lmps, et, ntp, nap, dx)
     # volume monte carlo
     elif roll <= (PPOS+PVOL):
         lmps, ntv, nav = volume_mc(lmps, et, pf, ntv, nav, dv)
@@ -829,7 +833,9 @@ def dump_samples_restart():
 
 if __name__ == '__main__':
 
-    (VERBOSE, RESTART, PARALLEL, DASK, DISTRIBUTED, INTSTS,
+    (VERBOSE, RESTART,
+     PARALLEL, DASK, DISTRIBUTED,
+     INTSTS, BM
      REFREQ, RENAME, RESTEP,
      QUEUE, ALLOC, NODES, PPN,
      WALLTIME, MEM,
