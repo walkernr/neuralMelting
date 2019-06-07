@@ -835,7 +835,7 @@ if __name__ == '__main__':
 
     (VERBOSE, RESTART,
      PARALLEL, DASK, DISTRIBUTED,
-     INTSTS, BM
+     INTSTS, BM,
      REFREQ, RENAME, RESTEP,
      QUEUE, ALLOC, NODES, PPN,
      WALLTIME, MEM,
