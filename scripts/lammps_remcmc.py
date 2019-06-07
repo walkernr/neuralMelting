@@ -87,7 +87,7 @@ def parse_args():
     args = parser.parse_args()
     # return arguments
     return (args.verbose, args.restart, args.parallel, args.client, args.distributed,
-            args.interpolate_states, args.bulk_move
+            args.interpolate_states, args.bulk_move,
             args.restart_dump, args.restart_name, args.restart_step,
             args.queue, args.allocation, args.nodes, args.procs_per_node,
             args.walltime, args.memory,
