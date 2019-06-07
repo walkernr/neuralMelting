@@ -82,6 +82,8 @@ def calculate_spatial():
     gbins = 256
     # domain for rdf
     r = np.linspace(1e-16, mr, gbins)
+    # domain for adf
+    a = np.linspace(1e-16, np.pi, gbins)
     # domain spacing for rdf
     dr = r[1]-r[0]
     # differential volume contained by shell at distance r
@@ -92,49 +94,79 @@ def calculate_spatial():
     dv = dv*l**3
     # differential number of atoms contained by shell at distance r
     dni = np.multiply(nrho[:, np.newaxis], dv[np.newaxis, :])
+    # differential number of atoms contained by sub-cube
+    dn = nrho*dr**3
     # base values for lattice vectors
     b = [-1, 0, 1]
     # generate lattice vectors for ever direction from base
     br = np.array([[b[i], b[j], b[k]] for i in range(3) for j in range(3) for k in range(3)],
                   dtype=np.int8)
     # create vector for rdf
-    gs = np.zeros(gbins, dtype=np.float32)
+    rd = np.zeros(gbins, dtype=np.float32)
+    # create vector for adf
+    ad = np.zeros(gbins, dtype=np.float32)
     # bins for cartesian density
     cbins = np.array([17, 17, 17])
     rv = np.array([np.linspace(0, l, cbins[i]) for i in range(len(cbins))])
     rv -= l/2
+    drv = rv[0, 1]-rv[0, 0]
+    # differential number of atoms contained by sub-cube
+    dn = nrho*drv**3
     # create vector for cartesian density
-    cs = np.zeros(cbins-1, dtype=np.float32)
+    cd = np.zeros(cbins-1, dtype=np.float32)
     # return properties
-    return ns, natoms, box, pos, br, r, dr, nrho, dni, gs, rv, cs
+    return ns, natoms, box, pos, br, dr, nrho, dni, r, a, rd, ad, drv, dn, rv, cd
 
 
 @nb.njit
-def calculate_rdf(natoms, box, br, pos, r, gs):
-    ''' calculate rdf for sample j '''
-    gs[:] = 0
+def calculate_rdf(natoms, box, br, pos, r, rd):
+    ''' calculate rdf '''
+    rd[:] = 0
     # loop through lattice vectors
     for j in range(br.shape[0]):
-        # displacement vector matrix for sample j
+        # displacement vector matrix
         dvm = pos-(pos+box*br[j].reshape(1, -1)).reshape(-1, 1, 3)
         # vector of displacements between atoms
         d = np.sqrt(np.sum(np.square(dvm), -1))
-        # calculate rdf for sample j
-        gs[1:] += np.histogram(d, r)[0]
-    return gs/natoms
+        # calculate rdf
+        rd[1:] += np.histogram(d, r)[0]
+    return rd/natoms
+
+
+@nb.njit
+def calculate_adf(natoms, box, br, pos, r, a, ad):
+    ''' calculate adf '''
+    ad[:] = 0
+    # loop through lattice vectors
+    for j in range(br.shape[0]):
+        # displacement vector matrix
+        dvm = pos-(pos+box*br[j].reshape(1, -1)).reshape(-1, 1, 3)
+        # vector of displacements between atoms
+        d = np.sqrt(np.sum(np.square(dvm), -1))
+        # filter out atoms within shell
+        sh = dvm[(d <= r[-1]) & (d > r[0])]
+        # displacement magnitudes of atoms within shell
+        mag = d[(d<= r[-1]) & (d > r[0])]
+        # dot product of vector displacements within shell
+        dot = np.sum(np.multiply(sh.reshape(-1, 1, 3), sh.reshape(1, -1, 3)), 2)
+        # angular displacements
+        am = np.arccos(dot/(mag*mag.reshape(1, -1, 1)))
+        # calculate adf
+        ad[1:] += np.histogram(am, a)[0]/2
+    return ad/natoms
 
 
 @nb.jit
-def calculate_cdf(natoms, box, br, pos, rv, cs):
+def calculate_cdf(natoms, box, br, pos, rv, cd):
     ''' calculate cdf for sample j '''
-    cs[:, :, :] = 0
+    cd[:, :, :] = 0
     # loop through lattice vectors
     for j in range(br.shape[0]):
-        # displacement vector matrix for sample j
+        # displacement vector matrix
         dvm = pos-(pos+box*br[j].reshape(1, -1)).reshape(-1, 1, 3)
         # calculate cdf for sample j
-        cs += np.histogramdd(dvm.reshape(-1, 3), rv)[0]
-    return cs/natoms
+        cd += np.histogramdd(dvm.reshape(-1, 3), rv)[0]
+    return cd/natoms
 
 
 def calculate_rdfs():
@@ -142,19 +174,40 @@ def calculate_rdfs():
     if VERBOSE:
         print('computing %s %s samples' % (NS, EL.lower()))
     if DASK:
-        operations = [delayed(calculate_rdf)(NATOMS[i], BOX[i], BR, POS[i], R, GS) for i in range(NS)]
+        operations = [delayed(calculate_rdf)(NATOMS[i], BOX[i], BR, POS[i], R, RD) for i in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
             progress(futures)
             print('\n')
     elif PARALLEL:
-        operations = [delayed(calculate_rdf)(NATOMS[i], BOX[i], BR, POS[i], R, GS) for i in range(NS)]
+        operations = [delayed(calculate_rdf)(NATOMS[i], BOX[i], BR, POS[i], R, RD) for i in range(NS)]
         futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(operations)
     else:
         if VERBOSE:
-            futures = [calculate_rdf(NATOMS[i], BOX[i], BR, POS[i], R, GS) for i in tqdm(range(NS))]
+            futures = [calculate_rdf(NATOMS[i], BOX[i], BR, POS[i], R, RD) for i in tqdm(range(NS))]
         else:
-            futures = [calculate_rdf(NATOMS[i], BOX[i], BR, POS[i], R, GS) for i in range(NS)]
+            futures = [calculate_rdf(NATOMS[i], BOX[i], BR, POS[i], R, RD) for i in range(NS)]
+    return futures
+
+
+def calculate_adfs():
+    ''' calculate adfs for all samples '''
+    if VERBOSE:
+        print('computing %s %s samples' % (NS, EL.lower()))
+    if DASK:
+        operations = [delayed(calculate_adf)(NATOMS[i], BOX[i], BR, POS[i], R, A, AD) for i in range(NS)]
+        futures = CLIENT.compute(operations)
+        if VERBOSE:
+            progress(futures)
+            print('\n')
+    elif PARALLEL:
+        operations = [delayed(calculate_adf)(NATOMS[i], BOX[i], BR, POS[i], R, A, AD) for i in range(NS)]
+        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(operations)
+    else:
+        if VERBOSE:
+            futures = [calculate_adf(NATOMS[i], BOX[i], BR, POS[i], R, A, AD) for i in tqdm(range(NS))]
+        else:
+            futures = [calculate_adf(NATOMS[i], BOX[i], BR, POS[i], R, A, AD) for i in range(NS)]
     return futures
 
 
@@ -163,19 +216,19 @@ def calculate_cdfs():
     if VERBOSE:
         print('computing %s %s samples' % (NS, EL.lower()))
     if DASK:
-        operations = [delayed(calculate_cdf)(NATOMS[i], BOX[i], BR, POS[i], RV, CS) for i in range(NS)]
+        operations = [delayed(calculate_cdf)(NATOMS[i], BOX[i], BR, POS[i], RV, CD) for i in range(NS)]
         futures = CLIENT.compute(operations)
         if VERBOSE:
             progress(futures)
             print('\n')
     elif PARALLEL:
-        operations = [delayed(calculate_cdf)(NATOMS[i], BOX[i], BR, POS[i], RV, CS) for i in range(NS)]
+        operations = [delayed(calculate_cdf)(NATOMS[i], BOX[i], BR, POS[i], RV, CD) for i in range(NS)]
         futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(operations)
     else:
         if VERBOSE:
-            futures = [calculate_cdf(NATOMS[i], BOX[i], BR, POS[i], RV, CS) for i in tqdm(range(NS))]
+            futures = [calculate_cdf(NATOMS[i], BOX[i], BR, POS[i], RV, CD) for i in tqdm(range(NS))]
         else:
-            futures = [calculate_cdf(NATOMS[i], BOX[i], BR, POS[i], RV, CS) for i in range(NS)]
+            futures = [calculate_cdf(NATOMS[i], BOX[i], BR, POS[i], RV, CD) for i in range(NS)]
     return futures
 
 if __name__ == '__main__':
@@ -248,23 +301,17 @@ if __name__ == '__main__':
                     client_info()
 
     # get spatial properties
-    NS, NATOMS, BOX, POS, BR, R, DR, NRHO, DNI, GS, RV, CS = calculate_spatial()
+    NS, NATOMS, BOX, POS, BR, DR, NRHO, DNI, R, A, RD, AD, DRV, DN, RV, CD = calculate_spatial()
     RNS = np.int32(NS/(PN*TN))
     if VERBOSE:
         print('data loaded')
+
     # calculate radial distributions
     G = calculate_rdfs()
     if DASK:
         G = np.array(CLIENT.gather(G), dtype=np.float32)
     else:
         G = np.array(G, dtype=np.float32)
-    C = calculate_cdfs()
-    if DASK:
-        C = np.array(CLIENT.gather(C), dtype=np.float32)
-    else:
-        C = np.array(C, dtype=np.float32)
-    if DASK:
-        CLIENT.close()
     # adjust rdf by atom count and atoms contained by shells
     G = np.divide(G, DNI)
     # calculate domain for structure factor
@@ -276,16 +323,12 @@ if __name__ == '__main__':
     S = 1+4*np.pi*NRHO[:, np.newaxis]*np.divide(FTG, Q)
     with np.errstate(divide='ignore', invalid='ignore'):
         I = np.multiply(np.nan_to_num(np.multiply(G, np.log(G)))-G+1, np.square(R[:]))
-    if VERBOSE:
-        print('calculations finalized')
-
     NRHO = NRHO.reshape(PN, TN, RNS)
     DNI = DNI.reshape(PN, TN, RNS, R.size)
     G = G.reshape(PN, TN, RNS, R.size)
     S = S.reshape(PN, TN, RNS, Q.size)
     I = I.reshape(PN, TN, RNS, R.size)
-    C = C.reshape(PN, TN, RNS, *(3*(RV.shape[1]-1,)))
-    # pickle data
+    # dump data
     np.save(PREFIX+'.nrho.npy', NRHO)
     np.save(PREFIX+'.dni.npy', DNI)
     np.save(PREFIX+'.r.npy', R)
@@ -293,7 +336,34 @@ if __name__ == '__main__':
     np.save(PREFIX+'.q.npy', Q)
     np.save(PREFIX+'.sf.npy', S)
     np.save(PREFIX+'.ef.npy', I)
+    del G, Q, PF, FTG, S, I
+
+    # # calculate angular distributions
+    # I = calculate_adfs()
+    # if DASK:
+    #     I = np.array(CLIENT.gather(I), dtype=np.float32)
+    # else:
+    #     I = np.array(I, dtype=np.float32)
+    # I = I.reshape(PN, TN, RNS, A.size)
+    # # dump data
+    # np.save(PREFIX+'.dn.npy', DN)
+    # np.save(PREFIX+'.a.npy', A)
+    # np.save(PREFIX+'.adf.npy', I)
+    # del I
+
+    # calculate cartesian densities
+    C = calculate_cdfs()
+    if DASK:
+        C = np.array(CLIENT.gather(C), dtype=np.float32)
+    else:
+        C = np.array(C, dtype=np.float32)
+    if DASK:
+        CLIENT.close()
+    C = np.divide(C, DN[:, np.newaxis, np.newaxis, np.newaxis])
+    C = C.reshape(PN, TN, RNS, *(3*(RV.shape[1]-1,)))
+    # dump data
+    np.save(PREFIX+'.rv.npy', RV)
     np.save(PREFIX+'.cdf.npy', C)
 
     if VERBOSE:
-        print('all properties pickled')
+        print('calculations finalized')

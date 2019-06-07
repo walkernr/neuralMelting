@@ -38,7 +38,7 @@ def parse_args():
     parser.add_argument('-sn', '--super_samples', help='number of samples per phase point (variational autoencoder)',
                         type=int, default=1024)
     parser.add_argument('-sc', '--scaler', help='feature scaler',
-                        type=str, default='none')
+                        type=str, default='global')
     parser.add_argument('-ld', '--latent_dimension', help='latent dimension of the variational autoencoder',
                         type=int, default=8)
     parser.add_argument('-mf', '--manifold', help='manifold learning method',
@@ -414,6 +414,8 @@ if __name__ == '__main__':
     except:
         if SCLR == 'none':
             SCDAT = CDAT.reshape(*SSHP1)
+        if SCLR == 'global':
+            SCDAT = ((CDAT-CDAT.min())/(CDAT.max()-CDAT.min())).reshape(*SSHP1)
         else:
             SCDAT = SCLRS[SCLR].fit_transform(CDAT.reshape(*SSHP2)).reshape(*SSHP1)
         np.save(PREF+'.%04d.%s.%04d.cdf.sc.npy' % (SNS, SCLR, SEED), SCDAT.reshape(*SSHP0))
