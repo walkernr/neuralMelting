@@ -523,6 +523,18 @@ if __name__ == '__main__':
         print('max error: %f' % MXERR)
         print('min error: %f' % MNERR)
         print(100*'-')
+    with open(OUTPREF+'.out', 'a') as out:
+        out.write('fitting errors\n')
+        out.write(100*'-'+'\n')
+        out.write('mean sig: %f\n' % np.mean(SCDAT))
+        out.write('stdv sig: %f\n' % np.std(SCDAT))
+        out.write('max sig %f\n' % np.max(SCDAT))
+        out.write('min sig %f\n' % np.min(SCDAT))
+        out.write('mean error: %f\n' % MERR)
+        out.write('stdv error: %f\n' % SERR)
+        out.write('max error: %f\n' % MXERR)
+        out.write('min error: %f\n' % MNERR)
+        out.write(100*'-'+'\n')
 
     try:
         PZENC = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.pca.prj.npy'
