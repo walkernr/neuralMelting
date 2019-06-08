@@ -423,7 +423,7 @@ if __name__ == '__main__':
             print('scaled selected classification samples computed')
             print(100*'-')
 
-    OPTS = {'sgd': SGD(lr=LR, momentum=0.0, decay=0.0, nesterov=False),
+    OPTS = {'sgd': SGD(lr=LR, momentum=0.0, decay=0.0, nesterov=True),
             'adadelta': Adadelta(lr=LR, rho=0.95, epsilon=None, decay=0.0),
             'adam': Adam(lr=LR, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=True),
             'nadam': Nadam(lr=LR, beta_1=0.9, beta_2=0.999, epsilon=None, schedule_decay=0.004)}
