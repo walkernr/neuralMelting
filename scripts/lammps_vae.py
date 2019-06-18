@@ -490,8 +490,6 @@ if __name__ == '__main__':
         if VERBOSE:
             print('z encodings of scaled selected classification samples loaded from file')
             print(100*'-')
-            print('error: %f' % ERR)
-            print(100*'-')
     except:
         if VERBOSE:
             print('predicting z encodings of scaled selected classification samples')
