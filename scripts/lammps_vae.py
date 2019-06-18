@@ -510,7 +510,7 @@ if __name__ == '__main__':
     SERR = np.std(ERR)
     MXERR = np.max(ERR)
     MNERR = np.min(ERR)
-    KLD = np.sum(1+np.log(np.square(ZENC[:, 1, :])-np.square(ZENC[:, 0, :])-np.square(ZENC[:, 1, :]), axis=-1)
+    KLD = np.sum(1+np.log(np.square(ZENC[:, 1, :])-np.square(ZENC[:, 0, :])-np.square(ZENC[:, 1, :]), axis=-1))
     if VERBOSE:
         print(100*'-')
         print('z encodings of scaled selected classification samples predicted')
