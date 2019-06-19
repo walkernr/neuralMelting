@@ -599,7 +599,7 @@ if __name__ == '__main__':
         # out.write('error |'+ERRDISTP[0].size*' %.2e'+'\n' % tuple(ERRDISTP[1][1:]))
         # out.write('dnsty |'+ERRDISTP[0].size*' %.2e'+'\n' % tuple(ERRDISTP[0][:]))
         # out.write(100*'-'+'\n')
-    del SCDAT, ERR
+    del SCDAT
 
     try:
         PZENC = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.pca.prj.npy'
