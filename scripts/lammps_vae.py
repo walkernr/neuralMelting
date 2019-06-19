@@ -547,6 +547,7 @@ if __name__ == '__main__':
         out.write('max kl div:      %f\n' % MXKLD)
         out.write('min kl div:      %f\n' % MNKLD)
         out.write(100*'-'+'\n')
+    del SCDAT, ERR
 
     try:
         PZENC = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.pca.prj.npy'
