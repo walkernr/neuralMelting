@@ -485,7 +485,7 @@ if __name__ == '__main__':
         ZENC = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.npy'
                        % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED)).reshape(*SSHP4)
         ZDEC = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zdec.npy'
-                       % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
+                       % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED)).reshape(*SSHP1)
         # del SCDAT
         if VERBOSE:
             print('z encodings of scaled selected classification samples loaded from file')
@@ -503,7 +503,7 @@ if __name__ == '__main__':
                 % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ZENC.reshape(*SSHP3))
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zdec.npy'
                 % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ZDEC.reshape(*SSHP0))
-    ERR = np.sqrt(np.square(ZDEC-SCDAT.reshape(SSHP1)))
+    ERR = np.sqrt(np.square(ZDEC-SCDAT))
     MERR = np.mean(ERR)
     SERR = np.std(ERR)
     MXERR = np.max(ERR)
