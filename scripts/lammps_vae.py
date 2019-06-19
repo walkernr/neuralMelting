@@ -594,11 +594,11 @@ if __name__ == '__main__':
         out.write('max kl div:      %f\n' % MXKLD)
         out.write('min kl div:      %f\n' % MNKLD)
         out.write(100*'-'+'\n')
-        out.write('error |'+ERRDISTN[0].size*' %.2e'+'\n' % tuple(ERRDISTN[1][:-1]))
-        out.write('dnsty |'+ERRDISTN[0].size*'  %.2e'+'\n' % tuple(ERRDISTN[0][:]))
-        out.write('error |'+ERRDISTP[0].size*' %.2e'+'\n' % tuple(ERRDISTP[1][1:]))
-        out.write('dnsty |'+ERRDISTP[0].size*' %.2e'+'\n' % tuple(ERRDISTP[0][:]))
-        out.write(100*'-'+'\n')
+        # out.write('error |'+ERRDISTN[0].size*' %.2e'+'\n' % tuple(ERRDISTN[1][:-1]))
+        # out.write('dnsty |'+ERRDISTN[0].size*'  %.2e'+'\n' % tuple(ERRDISTN[0][:]))
+        # out.write('error |'+ERRDISTP[0].size*' %.2e'+'\n' % tuple(ERRDISTP[1][1:]))
+        # out.write('dnsty |'+ERRDISTP[0].size*' %.2e'+'\n' % tuple(ERRDISTP[0][:]))
+        # out.write(100*'-'+'\n')
     del SCDAT, ERR
 
     try:
