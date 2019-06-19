@@ -96,8 +96,6 @@ def calculate_spatial():
     dv = dv*l**3
     # differential number of atoms contained by shell at distance r
     dni = np.multiply(nrho[:, np.newaxis], dv[np.newaxis, :])
-    # differential number of atoms contained by sub-cube
-    dn = nrho*dr**3
     # base values for lattice vectors
     b = [-1, 0, 1]
     # generate lattice vectors for ever direction from base
@@ -112,6 +110,8 @@ def calculate_spatial():
     rv = np.array([np.linspace(0, l, cbins[i]) for i in range(len(cbins))])
     rv -= l/2
     drv = rv[0, 1]-rv[0, 0]
+    # differential number of atoms contained by sub-cube
+    dn = nrho*drv**3
     # differential number of atoms contained by sub-cube
     dn = nrho*drv**3
     # create vector for cartesian density
