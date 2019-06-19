@@ -484,21 +484,23 @@ if __name__ == '__main__':
     try:
         ZENC = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.npy'
                        % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED)).reshape(*SSHP4)
-        MRERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.rel.mean.npy'
+        ERRDIST = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.dist.npy'
+                          % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
+        MERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.mean.npy'
                         % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
-        SRERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.rel.stdv.npy'
+        SERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.stdv.npy'
                         % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
-        MXRERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.rel.max.npy'
+        MXERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.max.npy'
                          % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
-        MNRERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.rel.min.npy'
+        MNERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.min.npy'
                          % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
-        MKLD = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.kld.mean.npy'
+        MKLD = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.kld.mean.npy'
                        % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
-        SKLD = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.kld.stdv.npy'
+        SKLD = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.kld.stdv.npy'
                        % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
-        MXKLD = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.kld.max.npy'
+        MXKLD = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.kld.max.npy'
                         % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
-        MNKLD = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.kld.min.npy'
+        MNKLD = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.kld.min.npy'
                         % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
         if VERBOSE:
             print('z encodings of scaled selected classification samples loaded from file')
@@ -511,33 +513,35 @@ if __name__ == '__main__':
         ZDEC = np.array(DEC.predict(ZENC[2, :, :], verbose=VERBOSE))
         ZENC = np.swapaxes(ZENC, 0, 1)[:, :2, :]
         ZENC[:, 1, :] = np.exp(0.5*ZENC[:, 1, :])
-        ERR = np.sqrt(np.square(ZDEC-SCDAT))
-        RERR = np.divide(np.abs(SCDAT-ERR), SCDAT)
+        ERR = ZDEC-SCDAT
+        ERRDIST = np.array(np.histogram(ERR, np.linspace(0, 10, 10)), dtype=np.float32)
         KLD = np.sum(1+np.log(np.square(ZENC[:, 1, :]))-np.square(ZENC[:, 0, :])-np.square(ZENC[:, 1, :]), axis=1)
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.npy'
                 % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ZENC.reshape(*SSHP3))
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zdec.npy'
                 % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ZDEC.reshape(*SSHP0))
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.rel.npy'
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), RERR.reshape(*SSHP0))
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.npy'
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ERR.reshape(*SSHP0))
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.dist.npy'
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ERRDIST)
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.kld.npy'
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), KLD.reshape(NP, NT))
-        MRERR = np.mean(RERR)
-        SRERR = np.std(RERR)
-        MXRERR = np.max(RERR)
-        MNRERR = np.min(RERR)
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), KLD.reshape(NP, NT, NS))
+        MERR = np.mean(ERR)
+        SERR = np.std(ERR)
+        MXERR = np.max(ERR)
+        MNERR = np.min(ERR)
         MKLD = np.mean(KLD)
         SKLD = np.std(KLD)
         MXKLD = np.max(KLD)
         MNKLD = np.min(KLD)
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.rel.mean.npy'
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), MRERR)
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.rel.stdv.npy'
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), SRERR)
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.rel.max.npy'
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), MXRERR)
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.rel.min.npy'
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), MNRERR)
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.mean.npy'
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), MERR)
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.stdv.npy'
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), SERR)
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.max.npy'
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), MXERR)
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.min.npy'
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), MNERR)
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.kld.mean.npy'
                 % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), MKLD)
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.kld.stdv.npy'
@@ -555,14 +559,17 @@ if __name__ == '__main__':
         print('stdv sig:        %f' % np.std(SCDAT))
         print('max sig          %f' % np.max(SCDAT))
         print('min sig          %f' % np.min(SCDAT))
-        print('mean error:      %f' % MRERR)
-        print('stdv error:      %f' % SRERR)
-        print('max error:       %f' % MXRERR)
-        print('min error:       %f' % MNRERR)
+        print('mean error:      %f' % MERR)
+        print('stdv error:      %f' % SERR)
+        print('max error:       %f' % MXERR)
+        print('min error:       %f' % MNERR)
         print('mean kl div:     %f' % MKLD)
         print('stdv kl div:     %f' % SKLD)
         print('max kl div:      %f' % MXKLD)
         print('min kl div:      %f' % MNKLD)
+        print(100*'-')
+        print('error |'+ERRDIST.shape[1]*' %1.2f' % tuple(ERRDIST[1, :]))
+        print('dnsty |'+ERRDIST.shape[1]*' %04d' % tuple(ERRDIST[0, :].astype(np.int32)))
         print(100*'-')
     with open(OUTPREF+'.out', 'a') as out:
         out.write('fitting errors\n')
@@ -571,14 +578,17 @@ if __name__ == '__main__':
         out.write('stdv sig:        %f\n' % np.std(SCDAT))
         out.write('max sig          %f\n' % np.max(SCDAT))
         out.write('min sig          %f\n' % np.min(SCDAT))
-        out.write('mean error:      %f\n' % MRERR)
-        out.write('stdv error:      %f\n' % SRERR)
-        out.write('max error:       %f\n' % MXRERR)
-        out.write('min error:       %f\n' % MNRERR)
+        out.write('mean error:      %f\n' % MERR)
+        out.write('stdv error:      %f\n' % SERR)
+        out.write('max error:       %f\n' % MXERR)
+        out.write('min error:       %f\n' % MNERR)
         out.write('mean kl div:     %f\n' % MKLD)
         out.write('stdv kl div:     %f\n' % SKLD)
         out.write('max kl div:      %f\n' % MXKLD)
         out.write('min kl div:      %f\n' % MNKLD)
+        out.write(100*'-'+'\n')
+        out.write('error |'+ERRDIST.shape[1]*' %1.2f'+'\n' % tuple(ERRDIST[1, :]))
+        print('dnsty |'+ERRDIST.shape[1]*' %04d'+'\n' % tuple(ERRDIST[0, :].astype(np.int32)))
         out.write(100*'-'+'\n')
     del SCDAT, ERR
 
