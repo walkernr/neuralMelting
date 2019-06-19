@@ -514,7 +514,7 @@ if __name__ == '__main__':
         ZENC = np.swapaxes(ZENC, 0, 1)[:, :2, :]
         ZENC[:, 1, :] = np.exp(0.5*ZENC[:, 1, :])
         ERR = ZDEC-SCDAT
-        ERRDIST = np.array(np.histogram(ERR, np.linspace(0, 10, 10)), dtype=np.float32)
+        ERRDIST = np.array(np.histogram(ERR, np.linspace(0.0, 1.0, 9)))
         KLD = np.sum(1+np.log(np.square(ZENC[:, 1, :]))-np.square(ZENC[:, 0, :])-np.square(ZENC[:, 1, :]), axis=1)
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.npy'
                 % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ZENC.reshape(*SSHP3))
@@ -587,7 +587,7 @@ if __name__ == '__main__':
         out.write('max kl div:      %f\n' % MXKLD)
         out.write('min kl div:      %f\n' % MNKLD)
         out.write(100*'-'+'\n')
-        out.write('error |'+ERRDIST.shape[1]*' %1.2f'+'\n' % tuple(ERRDIST[1, :]))
+        out.write('error |'+ERRDIST.shape[1]*' %1.2f'+'\n' % tuple(ERRDIST[1, 1:].astype(np.float32)))
         print('dnsty |'+ERRDIST.shape[1]*' %04d'+'\n' % tuple(ERRDIST[0, :].astype(np.int32)))
         out.write(100*'-'+'\n')
     del SCDAT, ERR
