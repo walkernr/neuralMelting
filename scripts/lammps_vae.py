@@ -525,7 +525,7 @@ if __name__ == '__main__':
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.dist.npy'
                 % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ERRDIST)
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.kld.npy'
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), KLD.reshape(NP, NT, NS))
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), KLD.reshape(NP, NT, SNS))
         MERR = np.mean(ERR)
         SERR = np.std(ERR)
         MXERR = np.max(ERR)
