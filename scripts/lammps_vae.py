@@ -484,8 +484,10 @@ if __name__ == '__main__':
     try:
         ZENC = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.npy'
                        % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED)).reshape(*SSHP4)
-        ERRDIST = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.dist.npy'
-                          % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
+        ERRDISTN = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.dist.neg.npy'
+                           % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
+        ERRDISTP = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.dist.pos.npy'
+                           % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
         MERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.mean.npy'
                         % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
         SERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.stdv.npy'
@@ -514,7 +516,8 @@ if __name__ == '__main__':
         ZENC = np.swapaxes(ZENC, 0, 1)[:, :2, :]
         ZENC[:, 1, :] = np.exp(0.5*ZENC[:, 1, :])
         ERR = ZDEC-SCDAT
-        ERRDIST = np.array(np.histogram(ERR, np.linspace(0.0, 1.0, 9)))
+        ERRDISTN = np.array(np.histogram(ERR, np.linspace(-1.0, 0.0, 9)))
+        ERRDISTP = np.array(np.histogram(ERR, np.linspace(0.0, 1.0, 9)))
         KLD = np.sum(1+np.log(np.square(ZENC[:, 1, :]))-np.square(ZENC[:, 0, :])-np.square(ZENC[:, 1, :]), axis=1)
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.npy'
                 % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ZENC.reshape(*SSHP3))
@@ -522,8 +525,10 @@ if __name__ == '__main__':
                 % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ZDEC.reshape(*SSHP0))
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.npy'
                 % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ERR.reshape(*SSHP0))
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.dist.npy'
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ERRDIST)
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.dist.neg.npy'
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ERRDISTN)
+        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.dist.pos.npy'
+                % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ERRDISTP)
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.kld.npy'
                 % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), KLD.reshape(NP, NT, SNS))
         MERR = np.mean(ERR)
@@ -568,8 +573,10 @@ if __name__ == '__main__':
         print('max kl div:      %f' % MXKLD)
         print('min kl div:      %f' % MNKLD)
         print(100*'-')
-        print('error |'+ERRDIST[0].shape[1]*' %1.2f' % tuple(ERRDIST[1, 1:]))
-        print('dnsty |'+ERRDIST[0].shape[1]*' %04d' % tuple(ERRDIST[0, :].astype(np.int32)))
+        print('error |'+ERRDISTN[0].shape[1]*' %1.2f' % tuple(ERRDISTN[1, :-1]))
+        print('count |'+ERRDISTN[0].shape[1]*' %04d' % tuple(ERRDISTN[0, :].astype(np.int32)))
+        print('error |'+ERRDISTP[0].shape[1]*' %1.2f' % tuple(ERRDISTP[1, 1:]))
+        print('count |'+ERRDISTP[0].shape[1]*' %04d' % tuple(ERRDISTP[0, :].astype(np.int32)))
         print(100*'-')
     with open(OUTPREF+'.out', 'a') as out:
         out.write('fitting errors\n')
@@ -587,8 +594,10 @@ if __name__ == '__main__':
         out.write('max kl div:      %f\n' % MXKLD)
         out.write('min kl div:      %f\n' % MNKLD)
         out.write(100*'-'+'\n')
-        out.write('error |'+ERRDIST.shape[1]*' %1.2f'+'\n' % tuple(ERRDIST[1, 1:].astype(np.float32)))
-        out.write('dnsty |'+ERRDIST.shape[1]*' %04d'+'\n' % tuple(ERRDIST[0, :].astype(np.int32)))
+        out.write('error |'+ERRDISTN[0].size*' %1.2f'+'\n' % tuple(ERRDISTN[1, :-1].astype(np.float32)))
+        out.write('dnsty |'+ERRDISTN[0].size*' %04d'+'\n' % tuple(ERRDISTN[0, :].astype(np.int32)))
+        out.write('error |'+ERRDISTP[0].size*' %1.2f'+'\n' % tuple(ERRDISTP[1, 1:].astype(np.float32)))
+        out.write('dnsty |'+ERRDISTP[0].size*' %04d'+'\n' % tuple(ERRDISTP[0, :].astype(np.int32)))
         out.write(100*'-'+'\n')
     del SCDAT, ERR
 
