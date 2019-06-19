@@ -568,8 +568,8 @@ if __name__ == '__main__':
         print('max kl div:      %f' % MXKLD)
         print('min kl div:      %f' % MNKLD)
         print(100*'-')
-        print('error |'+ERRDIST.shape[1]*' %1.2f' % tuple(ERRDIST[1, :]))
-        print('dnsty |'+ERRDIST.shape[1]*' %04d' % tuple(ERRDIST[0, :].astype(np.int32)))
+        print('error |'+ERRDIST[0].shape[1]*' %1.2f' % tuple(ERRDIST[1, 1:]))
+        print('dnsty |'+ERRDIST[0].shape[1]*' %04d' % tuple(ERRDIST[0, :].astype(np.int32)))
         print(100*'-')
     with open(OUTPREF+'.out', 'a') as out:
         out.write('fitting errors\n')
@@ -588,7 +588,7 @@ if __name__ == '__main__':
         out.write('min kl div:      %f\n' % MNKLD)
         out.write(100*'-'+'\n')
         out.write('error |'+ERRDIST.shape[1]*' %1.2f'+'\n' % tuple(ERRDIST[1, 1:].astype(np.float32)))
-        print('dnsty |'+ERRDIST.shape[1]*' %04d'+'\n' % tuple(ERRDIST[0, :].astype(np.int32)))
+        out.write('dnsty |'+ERRDIST.shape[1]*' %04d'+'\n' % tuple(ERRDIST[0, :].astype(np.int32)))
         out.write(100*'-'+'\n')
     del SCDAT, ERR
 
