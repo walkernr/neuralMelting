@@ -574,9 +574,9 @@ if __name__ == '__main__':
         print('min kl div:      %f' % MNKLD)
         print(100*'-')
         print('error |'+ERRDISTN[0].size*' %.2e' % tuple(ERRDISTN[1][:-1]))
-        print('count |'+ERRDISTN[0].size*'  %.2e' % tuple(ERRDISTN[0][:].astype(np.int32)))
+        print('count |'+ERRDISTN[0].size*'  %.2e' % tuple(ERRDISTN[0][:]))
         print('error |'+ERRDISTP[0].size*' %.2e' % tuple(ERRDISTP[1][1:]))
-        print('count |'+ERRDISTP[0].size*' %.2e' % tuple(ERRDISTP[0][:].astype(np.int32)))
+        print('count |'+ERRDISTP[0].size*' %.2e' % tuple(ERRDISTP[0][:]))
         print(100*'-')
     with open(OUTPREF+'.out', 'a') as out:
         out.write('fitting errors\n')
@@ -595,9 +595,9 @@ if __name__ == '__main__':
         out.write('min kl div:      %f\n' % MNKLD)
         out.write(100*'-'+'\n')
         out.write('error |'+ERRDISTN[0].size*' %.2e'+'\n' % tuple(ERRDISTN[1][:-1]))
-        out.write('dnsty |'+ERRDISTN[0].size*'  %.2e'+'\n' % tuple(ERRDISTN[0][:].astype(np.int32)))
+        out.write('dnsty |'+ERRDISTN[0].size*'  %.2e'+'\n' % tuple(ERRDISTN[0][:]))
         out.write('error |'+ERRDISTP[0].size*' %.2e'+'\n' % tuple(ERRDISTP[1][1:]))
-        out.write('dnsty |'+ERRDISTP[0].size*' %.2e'+'\n' % tuple(ERRDISTP[0][:].astype(np.int32)))
+        out.write('dnsty |'+ERRDISTP[0].size*' %.2e'+'\n' % tuple(ERRDISTP[0][:]))
         out.write(100*'-'+'\n')
     del SCDAT, ERR
 
