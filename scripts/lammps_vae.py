@@ -757,90 +757,90 @@ if __name__ == '__main__':
     if PLOT:
         vae_plots()
 
-    try:
-        SLPZENC = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.zenc.pca.prj.inl.npy' \
-                          % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
-        UP = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.p.u.npy' \
-                     % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
-        UT = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.t.u.npy' \
-                     % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
-        UPE = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.pe.u.npy' \
-                      % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
-        UKE = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.ke.u.npy' \
-                      % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
-        UVOL = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.vol.u.npy' \
-                       % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
-        UNRHO = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.nrho.u.npy' \
-                        % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
-        # del PZENC, CZENC, VZENC, CDAT
-        if VERBOSE:
-            print('inlier selected z encodings loaded from file')
-            print(100*'-')
-    except:
-        SLPZENC, UP, UT, UPE, UKE, UVOL, UNRHO = inlier_selection(PZENC.reshape(*SSHP3), CP, CT, CPE, CKE, CVOL, CNRHO, UNS)
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.zenc.pca.prj.inl.npy' \
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), SLPZENC)
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.p.u.npy' \
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UP)
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.t.u.npy' \
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UT)
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.pe.u.npy' \
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UPE)
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.ke.u.npy' \
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UKE)
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.vol.u.npy' \
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UVOL)
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.nrho.u.npy' \
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UNRHO)
-        # del PZENC, CZENC, VZENC, CDAT
-        if VERBOSE:
-            print('inlier selected z encodings computed')
-            print(100*'-')
+    # try:
+    #     SLPZENC = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.zenc.pca.prj.inl.npy' \
+    #                       % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+    #     UP = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.p.u.npy' \
+    #                  % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+    #     UT = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.t.u.npy' \
+    #                  % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+    #     UPE = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.pe.u.npy' \
+    #                   % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+    #     UKE = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.ke.u.npy' \
+    #                   % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+    #     UVOL = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.vol.u.npy' \
+    #                    % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+    #     UNRHO = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.nrho.u.npy' \
+    #                     % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED))
+    #     # del PZENC, CZENC, VZENC, CDAT
+    #     if VERBOSE:
+    #         print('inlier selected z encodings loaded from file')
+    #         print(100*'-')
+    # except:
+    #     SLPZENC, UP, UT, UPE, UKE, UVOL, UNRHO = inlier_selection(PZENC.reshape(*SSHP3), CP, CT, CPE, CKE, CVOL, CNRHO, UNS)
+    #     np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.zenc.pca.prj.inl.npy' \
+    #             % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), SLPZENC)
+    #     np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.p.u.npy' \
+    #             % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UP)
+    #     np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.t.u.npy' \
+    #             % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UT)
+    #     np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.pe.u.npy' \
+    #             % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UPE)
+    #     np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.ke.u.npy' \
+    #             % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UKE)
+    #     np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.vol.u.npy' \
+    #             % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UVOL)
+    #     np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%d.%04d.nrho.u.npy' \
+    #             % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, AD, SEED), UNRHO)
+    #     # del PZENC, CZENC, VZENC, CDAT
+    #     if VERBOSE:
+    #         print('inlier selected z encodings computed')
+    #         print(100*'-')
 
-    USHP0 = (NP, NT, UNS, 2, LD)
-    USHP1 = (NP*NT*UNS, 2, LD)
-    USHP2 = (NP, NT, UNS, LD)
-    USHP3 = (NP*NT*UNS, LD)
+    # USHP0 = (NP, NT, UNS, 2, LD)
+    # USHP1 = (NP*NT*UNS, 2, LD)
+    # USHP2 = (NP, NT, UNS, LD)
+    # USHP3 = (NP*NT*UNS, LD)
 
-    # reduction dictionary
-    MNFLDS = {'pca':PCA(n_components=2),
-              'kpca':KernelPCA(n_components=2, n_jobs=THREADS),
-              'isomap':Isomap(n_components=2, n_jobs=THREADS),
-              'lle':LocallyLinearEmbedding(n_components=2, n_jobs=THREADS),
-              'tsne':TSNE(n_components=2, perplexity=UNS,
-                          early_exaggeration=24, learning_rate=200, n_iter=1000,
-                          verbose=VERBOSE, n_jobs=THREADS)}
+    # # reduction dictionary
+    # MNFLDS = {'pca':PCA(n_components=2),
+    #           'kpca':KernelPCA(n_components=2, n_jobs=THREADS),
+    #           'isomap':Isomap(n_components=2, n_jobs=THREADS),
+    #           'lle':LocallyLinearEmbedding(n_components=2, n_jobs=THREADS),
+    #           'tsne':TSNE(n_components=2, perplexity=UNS,
+    #                       early_exaggeration=24, learning_rate=200, n_iter=1000,
+    #                       verbose=VERBOSE, n_jobs=THREADS)}
 
-    try:
-        MSLZENC = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%s.%d.%04d.zenc.mfld.inl.npy' \
-                          % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, MNFLD, AD, SEED))
-        if VERBOSE:
-            print('inlier selected z encoding manifold loaded from file')
-            print(100*'-')
-    except:
-        MSLZENC = np.zeros((NP*NT*UNS, 2, 2))
-        for i in range(ED):
-            MSLZENC[:, i, :] = MNFLDS[MNFLD].fit_transform(SLPZENC[:, :, :, i, :].reshape(*USHP3))
-        np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%s.%d.%04d.zenc.mfld.inl.npy' \
-                % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, MNFLD, AD, SEED), MSLZENC)
-        if VERBOSE:
-            if MNFLD == 'tsne':
-                print(100*'-')
-            print('inlier selected z encoding manifold computed')
-            print(100*'-')
+    # try:
+    #     MSLZENC = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%s.%d.%04d.zenc.mfld.inl.npy' \
+    #                       % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, MNFLD, AD, SEED))
+    #     if VERBOSE:
+    #         print('inlier selected z encoding manifold loaded from file')
+    #         print(100*'-')
+    # except:
+    #     MSLZENC = np.zeros((NP*NT*UNS, 2, 2))
+    #     for i in range(ED):
+    #         MSLZENC[:, i, :] = MNFLDS[MNFLD].fit_transform(SLPZENC[:, :, :, i, :].reshape(*USHP3))
+    #     np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%s.%d.%04d.zenc.mfld.inl.npy' \
+    #             % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, MNFLD, AD, SEED), MSLZENC)
+    #     if VERBOSE:
+    #         if MNFLD == 'tsne':
+    #             print(100*'-')
+    #         print('inlier selected z encoding manifold computed')
+    #         print(100*'-')
 
-    if PLOT:
-        outpref = PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%s.%d.%04d' \
-                  % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, MNFLD, AD, SEED)
-        for i in range(2):
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            ax.spines['right'].set_visible(False)
-            ax.spines['top'].set_visible(False)
-            ax.xaxis.set_ticks_position('bottom')
-            ax.yaxis.set_ticks_position('left')
-            ax.scatter(MSLZENC[:, i, 0], MSLZENC[:, i, 1], c=UT.reshape(-1),
-                       cmap=plt.get_cmap('plasma'), s=64, alpha=0.5, edgecolors='')
-            plt.xlabel('NL VAE %d0' % i)
-            plt.ylabel('NL VAE %d1' % i)
-            fig.savefig(outpref+'.vae.mnfld.prj.ld.%02d.png' % i)
+    # if PLOT:
+    #     outpref = PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.%s.%d.%04d' \
+    #               % (SNS, SCLR, OPT, LSS, LD, EP, LR, UNS, MNFLD, AD, SEED)
+    #     for i in range(2):
+    #         fig = plt.figure()
+    #         ax = fig.add_subplot(111)
+    #         ax.spines['right'].set_visible(False)
+    #         ax.spines['top'].set_visible(False)
+    #         ax.xaxis.set_ticks_position('bottom')
+    #         ax.yaxis.set_ticks_position('left')
+    #         ax.scatter(MSLZENC[:, i, 0], MSLZENC[:, i, 1], c=UT.reshape(-1),
+    #                    cmap=plt.get_cmap('plasma'), s=64, alpha=0.5, edgecolors='')
+    #         plt.xlabel('NL VAE %d0' % i)
+    #         plt.ylabel('NL VAE %d1' % i)
+    #         fig.savefig(outpref+'.vae.mnfld.prj.ld.%02d.png' % i)

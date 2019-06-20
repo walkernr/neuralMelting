@@ -44,7 +44,7 @@ def parse_args():
     parser.add_argument('-sb', '--spherical_bins', help='number of bins for spherical distributions',
                         type=int, default=64)
     parser.add_argument('-cb', '--cartesian_bins', help='number of bins for cartesian distributions',
-                        type=int, default=8)
+                        type=int, default=16)
     args = parser.parse_args()
     return (args.verbose, args.parallel, args.client, args.distributed,
             args.queue, args.allocation, args.nodes, args.procs_per_node,
