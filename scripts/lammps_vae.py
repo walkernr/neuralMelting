@@ -214,7 +214,7 @@ def build_variational_autoencoder():
                              'mse': lambda a, b: mse(a, b)}
     # vae loss
     reconstruction_loss = NSP**3*reconstruction_losses[LSS](K.flatten(input), K.flatten(output))
-    kl_loss = -0.5*K.sum(1+z_log_var-K.square(z_mean)-K.exp(z_log_var), axis=-1)
+    kl_loss = 0.5*K.sum(K.exp(z_log_var)+K.square(z_mean)-z_log_var-1, axis=-1)
     vae_loss = K.mean(reconstruction_loss+kl_loss)
     vae.add_loss(vae_loss)
     # compile vae
@@ -489,13 +489,13 @@ if __name__ == '__main__':
         ERRDISTP = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.dist.pos.npy'
                            % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
         MERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.mean.npy'
-                        % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
+                       % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
         SERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.stdv.npy'
-                        % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
+                       % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
         MXERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.max.npy'
-                         % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
+                        % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
         MNERR = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.min.npy'
-                         % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
+                        % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
         MKLD = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.kld.mean.npy'
                        % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED))
         SKLD = np.load(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zerr.kld.stdv.npy'
@@ -518,7 +518,7 @@ if __name__ == '__main__':
         ERR = ZDEC-SCDAT
         ERRDISTN = np.array(np.histogram(ERR, np.linspace(-1.0, 0.0, 9)))
         ERRDISTP = np.array(np.histogram(ERR, np.linspace(0.0, 1.0, 9)))
-        KLD = np.sum(1+np.log(np.square(ZENC[:, 1, :]))-np.square(ZENC[:, 0, :])-np.square(ZENC[:, 1, :]), axis=1)
+        KLD = 0.5*np.sum(np.square(ZENC[:, 1, :])+np.square(ZENC[:, 0, :])-np.log(np.square(ZENC[:, 1, :]))-1, axis=1)
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zenc.npy'
                 % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED), ZENC.reshape(*SSHP3))
         np.save(PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d.zdec.npy'
@@ -670,31 +670,31 @@ if __name__ == '__main__':
     def vae_plots():
         pref = PREF+'.%04d.%s.%s.%s.%02d.%04d.%.0e.%04d' % (SNS, SCLR, OPT, LSS, LD, EP, LR, SEED)
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
-        ax.xaxis.set_ticks_position('bottom')
-        ax.yaxis.set_ticks_position('left')
-        ax.scatter(ZENC[:, 0, 0], ZENC[:, 1, 0], c=CT.reshape(-1),
-                   cmap=plt.get_cmap('plasma'), s=64, alpha=0.5, edgecolors='')
-        plt.xlabel('VAE MU 0')
-        plt.ylabel('VAE SIGMA 0')
-        fig.savefig(pref+'.vae.prj.ld.png')
-        plt.close()
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # ax.spines['right'].set_visible(False)
+        # ax.spines['top'].set_visible(False)
+        # ax.xaxis.set_ticks_position('bottom')
+        # ax.yaxis.set_ticks_position('left')
+        # ax.scatter(ZENC[:, 0, 0], ZENC[:, 1, 0], c=CT.reshape(-1),
+        #            cmap=plt.get_cmap('plasma'), s=64, alpha=0.5, edgecolors='')
+        # plt.xlabel('VAE MU 0')
+        # plt.ylabel('VAE SIGMA 0')
+        # fig.savefig(pref+'.vae.prj.ld.png')
+        # plt.close()
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
-        ax.xaxis.set_ticks_position('bottom')
-        ax.yaxis.set_ticks_position('left')
-        ax.scatter(PZENC[:, 0, 0], PZENC[:, 1, 0], c=CT.reshape(-1),
-                   cmap=plt.get_cmap('plasma'), s=64, alpha=0.5, edgecolors='')
-        plt.xlabel('PCA VAE MU 0')
-        plt.ylabel('PCA SIGMA 0')
-        fig.savefig(pref+'.vae.pca.prj.ld.png')
-        plt.close()
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # ax.spines['right'].set_visible(False)
+        # ax.spines['top'].set_visible(False)
+        # ax.xaxis.set_ticks_position('bottom')
+        # ax.yaxis.set_ticks_position('left')
+        # ax.scatter(PZENC[:, 0, 0], PZENC[:, 1, 0], c=CT.reshape(-1),
+        #            cmap=plt.get_cmap('plasma'), s=64, alpha=0.5, edgecolors='')
+        # plt.xlabel('PCA VAE MU 0')
+        # plt.ylabel('PCA SIGMA 0')
+        # fig.savefig(pref+'.vae.pca.prj.ld.png')
+        # plt.close()
 
         DIAGMLV = SCLRS['minmax'].fit_transform(np.mean(ZENC.reshape(NP, NT, SNS, 2*LD), 2).reshape(NP*NT, 2*LD)).reshape(NP, NT, 2, LD)
         DIAGSLV = SCLRS['minmax'].fit_transform(np.var(ZENC.reshape(NP, NT, SNS, 2*LD)/\
@@ -709,8 +709,8 @@ if __name__ == '__main__':
         DIAGSPLV = SCLRS['minmax'].fit_transform(np.var(PZENC.reshape(NP, NT, SNS, 2*LD)/\
                                                  CT[:, :, :, np.newaxis], 2).reshape(NP*NT, 2*LD)).reshape(NP, NT, 2, LD)
 
-        for i in range(2):
-            for j in range(2):
+        for i in range(1):
+            for j in range(ED):
                 for k in range(LD):
                     fig = plt.figure()
                     ax = fig.add_subplot(111)
@@ -731,8 +731,8 @@ if __name__ == '__main__':
                     plt.ylabel('PRESS')
                     fig.savefig(pref+'.vae.diag.ld.%d.%d.%d.png' % (i, j, k))
                     plt.close()
-        for i in range(2):
-            for j in range(2):
+        for i in range(1):
+            for j in range(ED):
                 for k in range(LD):
                     fig = plt.figure()
                     ax = fig.add_subplot(111)
