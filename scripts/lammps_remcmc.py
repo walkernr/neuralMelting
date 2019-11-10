@@ -80,7 +80,7 @@ def parse_args():
     parser.add_argument('-ts', '--timesteps', help='hamiltonian monte carlo timesteps',
                         type=int, default=8)
     parser.add_argument('-dx', '--pos_displace', help='position displacement (lattice proportion)',
-                        type=float, default=0.0625)
+                        type=float, default=0.03125)
     parser.add_argument('-dv', '--vol_displace', help='logarithmic volume displacement (logarithmic volume proportion)',
                         type=float, default=0.03125)
     # parse arguments
