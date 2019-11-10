@@ -1,4 +1,4 @@
-s=2
+s=3
 # make and move to directory for output data
 mkdir ./output/remcmc_$s
 cd ./output/remcmc_$s
@@ -7,7 +7,7 @@ cd ./output/remcmc_$s
 python ../../scripts/lammps_remcmc.py -v -c -nw 16 -nt 1 -mt fork -n remcmc_init_$s -ss $s -pn 32 -tn 32 -sc 1024
 rm -r ./dask-worker-space
 # remcmc data collection run
-python ../../scripts/lammps_remcmc.py -v -c -nw 16 -nt 1 -mt fork -rn remcmc_init_$s -n remcmc_run_$s -ss $s -pn 32 -tn 32
+python ../../scripts/lammps_remcmc.py -v -r -c -nw 16 -nt 1 -mt fork -rn remcmc_init_$s -n remcmc_run_$s -ss $s -pn 32 -tn 32
 rm -r ./dask-worker-space
 # parse output
 python ../../scripts/lammps_parse.py -v -n remcmc_run_$s
