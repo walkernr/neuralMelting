@@ -1,4 +1,4 @@
-s=3
+s=4
 # make and move to directory for output data
 mkdir ./output/remcmc_$s
 cd ./output/remcmc_$s
@@ -12,5 +12,5 @@ rm -r ./dask-worker-space
 # parse output
 python ../../scripts/lammps_parse.py -v -n remcmc_run_$s
 # calculate structural data
-python ../../scripts/lammps_distr.py -v -c -nw 16 -nt 1 -n remcmc_run_$s -cb 6
+python ../../scripts/lammps_distr.py -v -c -nw 16 -nt 1 -n remcmc_run_$s -cb 8
 rm -r dask-worker-space
