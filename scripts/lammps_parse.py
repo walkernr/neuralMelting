@@ -64,19 +64,6 @@ SN = TEMP.shape[2]
 if VERBOSE:
     print('%d thermodynamic property steps parsed' % (PN*TN*SN))
 
-# parse trajectory file
-with open(PREFIX+'.traj', 'r') as traj_in:
-    DATA = [line.split() for line in traj_in.readlines()]
-    NATOMS, BOX = np.split(np.array([values for values in DATA if len(values) == 2]), 2, 1)
-    NATOMS = NATOMS.astype(np.uint16)[:, 0]
-    BOX = BOX.astype(np.float32)[:, 0]
-    X = [np.array(values).astype(np.float32) for values in DATA if len(values) == 3]
-    X = np.concatenate(tuple(X), 0)
-    NATOMS = NATOMS.reshape(PN, TN, -1)
-    X = X.reshape(PN, TN, NATOMS.shape[2], NATOMS[0, 0, 0], 3)
-if VERBOSE:
-    print('%d trajectory steps parsed' % (PN*TN*SN))
-
 # dump data
 np.save(PREFIX+'.temp.npy', TEMP)
 np.save(PREFIX+'.pe.npy', PE)
@@ -95,6 +82,22 @@ np.save(PREFIX+'.nah.npy', NAH)
 np.save(PREFIX+'.ap.npy', AP)
 np.save(PREFIX+'.av.npy', AV)
 np.save(PREFIX+'.ah.npy', AH)
+del TEMP, PE, KE, VIRIAL, VOL, DX, DV, NTP, NAP, NTV, NAV, NTH, NAH, AP, AV, AH
+
+# parse trajectory file
+with open(PREFIX+'.traj', 'r') as traj_in:
+    DATA = [line.split() for line in traj_in.readlines()]
+    NATOMS, BOX = np.split(np.array([values for values in DATA if len(values) == 2]), 2, 1)
+    NATOMS = NATOMS.astype(np.uint16)[:, 0]
+    BOX = BOX.astype(np.float32)[:, 0]
+    X = [np.array(values).astype(np.float32) for values in DATA if len(values) == 3]
+    X = np.concatenate(tuple(X), 0)
+    NATOMS = NATOMS.reshape(PN, TN, -1)
+    X = X.reshape(PN, TN, NATOMS.shape[2], NATOMS[0, 0, 0], 3)
+if VERBOSE:
+    print('%d trajectory steps parsed' % (PN*TN*SN))
+
+# dump data
 np.save(PREFIX+'.natoms.npy', NATOMS)
 np.save(PREFIX+'.box.npy', BOX)
 np.save(PREFIX+'.pos.npy', X)
