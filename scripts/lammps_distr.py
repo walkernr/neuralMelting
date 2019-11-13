@@ -135,27 +135,27 @@ def calculate_rdf(natoms, box, br, pos, r, rd):
     return rd/natoms
 
 
-@nb.njit
-def calculate_adf(natoms, box, br, pos, r, a, ad):
-    ''' calculate adf '''
-    ad[:] = 0
-    # loop through lattice vectors
-    for j in range(br.shape[0]):
-        # displacement vector matrix
-        dvm = pos-(pos+box*br[j].reshape(1, -1)).reshape(-1, 1, 3)
-        # vector of displacements between atoms
-        d = np.sqrt(np.sum(np.square(dvm), -1))
-        # filter out atoms within shell
-        sh = dvm[(d <= r[-1]) & (d > r[0])]
-        # displacement magnitudes of atoms within shell
-        mag = d[(d<= r[-1]) & (d > r[0])]
-        # dot product of vector displacements within shell
-        dot = np.sum(np.multiply(sh.reshape(-1, 1, 3), sh.reshape(1, -1, 3)), 2)
-        # angular displacements
-        am = np.arccos(dot/(mag*mag.reshape(1, -1, 1)))
-        # calculate adf
-        ad[1:] += np.histogram(am, a)[0]/2
-    return ad/natoms
+# @nb.njit
+# def calculate_adf(natoms, box, br, pos, r, a, ad):
+#     ''' calculate adf '''
+#     ad[:] = 0
+#     # loop through lattice vectors
+#     for j in range(br.shape[0]):
+#         # displacement vector matrix
+#         dvm = pos-(pos+box*br[j].reshape(1, -1)).reshape(-1, 1, 3)
+#         # vector of displacements between atoms
+#         d = np.sqrt(np.sum(np.square(dvm), -1))
+#         # filter out atoms within shell
+#         sh = dvm[(d <= r[-1]) & (d > r[0])]
+#         # displacement magnitudes of atoms within shell
+#         mag = d[(d<= r[-1]) & (d > r[0])]
+#         # dot product of vector displacements within shell
+#         dot = np.sum(np.multiply(sh.reshape(-1, 1, 3), sh.reshape(1, -1, 3)), 2)
+#         # angular displacements
+#         am = np.arccos(dot/(mag*mag.reshape(1, -1, 1)))
+#         # calculate adf
+#         ad[1:] += np.histogram(am, a)[0]/2
+#     return ad/natoms
 
 
 @nb.jit
@@ -192,25 +192,25 @@ def calculate_rdfs():
     return futures
 
 
-def calculate_adfs():
-    ''' calculate adfs for all samples '''
-    if VERBOSE:
-        print('computing %s %s samples' % (NS, EL.lower()))
-    if DASK:
-        operations = [delayed(calculate_adf)(NATOMS[i], BOX[i], BR, POS[i], R, A, AD) for i in range(NS)]
-        futures = CLIENT.compute(operations)
-        if VERBOSE:
-            progress(futures)
-            print('\n')
-    elif PARALLEL:
-        operations = [delayed(calculate_adf)(NATOMS[i], BOX[i], BR, POS[i], R, A, AD) for i in range(NS)]
-        futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(operations)
-    else:
-        if VERBOSE:
-            futures = [calculate_adf(NATOMS[i], BOX[i], BR, POS[i], R, A, AD) for i in tqdm(range(NS))]
-        else:
-            futures = [calculate_adf(NATOMS[i], BOX[i], BR, POS[i], R, A, AD) for i in range(NS)]
-    return futures
+# def calculate_adfs():
+#     ''' calculate adfs for all samples '''
+#     if VERBOSE:
+#         print('computing %s %s samples' % (NS, EL.lower()))
+#     if DASK:
+#         operations = [delayed(calculate_adf)(NATOMS[i], BOX[i], BR, POS[i], R, A, AD) for i in range(NS)]
+#         futures = CLIENT.compute(operations)
+#         if VERBOSE:
+#             progress(futures)
+#             print('\n')
+#     elif PARALLEL:
+#         operations = [delayed(calculate_adf)(NATOMS[i], BOX[i], BR, POS[i], R, A, AD) for i in range(NS)]
+#         futures = Parallel(n_jobs=NTHREAD, backend='threading', verbose=VERBOSE)(operations)
+#     else:
+#         if VERBOSE:
+#             futures = [calculate_adf(NATOMS[i], BOX[i], BR, POS[i], R, A, AD) for i in tqdm(range(NS))]
+#         else:
+#             futures = [calculate_adf(NATOMS[i], BOX[i], BR, POS[i], R, A, AD) for i in range(NS)]
+#     return futures
 
 
 def calculate_cdfs():
@@ -304,6 +304,7 @@ if __name__ == '__main__':
 
     # get spatial properties
     NS, NATOMS, BOX, POS, BR, DR, NRHO, DNI, R, A, RD, AD, DRV, DN, RV, CD = calculate_spatial()
+    del DR, NRHO, A, AD, DRV
     RNS = np.int32(NS/(PN*TN))
     if VERBOSE:
         print('data loaded')
@@ -317,28 +318,29 @@ if __name__ == '__main__':
     # adjust rdf by atom count and atoms contained by shells
     G = np.divide(G, DNI)
     # calculate domain for structure factor
-    Q = 2*np.pi/DR*np.fft.fftfreq(R.size)[1:int(R.size/2)]
+    # Q = 2*np.pi/DR*np.fft.fftfreq(R.size)[1:int(R.size/2)]
     # fourier transform of g
-    PF = DR*np.exp(-complex(0, 1)*Q*R[0])
-    FTG = -np.imag(PF*np.fft.fft(R[np.newaxis, :]*(G-1))[:, 1:int(R.size/2)])
+    # PF = DR*np.exp(-complex(0, 1)*Q*R[0])
+    # FTG = -np.imag(PF*np.fft.fft(R[np.newaxis, :]*(G-1))[:, 1:int(R.size/2)])
     # structure factor
-    S = 1+4*np.pi*NRHO[:, np.newaxis]*np.divide(FTG, Q)
-    with np.errstate(divide='ignore', invalid='ignore'):
-        I = np.multiply(np.nan_to_num(np.multiply(G, np.log(G)))-G+1, np.square(R[:]))
-    NRHO = NRHO.reshape(PN, TN, RNS)
+    # S = 1+4*np.pi*NRHO[:, np.newaxis]*np.divide(FTG, Q)
+    # with np.errstate(divide='ignore', invalid='ignore'):
+    #     I = np.multiply(np.nan_to_num(np.multiply(G, np.log(G)))-G+1, np.square(R[:]))
+    # NRHO = NRHO.reshape(PN, TN, RNS)
     DNI = DNI.reshape(PN, TN, RNS, R.size)
     G = G.reshape(PN, TN, RNS, R.size)
-    S = S.reshape(PN, TN, RNS, Q.size)
-    I = I.reshape(PN, TN, RNS, R.size)
+    # S = S.reshape(PN, TN, RNS, Q.size)
+    # I = I.reshape(PN, TN, RNS, R.size)
     # dump data
-    np.save(PREFIX+'.nrho.npy', NRHO)
+    # np.save(PREFIX+'.nrho.npy', NRHO)
     np.save(PREFIX+'.dni.npy', DNI)
     np.save(PREFIX+'.r.npy', R)
     np.save(PREFIX+'.rdf.npy', G)
-    np.save(PREFIX+'.q.npy', Q)
-    np.save(PREFIX+'.sf.npy', S)
-    np.save(PREFIX+'.ef.npy', I)
-    del G, Q, PF, FTG, S, I
+    # np.save(PREFIX+'.q.npy', Q)
+    # np.save(PREFIX+'.sf.npy', S)
+    # np.save(PREFIX+'.ef.npy', I)
+    # del G, Q, PF, FTG, S, I
+    del DNI, R, G, RD
 
     # # calculate angular distributions
     # I = calculate_adfs()
@@ -348,7 +350,6 @@ if __name__ == '__main__':
     #     I = np.array(I, dtype=np.float32)
     # I = I.reshape(PN, TN, RNS, A.size)
     # # dump data
-    # np.save(PREFIX+'.dn.npy', DN)
     # np.save(PREFIX+'.a.npy', A)
     # np.save(PREFIX+'.adf.npy', I)
     # del I
@@ -364,6 +365,7 @@ if __name__ == '__main__':
     C = np.divide(C, DN[:, np.newaxis, np.newaxis, np.newaxis])
     C = C.reshape(PN, TN, RNS, *(3*(RV.shape[1]-1,)))
     # dump data
+    np.save(PREFIX+'.dn.npy', DN)
     np.save(PREFIX+'.rv.npy', RV)
     np.save(PREFIX+'.cdf.npy', C)
 
